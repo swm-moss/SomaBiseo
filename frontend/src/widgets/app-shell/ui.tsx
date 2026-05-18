@@ -9,9 +9,9 @@ import { routes } from "@/shared/config/routes";
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-20 border-b bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-5 sm:px-8">
-          <Link className="text-base font-black" href={routes.dashboard}>
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-[60px] w-full max-w-[480px] items-center justify-between px-5 sm:px-6">
+          <Link className="text-[17px] font-black" href={routes.dashboard}>
             {PRODUCT_NAME}
           </Link>
           <nav className="hidden items-center gap-5 text-sm font-semibold text-muted-foreground lg:flex">
@@ -31,7 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <PortalSessionStatus />
         </div>
       </header>
-      <div className="border-b bg-blue-50 px-5 py-2 text-center text-xs font-medium text-blue-800">
+      <div className="border-b border-border/70 bg-[#eaf3ff] px-5 py-2 text-center text-[12px] font-semibold leading-[18px] text-primary">
         {NON_OFFICIAL_NOTICE}
       </div>
       {children}

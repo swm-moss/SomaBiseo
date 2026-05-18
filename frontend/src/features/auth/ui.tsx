@@ -65,11 +65,11 @@ export function PortalLoginForm() {
       })}
     >
       <div>
-        <label className="text-sm font-semibold" htmlFor="username">
+        <label className="text-[15px] font-bold leading-[22px]" htmlFor="username">
           SOMA 포털 아이디
         </label>
         <input
-          className="mt-2 h-11 w-full rounded-lg border bg-white px-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-primary/20"
+          className="sb-field"
           id="username"
           autoComplete="username"
           placeholder="zun_e@kakao.com"
@@ -77,15 +77,17 @@ export function PortalLoginForm() {
           {...register("username")}
         />
         {errors.username ? (
-          <p className="mt-2 text-sm text-destructive">{errors.username.message}</p>
+          <p className="mt-2 text-[14px] font-semibold leading-[21px] text-destructive">
+            {errors.username.message}
+          </p>
         ) : null}
       </div>
       <div>
-        <label className="text-sm font-semibold" htmlFor="password">
+        <label className="text-[15px] font-bold leading-[22px]" htmlFor="password">
           비밀번호
         </label>
         <input
-          className="mt-2 h-11 w-full rounded-lg border bg-white px-3 text-sm outline-none transition-shadow focus:ring-2 focus:ring-primary/20"
+          className="sb-field"
           id="password"
           autoComplete="current-password"
           placeholder="SOMA 포털 비밀번호"
@@ -93,15 +95,17 @@ export function PortalLoginForm() {
           {...register("password")}
         />
         {errors.password ? (
-          <p className="mt-2 text-sm text-destructive">{errors.password.message}</p>
+          <p className="mt-2 text-[14px] font-semibold leading-[21px] text-destructive">
+            {errors.password.message}
+          </p>
         ) : null}
       </div>
       {errors.root ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-destructive">
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-[14px] font-semibold leading-[21px] text-destructive">
           {errors.root.message}
         </p>
       ) : null}
-      <Button className="h-11 w-full" disabled={isSubmitting} type="submit">
+      <Button className="mt-5 h-[52px] w-full" disabled={isSubmitting} type="submit">
         {isSubmitting ? "로그인 중" : "SOMA 포털로 로그인"}
       </Button>
     </form>

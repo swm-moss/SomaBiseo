@@ -14,15 +14,15 @@ export function EmptyState({ title, description, action, className }: EmptyState
   return (
     <div
       className={cn(
-        "flex flex-col items-start gap-3 rounded-lg border border-dashed bg-white p-5",
+        "flex flex-col items-start gap-3 rounded-lg bg-white p-5",
         className,
       )}
     >
       <Inbox aria-hidden="true" className="size-5 text-muted-foreground" />
       <div>
-        <p className="font-semibold">{title}</p>
+        <p className="text-[17px] font-bold leading-[25.5px]">{title}</p>
         {description ? (
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
+          <p className="mt-1 text-[15px] leading-[22px] text-muted-foreground">{description}</p>
         ) : null}
       </div>
       {action}

@@ -14,7 +14,7 @@ const typeLabel = {
 
 export function UpcomingEventCard({ event }: { event: SomaEvent }) {
   return (
-    <article className="flex gap-3 border-b py-4 last:border-b-0">
+    <article className="sb-list-row">
       <Link className="min-w-0 flex-1" href={routes.eventDetail(event.id)}>
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
@@ -29,11 +29,13 @@ export function UpcomingEventCard({ event }: { event: SomaEvent }) {
             <StatusBadge tone="green">충돌 없음</StatusBadge>
           )}
         </div>
-        <h3 className="mt-2 line-clamp-2 text-base font-bold leading-6">{event.title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h3 className="mt-2 line-clamp-2 text-[17px] font-extrabold leading-[25.5px]">
+          {event.title}
+        </h3>
+        <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
           {event.mentorName ?? "멘토 미정"} · {formatOptionalDateTime(event.startAt)}
         </p>
-        <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+        <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
           <MapPin aria-hidden="true" className="size-4" />
           {event.location ?? "장소 미정"}
         </p>

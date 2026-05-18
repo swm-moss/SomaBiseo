@@ -18,8 +18,8 @@ export function BottomNavigation() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden">
-      <div className="mx-auto grid max-w-3xl grid-cols-4 gap-1">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden">
+      <div className="mx-auto grid max-w-[480px] grid-cols-4 gap-1">
         {navItems.map(({ href, label, Icon }) => {
           const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
@@ -27,8 +27,8 @@ export function BottomNavigation() {
             <Link
               key={href}
               className={cn(
-                "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-xs font-semibold text-muted-foreground",
-                isActive && "bg-blue-50 text-primary",
+                "flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg text-[12px] font-bold text-muted-foreground",
+                isActive && "bg-[#eaf3ff] text-primary",
               )}
               href={href}
             >

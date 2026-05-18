@@ -12,10 +12,10 @@ export function ErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <div className="rounded-lg border bg-white p-5">
+    <div className="rounded-lg bg-white p-5">
       <AlertCircle aria-hidden="true" className="size-5 text-destructive" />
-      <p className="mt-3 font-semibold">{title}</p>
-      <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
+      <p className="mt-3 text-[17px] font-bold leading-[25.5px]">{title}</p>
+      <p className="mt-1 text-[15px] leading-[22px] text-muted-foreground">{description}</p>
       {onRetry ? (
         <Button className="mt-4" variant="outline" onClick={onRetry}>
           다시 시도

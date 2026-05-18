@@ -21,7 +21,7 @@ export function SegmentControl<T extends string>({
   className,
 }: SegmentControlProps<T>) {
   return (
-    <div className={cn("flex gap-2 overflow-x-auto py-1", className)}>
+    <div className={cn("-mx-5 flex gap-2 overflow-x-auto px-5 py-1", className)}>
       {options.map((option) => {
         const isSelected = option.value === value;
 
@@ -29,10 +29,10 @@ export function SegmentControl<T extends string>({
           <button
             key={option.value}
             className={cn(
-              "sb-tap shrink-0 rounded-lg px-3 text-sm font-semibold transition-colors",
+              "sb-tap shrink-0 rounded-lg px-4 text-[15px] font-bold transition-colors",
               isSelected
                 ? "bg-foreground text-white"
-                : "bg-white text-muted-foreground hover:bg-slate-100",
+                : "bg-white text-muted-foreground hover:bg-muted",
             )}
             type="button"
             onClick={() => onValueChange(option.value)}

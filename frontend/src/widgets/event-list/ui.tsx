@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -12,7 +13,6 @@ import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
 import { LoadingState } from "@/shared/ui/loading-state";
 import { SegmentControl } from "@/shared/ui/segment-control";
-import Link from "next/link";
 
 type EventTab = "ALL" | SomaEventType;
 
@@ -28,7 +28,8 @@ export function EventList() {
   const validSession = session && !isPortalSessionExpired(session) ? session : null;
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["events", validSession?.sessionId, tab],
-    queryFn: () => getSomaEvents(validSession!.sessionId, { type: tab === "ALL" ? undefined : tab }),
+    queryFn: () =>
+      getSomaEvents(validSession!.sessionId, { type: tab === "ALL" ? undefined : tab }),
     enabled: Boolean(validSession),
   });
 
@@ -40,7 +41,7 @@ export function EventList() {
           description="로그인하면 실제 멘토특강과 자유멘토링 목록을 불러옵니다."
           action={
             <Link
-              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
+              className="inline-flex h-12 items-center rounded-lg bg-primary px-5 text-[16px] font-bold text-primary-foreground"
               href={routes.login}
             >
               로그인
@@ -57,7 +58,7 @@ export function EventList() {
             <EmptyState title="일정이 없어요" description="조건에 맞는 특강이나 멘토링이 없습니다." />
           ) : null}
           {data && data.length > 0 ? (
-            <div className="mt-3 rounded-lg bg-white px-4">
+            <div className="sb-list-surface">
               {data.map((event) => (
                 <UpcomingEventCard key={event.id} event={event} />
               ))}
