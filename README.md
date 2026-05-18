@@ -20,9 +20,7 @@ npm --prefix frontend run dev
 ## Run Backend
 
 ```bash
-docker compose up -d postgres
-cd backend
-./gradlew bootRun
+docker compose up -d --build backend
 ```
 
 Local backend health:
@@ -30,6 +28,8 @@ Local backend health:
 ```bash
 curl http://localhost:8080/api/health
 ```
+
+Postgres is exposed on `127.0.0.1:${POSTGRES_PORT:-15432}` to avoid clashing with an existing local `5432`.
 
 ## Product Guardrails
 

@@ -46,8 +46,9 @@ public class SomaPortalClient {
         }
 
         HttpResponse<String> loginResponse = sendRaw(httpClient, postForm(properties.loginSubmitPath(), formBody));
+        HttpResponse<String> completedLoginResponse = completeAutoSubmitIfPresent(httpClient, loginResponse);
 
-        if (parser.looksLikeLoginPage(loginResponse.body())) {
+        if (parser.looksLikeLoggedOutPage(completedLoginResponse.body())) {
             throw new SomaPortalUnauthorizedException("SOMA 포털 로그인에 실패했습니다. 아이디와 비밀번호를 확인해 주세요.");
         }
 
@@ -134,7 +135,7 @@ public class SomaPortalClient {
     private void assertMypageResponse(HttpResponse<String> response) {
         String path = response.uri().getPath();
 
-        if (!path.startsWith("/busan/sw/mypage") || parser.looksLikeLoginPage(response.body())) {
+        if (!path.contains("/sw/mypage") || parser.looksLikeLoggedOutPage(response.body())) {
             throw new SomaPortalUnauthorizedException("SOMA 포털 세션이 유효하지 않습니다. 다시 로그인해 주세요.");
         }
     }
@@ -159,6 +160,12 @@ public class SomaPortalClient {
         values.put("password", password);
 
         return formBody(values);
+    }
+
+    private HttpResponse<String> completeAutoSubmitIfPresent(HttpClient httpClient, HttpResponse<String> response) {
+        return parser.parseAutoSubmitForm(response.body())
+                .map(form -> sendRaw(httpClient, postForm(form.action(), formBody(form.values()))))
+                .orElse(response);
     }
 
     private String formBody(Map<String, String> values) {

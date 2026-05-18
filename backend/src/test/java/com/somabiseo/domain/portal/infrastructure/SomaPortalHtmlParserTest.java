@@ -6,6 +6,7 @@ import com.somabiseo.domain.somaevent.domain.EventType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,7 +53,7 @@ class SomaPortalHtmlParserTest {
                   <tbody>
                     <tr>
                       <td>1</td>
-                      <td><a href="/busan/sw/mypage/mentoLec/view.do?mentoLecId=17">[멘토특강] AI 서비스 운영</a></td>
+                      <td class="tit"><a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=17">[멘토특강] AI 서비스 운영</a></td>
                       <td>정다은 멘토</td>
                       <td>2026.05.20 15:00</td>
                     </tr>
@@ -63,9 +64,61 @@ class SomaPortalHtmlParserTest {
         List<SomaPortalEventResponse> events = parser.parseEvents(html, "https://www.swmaestro.ai");
 
         assertThat(events).hasSize(1);
-        assertThat(events.getFirst().sourceId()).isEqualTo("mentoLecId-17");
+        assertThat(events.getFirst().sourceId()).isEqualTo("qustnrSn-17");
         assertThat(events.getFirst().type()).isEqualTo(EventType.LECTURE);
         assertThat(events.getFirst().mentorName()).isEqualTo("정다은 멘토");
         assertThat(events.getFirst().startAt()).isNotNull();
+    }
+
+    @Test
+    void doesNotTreatEventTypeLabelAsMentorName() {
+        String html = """
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>1</td>
+                      <td class="tit"><a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=9284">[멘토 특강] 글로벌 금융 질서의 재편</a></td>
+                      <td>2026-06-20 09:00</td>
+                    </tr>
+                  </tbody>
+                </table>
+                """;
+
+        List<SomaPortalEventResponse> events = parser.parseEvents(html, "https://www.swmaestro.ai");
+
+        assertThat(events).hasSize(1);
+        assertThat(events.getFirst().mentorName()).isNull();
+        assertThat(events.getFirst().topic()).isEqualTo("글로벌 금융 질서의 재편");
+    }
+
+    @Test
+    void parsesAutoSubmitBridgeForm() {
+        String html = """
+                <form name="gofrm" action='/busan/sw/login.do' method='post'>
+                  <input type='hidden' name='password' value='hashed-password' />
+                  <input type='hidden' name='username' value='user@example.com' />
+                </form>
+                """;
+
+        Optional<SomaPortalHtmlParser.PortalAutoSubmitForm> form = parser.parseAutoSubmitForm(html);
+
+        assertThat(form).isPresent();
+        assertThat(form.get().action()).isEqualTo("/busan/sw/login.do");
+        assertThat(form.get().values())
+                .containsEntry("username", "user@example.com")
+                .containsEntry("password", "hashed-password");
+    }
+
+    @Test
+    void detectsLoggedOutMainPage() {
+        String html = """
+                <html>
+                  <body>
+                    <a href="/sw/member/user/forLogin.do?menuNo=200025" class="lock">로그인</a>
+                  </body>
+                </html>
+                """;
+
+        assertThat(parser.looksLikeLoggedOutPage(html)).isTrue();
     }
 }

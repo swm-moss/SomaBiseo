@@ -53,6 +53,45 @@ public class SomaPortalHtmlParser {
                 || document.text().contains("비밀번호를 입력해 주세요");
     }
 
+    public boolean looksLikeLoggedOutPage(String html) {
+        Document document = Jsoup.parse(html);
+
+        return looksLikeLoginPage(html)
+                || document.select("a.lock[href*=forLogin.do]").stream()
+                .anyMatch(link -> clean(link.text()).contains("로그인"));
+    }
+
+    public Optional<PortalAutoSubmitForm> parseAutoSubmitForm(String html) {
+        Document document = Jsoup.parse(html);
+        Element form = document.selectFirst("form[name=gofrm], form#gofrm");
+
+        if (form == null) {
+            return Optional.empty();
+        }
+
+        String action = clean(form.attr("action"));
+
+        if (action.isBlank()) {
+            return Optional.empty();
+        }
+
+        Map<String, String> values = new LinkedHashMap<>();
+
+        for (Element input : form.select("input[name]")) {
+            String name = clean(input.attr("name"));
+
+            if (!name.isBlank()) {
+                values.put(name, input.attr("value"));
+            }
+        }
+
+        if (values.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new PortalAutoSubmitForm(action, values));
+    }
+
     public List<SomaPortalNoticeResponse> parseNotices(String html, String baseUrl) {
         return parseBoardItems(html, baseUrl).stream()
                 .map(item -> new SomaPortalNoticeResponse(
@@ -131,7 +170,11 @@ public class SomaPortalHtmlParser {
     }
 
     private Optional<PortalBoardItem> parseTableRow(Element row, String baseUrl) {
-        Element link = row.selectFirst("a[href*=view.do], a[href*=detail.do], a[href]");
+        Element link = row.selectFirst("td.tit a[href*=view.do], td.tit a[href*=detail.do]");
+
+        if (link == null) {
+            link = row.selectFirst("a[href*=view.do], a[href*=detail.do]");
+        }
 
         if (link == null || clean(link.text()).isBlank()) {
             return Optional.empty();
@@ -173,9 +216,11 @@ public class SomaPortalHtmlParser {
         }
 
         String beforeMarker = clean(text.substring(0, mentorMarker)
+                .replace("[멘토 특강]", " ")
                 .replace("[멘토특강]", " ")
                 .replace("[자유멘토링]", " ")
                 .replace("[멘토링]", " ")
+                .replace("[자유 멘토링]", " ")
                 .replace("|", " "));
         String[] tokens = beforeMarker.split("\\s+");
 
@@ -189,6 +234,10 @@ public class SomaPortalHtmlParser {
             name = tokens[tokens.length - 2] + " " + name;
         }
 
+        if (!isNameToken(name)) {
+            return Optional.empty();
+        }
+
         return Optional.of(name + " 멘토");
     }
 
@@ -196,9 +245,15 @@ public class SomaPortalHtmlParser {
         return value.matches("[A-Za-z][A-Za-z0-9.·-]*");
     }
 
+    private boolean isNameToken(String value) {
+        return value.matches("[가-힣A-Za-z][가-힣A-Za-z0-9.·\\- ]*");
+    }
+
     private String inferTopic(String title) {
         return title
+                .replace("[멘토 특강]", "")
                 .replace("[멘토특강]", "")
+                .replace("[자유 멘토링]", "")
                 .replace("[자유멘토링]", "")
                 .replace("[멘토링]", "")
                 .trim();
@@ -309,7 +364,7 @@ public class SomaPortalHtmlParser {
         if (query != null) {
             Map<String, String> params = parseQuery(query);
 
-            for (String key : List.of("nttId", "lecId", "mentoLecId", "seq", "id")) {
+            for (String key : List.of("nttId", "qustnrSn", "lecId", "mentoLecId", "seq", "id")) {
                 String value = params.get(key);
 
                 if (value != null && !value.isBlank()) {
@@ -345,5 +400,11 @@ public class SomaPortalHtmlParser {
         }
 
         return value.replace('\u00a0', ' ').replaceAll("\\s+", " ").trim();
+    }
+
+    public record PortalAutoSubmitForm(
+            String action,
+            Map<String, String> values
+    ) {
     }
 }
