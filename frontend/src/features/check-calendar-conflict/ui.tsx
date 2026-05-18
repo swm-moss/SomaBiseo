@@ -1,0 +1,58 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
+
+import { getConflictForEvent } from "@/entities/calendar/api";
+import type { SomaEvent } from "@/entities/soma-event/model";
+import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
+import { formatTimeRange } from "@/shared/lib/date";
+import { LoadingState } from "@/shared/ui/loading-state";
+
+export function CalendarConflictResult({ event }: { event: SomaEvent }) {
+  const connected = useGoogleCalendarStore((state) => state.connected);
+  const { data, isLoading } = useQuery({
+    queryKey: ["calendar-conflict", event.id],
+    queryFn: () => getConflictForEvent(event),
+    enabled: connected,
+  });
+
+  if (!connected) {
+    return (
+      <div className="rounded-lg border border-dashed bg-white p-4 text-sm leading-6 text-muted-foreground">
+        캘린더를 연결하면 이 일정의 충돌 여부를 확인합니다.
+      </div>
+    );
+  }
+
+  if (isLoading || !data) {
+    return <LoadingState className="min-h-24 rounded-lg border bg-white" label="충돌 확인 중" />;
+  }
+
+  if (!data.hasConflict) {
+    return (
+      <div className="rounded-lg border bg-white p-4">
+        <div className="flex items-center gap-2 text-emerald-700">
+          <CheckCircle2 aria-hidden="true" className="size-5" />
+          <p className="font-semibold">충돌 없음</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+      <div className="flex items-center gap-2 text-amber-800">
+        <AlertTriangle aria-hidden="true" className="size-5" />
+        <p className="font-semibold">일정 충돌</p>
+      </div>
+      <div className="mt-3 space-y-2">
+        {data.busyBlocks.map((busy) => (
+          <p key={busy.id} className="text-sm text-amber-900">
+            {formatTimeRange(busy.startAt, busy.endAt)} {busy.title}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,129 @@
+@import "pretendard/dist/web/variable/pretendardvariable.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-somabiseo-sans: "Pretendard Variable", "Pretendard",
+    "Apple SD Gothic Neo", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-somabiseo-mono: "SFMono-Regular", "SF Mono", Consolas,
+    "Liberation Mono", monospace;
+
+  --background: #f6f8fb;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #eef2ff;
+  --secondary-foreground: #1e3a8a;
+  --muted: #f3f4f6;
+  --muted-foreground: #667085;
+  --accent: #ecfeff;
+  --accent-foreground: #155e75;
+  --destructive: #dc2626;
+  --border: #e5e7eb;
+  --input: #d1d5db;
+  --ring: #2563eb;
+  --radius: 0.5rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #2563eb;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-somabiseo-sans);
+  --font-mono: var(--font-somabiseo-mono);
+  --font-heading: var(--font-somabiseo-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.25);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    letter-spacing: 0;
+  }
+
+  html {
+    @apply font-sans;
+    background: var(--background);
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    font-family: var(--font-somabiseo-sans);
+    overflow-wrap: break-word;
+    word-break: keep-all;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .sb-page {
+    @apply mx-auto w-full max-w-3xl px-5 pb-28 pt-6 sm:px-8 lg:max-w-5xl lg:pb-12;
+  }
+
+  .sb-section {
+    @apply py-5;
+  }
+
+  .sb-section + .sb-section {
+    @apply border-t;
+  }
+
+  .sb-section-title {
+    @apply text-base font-bold text-foreground;
+  }
+
+  .sb-section-description {
+    @apply mt-1 text-sm leading-6 text-muted-foreground;
+  }
+
+  .sb-tap {
+    @apply min-h-11;
+  }
+}

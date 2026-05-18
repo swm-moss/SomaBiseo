@@ -1,0 +1,39 @@
+import type { Metadata } from "next";
+import { Providers } from "./providers";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://somabiseo.local"),
+  title: {
+    default: "SomaBiseo",
+    template: "%s · SomaBiseo",
+  },
+  description: "소마 일정, 공지, 멘토링을 한눈에 보는 비공식 일정 비서",
+  openGraph: {
+    title: "SomaBiseo",
+    description: "소마 일정, 공지, 멘토링을 한눈에 보는 비공식 일정 비서",
+    url: "/",
+    siteName: "SomaBiseo",
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "SomaBiseo",
+    description: "소마 일정, 공지, 멘토링을 한눈에 보는 비공식 일정 비서",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="ko" className="h-full scroll-smooth antialiased">
+      <body className="min-h-full">
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,12 @@
+{
+  "name": "somabiseo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:lint": "npm --prefix frontend run lint",
+    "backend:dev": "cd backend && ./gradlew bootRun",
+    "backend:test": "cd backend && ./gradlew test"
+  }
+}
