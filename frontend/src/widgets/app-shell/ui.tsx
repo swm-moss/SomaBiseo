@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { BottomNavigation } from "@/widgets/bottom-navigation/ui";
+import { PortalSessionStatus } from "@/features/auth/ui";
 import { NON_OFFICIAL_NOTICE, PRODUCT_NAME } from "@/shared/constants/product";
 import { routes } from "@/shared/config/routes";
 
@@ -27,6 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               설정
             </Link>
           </nav>
+          <PortalSessionStatus />
         </div>
       </header>
       <div className="border-b bg-blue-50 px-5 py-2 text-center text-xs font-medium text-blue-800">

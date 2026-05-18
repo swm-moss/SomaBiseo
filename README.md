@@ -17,6 +17,9 @@ SomaBiseo
 npm --prefix frontend run dev
 ```
 
+Open the URL printed by Next.js, usually `http://localhost:3000`. If another app is using
+3000, Next.js will pick another port such as `http://localhost:3001`.
+
 ## Run Backend
 
 ```bash
@@ -30,6 +33,17 @@ curl http://localhost:8080/api/health
 ```
 
 Postgres is exposed on `127.0.0.1:${POSTGRES_PORT:-15432}` to avoid clashing with an existing local `5432`.
+
+## Local Real Portal Test
+
+```bash
+docker compose up -d --build backend
+npm --prefix frontend run dev
+```
+
+Then open `/login` on the frontend localhost URL and sign in with a SOMA portal account.
+The frontend calls `http://localhost:8080/api/soma/login`, stores only the temporary
+`sessionId` in browser storage, and uses it to load real notices and mentoring events.
 
 ## Product Guardrails
 

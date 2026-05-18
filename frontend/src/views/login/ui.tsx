@@ -1,9 +1,5 @@
-import Link from "next/link";
-
-import { EmailLoginForm } from "@/features/auth/ui";
+import { PortalLoginForm } from "@/features/auth/ui";
 import { PRODUCT_NAME, PRODUCT_TAGLINE, NON_OFFICIAL_NOTICE } from "@/shared/constants/product";
-import { routes } from "@/shared/config/routes";
-import { Button } from "@/shared/ui/button";
 
 export function LoginPage() {
   return (
@@ -14,11 +10,7 @@ export function LoginPage() {
         <p className="mt-4 text-base leading-7 text-muted-foreground">{PRODUCT_TAGLINE}</p>
 
         <div className="mt-8 rounded-lg border bg-white p-4">
-          <Button className="h-11 w-full" asChild>
-            <Link href={routes.dashboard}>Google로 시작하기</Link>
-          </Button>
-          <div className="my-4 h-px bg-border" />
-          <EmailLoginForm />
+          <PortalLoginForm />
         </div>
 
         <p className="mt-5 text-xs leading-5 text-muted-foreground">{NON_OFFICIAL_NOTICE}</p>

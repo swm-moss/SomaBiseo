@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getNotices } from "@/entities/notice/api";
 import type { NoticeFilter } from "@/entities/notice/model";
+import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
 import { BookmarkNoticeButton } from "@/features/bookmark-notice/ui";
 import { useNoticeBookmarkStore } from "@/features/bookmark-notice/model";
 import { useNoticeReadStore } from "@/features/mark-notice-read/model";
@@ -27,11 +28,14 @@ const options = [
 
 export function NoticeList() {
   const [filter, setFilter] = useState<NoticeFilter>("ALL");
+  const session = usePortalAuthStore((state) => state.session);
   const bookmarkedNoticeIds = useNoticeBookmarkStore((state) => state.bookmarkedNoticeIds);
   const readNoticeIds = useNoticeReadStore((state) => state.readNoticeIds);
+  const validSession = session && !isPortalSessionExpired(session) ? session : null;
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["notices"],
-    queryFn: getNotices,
+    queryKey: ["notices", validSession?.sessionId],
+    queryFn: () => getNotices(validSession!.sessionId),
+    enabled: Boolean(validSession),
   });
 
   const notices = useMemo(() => {
@@ -58,6 +62,22 @@ export function NoticeList() {
 
   return (
     <section className="sb-section">
+      {!validSession ? (
+        <EmptyState
+          title="SOMA 포털 로그인이 필요해요"
+          description="로그인하면 실제 공지사항을 localhost에서 바로 불러옵니다."
+          action={
+            <Link
+              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
+              href={routes.login}
+            >
+              로그인
+            </Link>
+          }
+        />
+      ) : null}
+      {validSession ? (
+        <>
       <SegmentControl options={options} value={filter} onValueChange={setFilter} />
       {isLoading ? <LoadingState /> : null}
       {isError ? <ErrorState onRetry={() => void refetch()} /> : null}
@@ -93,6 +113,8 @@ export function NoticeList() {
             );
           })}
         </div>
+      ) : null}
+        </>
       ) : null}
     </section>
   );

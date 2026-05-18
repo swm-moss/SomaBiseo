@@ -4,7 +4,7 @@ import { AlertTriangle, MapPin } from "lucide-react";
 import type { SomaEvent } from "@/entities/soma-event/model";
 import { FavoriteEventButton } from "@/features/favorite-event/ui";
 import { routes } from "@/shared/config/routes";
-import { formatDateTime } from "@/shared/lib/date";
+import { formatOptionalDateTime } from "@/shared/lib/date";
 import { StatusBadge } from "@/shared/ui/status-badge";
 
 const typeLabel = {
@@ -31,11 +31,11 @@ export function UpcomingEventCard({ event }: { event: SomaEvent }) {
         </div>
         <h3 className="mt-2 line-clamp-2 text-base font-bold leading-6">{event.title}</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          {event.mentorName} · {formatDateTime(event.startAt)}
+          {event.mentorName ?? "멘토 미정"} · {formatOptionalDateTime(event.startAt)}
         </p>
         <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
           <MapPin aria-hidden="true" className="size-4" />
-          {event.location}
+          {event.location ?? "장소 미정"}
         </p>
       </Link>
       <FavoriteEventButton eventId={event.id} />

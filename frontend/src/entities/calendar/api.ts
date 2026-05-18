@@ -2,6 +2,10 @@ import type { CalendarConflict } from "@/entities/calendar/model";
 import type { SomaEvent } from "@/entities/soma-event/model";
 
 function overlaps(event: SomaEvent, busy: { startAt: string; endAt: string }) {
+  if (!event.startAt || !event.endAt) {
+    return false;
+  }
+
   return (
     new Date(event.startAt).getTime() < new Date(busy.endAt).getTime() &&
     new Date(event.endAt).getTime() > new Date(busy.startAt).getTime()
