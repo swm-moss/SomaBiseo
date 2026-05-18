@@ -1,5 +1,6 @@
 package com.somabiseo.global.config;
 
+import com.somabiseo.domain.portal.infrastructure.SomaPortalProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -8,7 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.util.List;
 
 @Configuration
-@EnableConfigurationProperties(CorsProperties.class)
+@EnableConfigurationProperties({CorsProperties.class, SomaPortalProperties.class})
 public class WebConfig implements WebMvcConfigurer {
     private final CorsProperties corsProperties;
 

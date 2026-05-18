@@ -21,6 +21,24 @@ POST /api/auth/logout
 GET  /api/me
 ```
 
+## SOMA Portal Read Adapter
+
+SOMA 포털 비밀번호는 저장하지 않습니다. `/api/soma/login` 요청 처리 중에만 사용하고, 서버는 포털 세션 쿠키를 가진 임시 `sessionId`만 메모리에 보관합니다.
+
+```txt
+POST   /api/soma/login
+DELETE /api/soma/logout?sessionId={sessionId}
+GET    /api/soma/notices?sessionId={sessionId}&page=1
+GET    /api/soma/events?sessionId={sessionId}&page=1
+```
+
+```json
+{
+  "username": "portal-id",
+  "password": "portal-password"
+}
+```
+
 ## Dashboard
 
 ```txt

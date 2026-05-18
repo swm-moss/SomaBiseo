@@ -24,3 +24,11 @@ springdoc:
 somabiseo:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+  portal:
+    base-url: ${SOMA_PORTAL_BASE_URL:https://www.swmaestro.ai}
+    login-page-path: /busan/sw/member/user/forLogin.do?menuNo=200025
+    login-check-path: /busan/sw/member/user/checkStat.json
+    login-submit-path: /busan/sw/member/user/toLogin.do
+    notice-list-path: /busan/sw/mypage/myNotice/list.do?menuNo=200038
+    event-list-path: /busan/sw/mypage/mentoLec/list.do?menuNo=200046
+    session-ttl-minutes: ${SOMA_PORTAL_SESSION_TTL_MINUTES:30}

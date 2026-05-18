@@ -26,7 +26,8 @@ SomaBiseo는 소프트웨어마에스트로 연수생을 위한 비공식 일정
 
 - Java 21, Spring Boot 3.x, Spring Web, Spring Security, Spring Data JPA, PostgreSQL, Flyway를 기준으로 합니다.
 - API 응답 형식은 `ApiResponse<T>`를 기본으로 쓰되, `/api/health`는 `{ "status": "ok" }`를 반환합니다.
-- 실제 SOMA 연동은 MVP 1차에서 바로 붙이지 않습니다. `SomaSourceClient` 인터페이스와 mock 구현부터 사용합니다.
+- 기본 데이터 동기화는 `SomaSourceClient` 인터페이스와 mock/manual import 구현부터 사용합니다.
+- 사용자가 명시적으로 요청한 SOMA 포털 읽기 전용 API는 `domain/portal`에 격리합니다. 포털 비밀번호를 저장하지 않고, 임시 세션 쿠키만 메모리 TTL로 보관합니다.
 - Google Calendar OAuth, FreeBusy, 이벤트 생성은 백엔드에서 다루되 초기 구현은 mock으로 시작합니다.
 
 ## 완료 보고
