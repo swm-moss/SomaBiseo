@@ -110,6 +110,44 @@ class SomaPortalHtmlParserTest {
     }
 
     @Test
+    void parsesMentoLecApplicationDetailForApply() {
+        String html = """
+                <html>
+                  <body>
+                    <button onclick="apply('9310', '7', '0')">신청하기</button>
+                  </body>
+                </html>
+                """;
+
+        var detail = parser.parseMentoLecApplicationDetail(html, "9310");
+
+        assertThat(detail.qustnrSn()).isEqualTo("9310");
+        assertThat(detail.applyCnt()).isEqualTo(7);
+        assertThat(detail.appCnt()).isEqualTo(0);
+        assertThat(detail.applied()).isFalse();
+    }
+
+    @Test
+    void parsesMentoLecApplicationDetailForCancel() {
+        String html = """
+                <html>
+                  <body>
+                    <button onclick="apply('9310', 7, 1)">신청하기</button>
+                    <a href="javascript:void(0)" onclick="applyCancel('9310', '38784')">[신청취소]</a>
+                  </body>
+                </html>
+                """;
+
+        var detail = parser.parseMentoLecApplicationDetail(html, "qustnrSn-9310");
+
+        assertThat(detail.qustnrSn()).isEqualTo("9310");
+        assertThat(detail.applyCnt()).isEqualTo(7);
+        assertThat(detail.appCnt()).isEqualTo(1);
+        assertThat(detail.applicationId()).isEqualTo("38784");
+        assertThat(detail.applied()).isTrue();
+    }
+
+    @Test
     void detectsLoggedOutMainPage() {
         String html = """
                 <html>

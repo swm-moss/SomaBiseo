@@ -33,6 +33,12 @@ type PortalEventResponse = {
   rawText: string;
 };
 
+export type MentoLecApplicationResponse = {
+  qustnrSn: string;
+  applied: boolean;
+  message: string;
+};
+
 const knownStatuses = new Set<SomaEventStatus>([
   "OPEN",
   "CLOSED",
@@ -156,6 +162,30 @@ export async function getSomaEventById(sessionId: string, eventId: string) {
   );
 
   return mergeEvent(summary, toSomaEvent(detail));
+}
+
+export async function applyMentoLec(sessionId: string, qustnrSn: string) {
+  return unwrapApiResponse(
+    apiClient
+      .post(`soma/mento-lecs/${qustnrSn}/apply`, {
+        searchParams: {
+          sessionId,
+        },
+      })
+      .json<ApiResponse<MentoLecApplicationResponse>>(),
+  );
+}
+
+export async function cancelMentoLecApplication(sessionId: string, qustnrSn: string) {
+  return unwrapApiResponse(
+    apiClient
+      .delete(`soma/mento-lecs/${qustnrSn}/application`, {
+        searchParams: {
+          sessionId,
+        },
+      })
+      .json<ApiResponse<MentoLecApplicationResponse>>(),
+  );
 }
 
 export async function getDashboardEvents(sessionId: string) {
