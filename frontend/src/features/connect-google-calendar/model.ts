@@ -9,18 +9,15 @@ type GoogleCalendarState = {
   connected: boolean;
   googleAccountEmail?: string;
   selectedCalendarId?: string;
-  addedEventIds: string[];
   connect: () => void;
   disconnect: () => void;
   setConnection: (connection: CalendarConnection) => void;
-  markEventAdded: (eventId: string) => void;
 };
 
 export const useGoogleCalendarStore = create<GoogleCalendarState>()(
   persist(
     (set) => ({
       connected: false,
-      addedEventIds: [],
       connect: () =>
         set({
           connected: true,
@@ -32,21 +29,13 @@ export const useGoogleCalendarStore = create<GoogleCalendarState>()(
           connected: false,
           googleAccountEmail: undefined,
           selectedCalendarId: undefined,
-          addedEventIds: [],
         }),
       setConnection: (connection) =>
-        set((state) => ({
+        set({
           connected: connection.connected,
           googleAccountEmail: connection.googleAccountEmail ?? undefined,
           selectedCalendarId: connection.calendarId ?? undefined,
-          addedEventIds: connection.connected ? state.addedEventIds : [],
-        })),
-      markEventAdded: (eventId) =>
-        set((state) => ({
-          addedEventIds: state.addedEventIds.includes(eventId)
-            ? state.addedEventIds
-            : [...state.addedEventIds, eventId],
-        })),
+        }),
     }),
     {
       name: "somabiseo-google-calendar",

@@ -7,11 +7,12 @@ import { getConflictForEvent } from "@/entities/calendar/api";
 import type { SomaEvent } from "@/entities/soma-event/model";
 import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
 import { formatTimeRange } from "@/shared/lib/date";
+import { ErrorState } from "@/shared/ui/error-state";
 import { LoadingState } from "@/shared/ui/loading-state";
 
 export function CalendarConflictResult({ event }: { event: SomaEvent }) {
   const connected = useGoogleCalendarStore((state) => state.connected);
-  const { data, isLoading } = useQuery({
+  const { data, isError, isLoading, refetch } = useQuery({
     queryKey: ["calendar-conflict", event.id],
     queryFn: () => getConflictForEvent(event),
     enabled: connected,
@@ -25,8 +26,18 @@ export function CalendarConflictResult({ event }: { event: SomaEvent }) {
     );
   }
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return <LoadingState className="min-h-24 rounded-lg border bg-white" label="충돌 확인 중" />;
+  }
+
+  if (isError || !data) {
+    return (
+      <ErrorState
+        title="충돌 여부를 확인하지 못했어요"
+        description="Google Calendar 연결 상태를 확인한 뒤 다시 시도해 주세요."
+        onRetry={() => void refetch()}
+      />
+    );
   }
 
   if (!data.hasConflict) {
