@@ -100,12 +100,20 @@ export function LandingPage() {
           </div>
 
           <div className="absolute inset-x-5 top-24 z-10 text-center text-white sm:top-10">
-            <p className="sb-landing-rise text-[13px] font-semibold uppercase leading-[20px] text-white/80">
-              Hi, I&apos;m
+            <p className="sb-landing-rise text-[13px] font-semibold leading-[20px] text-white/80">
+              비공식 소마 일정 비서
             </p>
-            <h1 className="sb-landing-rise text-[38px] font-black leading-[44px] sm:text-[64px] sm:leading-[70px]">
-              SomaBiseo
-            </h1>
+            <h1 className="sr-only">{PRODUCT_NAME}</h1>
+            <Image
+              alt=""
+              aria-hidden="true"
+              className="sb-landing-rise mx-auto mt-3 h-auto w-[min(78vw,360px)] object-contain brightness-0 invert drop-shadow-[0_14px_28px_rgb(25_31_40/16%)] sm:w-[480px] lg:w-[560px]"
+              height={240}
+              priority
+              src="/brand/somabiseo-logo.png"
+              unoptimized
+              width={720}
+            />
             <p className="sb-landing-rise mx-auto mt-2 max-w-[520px] text-[13px] font-medium leading-[20px] text-white/75 sm:text-[15px] sm:leading-[23px]">
               소마 공지, 특강, 멘토링, 캘린더 충돌을 한 화면에서 정리합니다.
             </p>
