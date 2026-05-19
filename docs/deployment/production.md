@@ -84,10 +84,16 @@ railway up backend --path-as-root
 | `SOMA_PORTAL_BASE_URL` | `https://www.swmaestro.ai` | SOMA 포털 기준 URL |
 | `OPENAI_API_KEY` | `sk-...` | 멘토링/특강 AI 요약 생성용 OpenAI API 키 |
 | `OPENAI_SUMMARY_MODEL` | `gpt-5.4-mini` | AI 요약 모델. 비우면 기본값 사용 |
+| `GOOGLE_CALENDAR_CLIENT_ID` | `...apps.googleusercontent.com` | Google OAuth 웹 클라이언트 ID |
+| `GOOGLE_CALENDAR_CLIENT_SECRET` | `********` | Google OAuth 웹 클라이언트 secret |
+| `GOOGLE_CALENDAR_REDIRECT_URI` | `https://backend-production-76bf.up.railway.app/api/calendar/google/callback` | Google Cloud Console에 등록한 승인된 리디렉션 URI |
+| `GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI` | `https://somabiseo.vercel.app/settings` | OAuth 완료 후 돌아갈 프론트 설정 화면 |
+| `GOOGLE_CALENDAR_ID` | `primary` | 조회할 Google Calendar ID. 기본 캘린더는 `primary` |
+| `GOOGLE_CALENDAR_MOCK_ENABLED` | `false` | 운영에서는 실제 Google Calendar API를 사용하므로 `false` |
 
 Railway Postgres의 기본 `DATABASE_URL`은 JDBC 형식이 아닐 수 있다. 그 경우 Railway 변수 참조로 `DATABASE_JDBC_URL`을 `jdbc:postgresql://...` 형태로 따로 만든다.
 백엔드와 Postgres가 같은 Railway 프로젝트에 있으면 공개 DB 도메인 대신 `postgres-db.railway.internal` private DNS를 사용한다.
-OpenAI 키는 운영 환경변수에만 등록하고 `.env`, 문서, PR 본문에 원문을 남기지 않는다.
+OpenAI 키와 Google OAuth secret은 운영 환경변수에만 등록하고 `.env`, 문서, PR 본문에 원문을 남기지 않는다.
 
 ## 최초 구축 체크리스트
 

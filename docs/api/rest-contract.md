@@ -80,8 +80,14 @@ DELETE /api/events/{eventId}/favorite
 
 ```txt
 GET  /api/calendar/google/connect-url
-GET  /api/calendar/google/callback
+GET  /api/calendar/google/callback?code={authorizationCode}
+GET  /api/calendar/google/status
+GET  /api/calendar/google/events?from={isoDateTime}&to={isoDateTime}
+DELETE /api/calendar/google/connection
 GET  /api/calendar/conflicts?eventId=1
 POST /api/calendar/events/{eventId}
 DELETE /api/calendar/events/{eventId}
 ```
+
+`connect-url`은 Google OAuth 동의 화면 URL을 반환한다. OAuth 완료 후 Google이 `callback`으로
+돌아오면 백엔드가 authorization code를 access token으로 교환하고 프론트 설정 화면으로 redirect한다.

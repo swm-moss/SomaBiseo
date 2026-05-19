@@ -12,7 +12,16 @@ export type CalendarConflict = {
 
 export type CalendarConnection = {
   connected: boolean;
-  googleAccountEmail?: string;
-  calendarId?: string;
-  calendarName?: string;
+  googleAccountEmail?: string | null;
+  calendarId?: string | null;
+  calendarName?: string | null;
+};
+
+export type GoogleCalendarEvent = {
+  id: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  calendarId: string;
+  location: string | null;
 };
