@@ -59,15 +59,26 @@ public class SomaPortalHtmlParser {
                 || text.contains("비밀번호를 입력해 주세요")
                 || text.contains("아이디 혹은 비밀번호가 일치 하지 않습니다")
                 || text.contains("아이디 혹은 비밀번호가 일치하지 않습니다")
-                || html.contains("forLogin.do?menuNo=200025");
+                || html.contains("아이디 혹은 비밀번호가 일치 하지 않습니다")
+                || html.contains("아이디 혹은 비밀번호가 일치하지 않습니다");
     }
 
     public boolean looksLikeLoggedOutPage(String html) {
         Document document = Jsoup.parse(html);
 
+        if (looksLikeLoggedInPage(document)) {
+            return false;
+        }
+
         return looksLikeLoginPage(html)
                 || document.select("a.lock[href*=forLogin.do]").stream()
                 .anyMatch(link -> clean(link.text()).contains("로그인"));
+    }
+
+    private boolean looksLikeLoggedInPage(Document document) {
+        String text = clean(document.text());
+
+        return text.contains("로그아웃") || text.contains("MY PAGE");
     }
 
     public Optional<PortalAutoSubmitForm> parseAutoSubmitForm(String html) {
