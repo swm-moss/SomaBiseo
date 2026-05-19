@@ -59,6 +59,9 @@ public class GlobalExceptionHandler {
             GoogleCalendarConnectionException exception
     ) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(exception.getMessage()));
+    }
+
     @ExceptionHandler(ReviewException.class)
     ResponseEntity<ApiResponse<Void>> handleReviewException(ReviewException exception) {
         return ResponseEntity.badRequest()
