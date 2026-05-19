@@ -26,6 +26,8 @@ GET  /api/me
 사용자에게 SOMA 포털 아이디/비밀번호를 입력받지 않습니다. 공지와 멘토링 조회는 백엔드가
 `SOMA_PORTAL_OPERATOR_USERNAME`, `SOMA_PORTAL_OPERATOR_PASSWORD` 환경변수의 운영자 계정으로
 읽기 전용 세션을 만들고 재사용합니다.
+조회 결과는 `notices`, `soma_events` 테이블에 저장하며, `SOMA_PORTAL_CACHE_TTL_MINUTES`가 지난 경우에만
+포털을 다시 동기화합니다.
 
 ```txt
 GET    /api/soma/notices?page=1
@@ -85,3 +87,16 @@ DELETE /api/calendar/events/{eventId}
 
 `connect-url`은 Google OAuth 동의 화면 URL을 반환한다. OAuth 완료 후 Google이 `callback`으로
 돌아오면 백엔드가 authorization code를 access token으로 교환하고 프론트 설정 화면으로 redirect한다.
+## Reviews
+
+```txt
+GET  /api/reviews/writable
+GET  /api/reviews/recent-events?limit=3
+GET  /api/reviews/summaries?eventIds=a,b
+GET  /api/events/{eventId}/reviews?page=1&size=10
+POST /api/events/{eventId}/reviews
+```
+
+POST body는 `{"authorName": "...", "content": "20~500자"}`다. 본문 길이/종료 후 3일 윈도/신청자 명단 매칭/중복 작성 4가지 검증을 서버가 수행한다. 작성자는 백엔드가 동결한 신청자 명단에서 선택하므로 후기 작성 자체에 인증 헤더는 필요 없다.
+
+요약 응답(`/api/reviews/summaries`)은 요청한 eventIds 순서대로 `{eventId, reviewCount, lastCreatedAt}` 배열을 돌려준다.

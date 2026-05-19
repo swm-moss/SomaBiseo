@@ -47,6 +47,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link className="hover:text-foreground" href={routes.events}>
               일정
             </Link>
+            <Link className="hover:text-foreground" href={routes.reviews}>
+              후기
+            </Link>
             <Link className="hover:text-foreground" href={routes.settings}>
               설정
             </Link>

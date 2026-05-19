@@ -6,5 +6,7 @@ export const routes = {
   noticeDetail: (noticeId: string) => `/notices/${noticeId}`,
   events: "/events",
   eventDetail: (eventId: string) => `/events/${eventId}`,
+  reviews: "/reviews",
+  reviewDetail: (eventId: string) => `/reviews/${eventId}`,
   settings: "/settings",
 } as const;
