@@ -26,6 +26,8 @@ GET  /api/me
 사용자에게 SOMA 포털 아이디/비밀번호를 입력받지 않습니다. 공지와 멘토링 조회는 백엔드가
 `SOMA_PORTAL_OPERATOR_USERNAME`, `SOMA_PORTAL_OPERATOR_PASSWORD` 환경변수의 운영자 계정으로
 읽기 전용 세션을 만들고 재사용합니다.
+조회 결과는 `notices`, `soma_events` 테이블에 저장하며, `SOMA_PORTAL_CACHE_TTL_MINUTES`가 지난 경우에만
+포털을 다시 동기화합니다.
 
 ```txt
 GET    /api/soma/notices?page=1

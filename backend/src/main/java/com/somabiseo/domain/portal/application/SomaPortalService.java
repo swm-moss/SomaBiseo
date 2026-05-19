@@ -14,6 +14,7 @@ import com.somabiseo.domain.portal.infrastructure.SomaPortalHtmlParser;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalProperties;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -23,24 +24,30 @@ import java.util.function.Function;
 @Service
 public class SomaPortalService {
     private static final String OPERATOR_SESSION_ID = "operator-readonly";
+    private static final int PAGE_SIZE = 10;
 
     private final SomaPortalClient portalClient;
     private final SomaPortalHtmlParser htmlParser;
     private final SomaPortalSessionStore sessionStore;
     private final SomaPortalProperties properties;
+    private final SomaPortalCacheService cacheService;
     private final Object operatorSessionLock = new Object();
+    private final Object noticeSyncLock = new Object();
+    private final Object eventSyncLock = new Object();
     private volatile SomaPortalSession operatorSession;
 
     public SomaPortalService(
             SomaPortalClient portalClient,
             SomaPortalHtmlParser htmlParser,
             SomaPortalSessionStore sessionStore,
-            SomaPortalProperties properties
+            SomaPortalProperties properties,
+            SomaPortalCacheService cacheService
     ) {
         this.portalClient = portalClient;
         this.htmlParser = htmlParser;
         this.sessionStore = sessionStore;
         this.properties = properties;
+        this.cacheService = cacheService;
     }
 
     public SomaPortalLoginResponse login(String username, String password) {
@@ -64,16 +71,21 @@ public class SomaPortalService {
     }
 
     public SomaPortalPageResponse<SomaPortalNoticeResponse> getPublicNotices(int page) {
-        return withOperatorSession((session) -> getNotices(session, page));
+        syncNoticesIfNeeded();
+
+        return cacheService.getNotices(page, PAGE_SIZE);
     }
 
     public SomaPortalPageResponse<SomaPortalNoticeResponse> getNotices(String sessionId, int page) {
         SomaPortalSession session = sessionStore.get(sessionId);
+        SomaPortalPageResponse<SomaPortalNoticeResponse> response = fetchNotices(session, page);
 
-        return getNotices(session, page);
+        cacheService.upsertNotices(response.items());
+
+        return response;
     }
 
-    private SomaPortalPageResponse<SomaPortalNoticeResponse> getNotices(SomaPortalSession session, int page) {
+    private SomaPortalPageResponse<SomaPortalNoticeResponse> fetchNotices(SomaPortalSession session, int page) {
         int safePage = Math.max(page, 1);
         String html = portalClient.getNoticesHtml(session, safePage);
         List<SomaPortalNoticeResponse> notices = htmlParser.parseNotices(html, portalClient.baseUrl());
@@ -82,16 +94,21 @@ public class SomaPortalService {
     }
 
     public SomaPortalPageResponse<SomaPortalEventResponse> getPublicEvents(int page) {
-        return withOperatorSession((session) -> getEvents(session, page));
+        syncEventsIfNeeded();
+
+        return cacheService.getEvents(page, PAGE_SIZE);
     }
 
     public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(String sessionId, int page) {
         SomaPortalSession session = sessionStore.get(sessionId);
+        SomaPortalPageResponse<SomaPortalEventResponse> response = fetchEvents(session, page);
 
-        return getEvents(session, page);
+        cacheService.upsertEvents(response.items());
+
+        return response;
     }
 
-    private SomaPortalPageResponse<SomaPortalEventResponse> getEvents(SomaPortalSession session, int page) {
+    private SomaPortalPageResponse<SomaPortalEventResponse> fetchEvents(SomaPortalSession session, int page) {
         int safePage = Math.max(page, 1);
         String html = portalClient.getEventsHtml(session, safePage);
         List<SomaPortalEventResponse> events = htmlParser.parseEvents(html, portalClient.baseUrl());
@@ -100,16 +117,26 @@ public class SomaPortalService {
     }
 
     public SomaPortalEventResponse getPublicEventDetail(String sourceUrl) {
-        return withOperatorSession((session) -> getEventDetail(session, sourceUrl));
+        return cacheService.findEventDetail(sourceUrl)
+                .orElseGet(() -> {
+                    SomaPortalEventResponse detail = withOperatorSession((session) -> fetchEventDetail(session, sourceUrl));
+
+                    cacheService.upsertEvent(detail);
+
+                    return detail;
+                });
     }
 
     public SomaPortalEventResponse getEventDetail(String sessionId, String sourceUrl) {
         SomaPortalSession session = sessionStore.get(sessionId);
+        SomaPortalEventResponse detail = fetchEventDetail(session, sourceUrl);
 
-        return getEventDetail(session, sourceUrl);
+        cacheService.upsertEvent(detail);
+
+        return detail;
     }
 
-    private SomaPortalEventResponse getEventDetail(SomaPortalSession session, String sourceUrl) {
+    private SomaPortalEventResponse fetchEventDetail(SomaPortalSession session, String sourceUrl) {
         String html = portalClient.getEventDetailHtml(session, sourceUrl);
 
         return htmlParser.parseEventDetail(html, portalClient.baseUrl(), sourceUrl);
@@ -154,6 +181,78 @@ public class SomaPortalService {
         }
 
         return qustnrSn;
+    }
+
+    private void syncNoticesIfNeeded() {
+        if (cacheService.noticesFresh(cacheTtl())) {
+            return;
+        }
+
+        synchronized (noticeSyncLock) {
+            if (cacheService.noticesFresh(cacheTtl())) {
+                return;
+            }
+
+            syncNotices();
+        }
+    }
+
+    private void syncNotices() {
+        withOperatorSession((session) -> {
+            SomaPortalPageResponse<SomaPortalNoticeResponse> firstPage = fetchNotices(session, 1);
+            cacheService.upsertNotices(firstPage.items());
+
+            int totalPages = limitedTotalPages(firstPage.totalPages());
+
+            for (int page = 2; page <= totalPages; page += 1) {
+                cacheService.upsertNotices(fetchNotices(session, page).items());
+            }
+
+            cacheService.markNoticeSyncSuccess(totalPages);
+
+            return null;
+        });
+    }
+
+    private void syncEventsIfNeeded() {
+        if (cacheService.eventsFresh(cacheTtl())) {
+            return;
+        }
+
+        synchronized (eventSyncLock) {
+            if (cacheService.eventsFresh(cacheTtl())) {
+                return;
+            }
+
+            syncEvents();
+        }
+    }
+
+    private void syncEvents() {
+        withOperatorSession((session) -> {
+            SomaPortalPageResponse<SomaPortalEventResponse> firstPage = fetchEvents(session, 1);
+            cacheService.upsertEvents(firstPage.items());
+
+            int totalPages = limitedTotalPages(firstPage.totalPages());
+
+            for (int page = 2; page <= totalPages; page += 1) {
+                cacheService.upsertEvents(fetchEvents(session, page).items());
+            }
+
+            cacheService.markEventSyncSuccess(totalPages);
+
+            return null;
+        });
+    }
+
+    private Duration cacheTtl() {
+        return Duration.ofMinutes(Math.max(properties.cacheTtlMinutes(), 1));
+    }
+
+    private int limitedTotalPages(int totalPages) {
+        int syncPageLimit = properties.syncPageLimit() <= 0 ? 1 : properties.syncPageLimit();
+
+        return Math.max(1, Math.min(totalPages, syncPageLimit));
     }
 
     private <T> T withOperatorSession(Function<SomaPortalSession, T> action) {

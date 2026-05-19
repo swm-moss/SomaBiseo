@@ -15,6 +15,8 @@ public record SomaPortalProperties(
         String mentoLecCancelPath,
         String operatorUsername,
         String operatorPassword,
-        long sessionTtlMinutes
+        long sessionTtlMinutes,
+        long cacheTtlMinutes,
+        int syncPageLimit
 ) {
 }
