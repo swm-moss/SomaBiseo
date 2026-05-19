@@ -10,6 +10,19 @@ export type SomaEventStatus =
   | "CANCELED"
   | "UNKNOWN";
 
+export type SomaEventDetailItem = {
+  label: string;
+  value: string;
+};
+
+export type SomaEventApplicant = {
+  no: string;
+  traineeName: string;
+  appliedAt: string;
+  canceledAt: string | null;
+  status: string;
+};
+
 export type SomaEvent = {
   id: string;
   sourceId: string;
@@ -24,8 +37,17 @@ export type SomaEvent = {
   applicationStartAt: string | null;
   applicationEndAt: string | null;
   capacity: number | null;
+  applicantCount: number | null;
   status: SomaEventStatus;
+  approvalStatus: string | null;
+  operationType: string | null;
+  author: string | null;
+  registeredAt: string | null;
   sourceUrl: string;
+  detailItems: SomaEventDetailItem[];
+  contentText: string | null;
+  applicants: SomaEventApplicant[];
+  rawText: string;
   conflict: CalendarConflict;
 };
 

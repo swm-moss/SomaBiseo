@@ -121,4 +121,130 @@ class SomaPortalHtmlParserTest {
 
         assertThat(parser.looksLikeLoggedOutPage(html)).isTrue();
     }
+
+    @Test
+    void detectsWrongPasswordAlertPageAsLoggedOut() {
+        String html = """
+                <!doctype html>
+                <html lang="ko">
+                  <head>
+                    <script>
+                      alert('아이디 혹은 비밀번호가 일치 하지 않습니다.');
+                      location.href='/busan/sw/member/user/forLogin.do?menuNo=200025';
+                    </script>
+                  </head>
+                  <body></body>
+                </html>
+                """;
+
+        assertThat(parser.looksLikeLoggedOutPage(html)).isTrue();
+    }
+
+    @Test
+    void parsesEventDetailTableContentAndApplicants() {
+        String html = """
+                <html>
+                  <body>
+                    <table>
+                      <tbody>
+                        <tr>
+                          <th>모집 명</th>
+                          <td colspan="3">[멘토 특강] [오프라인] 지속 성장하는 AI 서비스 위한 CI/CD와 자동화 개선 루프</td>
+                        </tr>
+                        <tr>
+                          <th>상태</th>
+                          <td>[마감]</td>
+                          <th>개설 승인</th>
+                          <td>OK</td>
+                        </tr>
+                        <tr>
+                          <th>접수 기간</th>
+                          <td>2026.05.12 00시00분 ~ 2026.05.31 09시00분</td>
+                          <th>강의날짜</th>
+                          <td>2026.05.31 09:00시 ~ 11:30시</td>
+                        </tr>
+                        <tr>
+                          <th>진행방식</th>
+                          <td>오프라인</td>
+                          <th>장소</th>
+                          <td>하이텐 - 23호실(8인)</td>
+                        </tr>
+                        <tr>
+                          <th>모집인원</th>
+                          <td>8명</td>
+                          <th>작성자</th>
+                          <td>오승근</td>
+                        </tr>
+                        <tr>
+                          <th>등록일</th>
+                          <td colspan="3">2026.05.11</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div class="view-content">
+                      <p>1. 멘토링 목표 : CI/CD와 자동화 개선 루프를 이해하는 것을 목표로 합니다.</p>
+                      <p>2. 멘토링 세부 내용</p>
+                      <ul>
+                        <li>GitHub Actions 기반 다중 환경 CI/CD 파이프라인 설계 예시</li>
+                        <li>환경별 변수·시크릿 관리</li>
+                      </ul>
+                    </div>
+                    <h4>신청자 리스트 [8 명]</h4>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>NO.</th>
+                          <th>연수생</th>
+                          <th>신청일</th>
+                          <th>취소일</th>
+                          <th>상태</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>9</td>
+                          <td>박보라</td>
+                          <td>2026.05.12 21:58</td>
+                          <td>-</td>
+                          <td>[신청완료]</td>
+                        </tr>
+                        <tr>
+                          <td>취소</td>
+                          <td>김도원</td>
+                          <td>2026.05.12 21:55</td>
+                          <td>2026.05.12 21:58</td>
+                          <td>[신청취소]</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </body>
+                </html>
+                """;
+
+        SomaPortalEventResponse event = parser.parseEventDetail(
+                html,
+                "https://www.swmaestro.ai",
+                "/busan/sw/mypage/mentoLec/view.do?qustnrSn=337"
+        );
+
+        assertThat(event.sourceId()).isEqualTo("qustnrSn-337");
+        assertThat(event.type()).isEqualTo(EventType.LECTURE);
+        assertThat(event.title()).contains("CI/CD와 자동화 개선 루프");
+        assertThat(event.status()).isEqualTo("CLOSED");
+        assertThat(event.approvalStatus()).isEqualTo("OK");
+        assertThat(event.operationType()).isEqualTo("오프라인");
+        assertThat(event.location()).isEqualTo("하이텐 - 23호실(8인)");
+        assertThat(event.capacity()).isEqualTo(8);
+        assertThat(event.applicantCount()).isEqualTo(8);
+        assertThat(event.startAt()).isNotNull();
+        assertThat(event.endAt()).isNotNull();
+        assertThat(event.applicationStartAt()).isNotNull();
+        assertThat(event.applicationEndAt()).isNotNull();
+        assertThat(event.detailItems()).extracting("label").contains("모집명", "접수기간", "강의날짜");
+        assertThat(event.contentText()).contains("멘토링 목표", "GitHub Actions");
+        assertThat(event.applicants()).hasSize(2);
+        assertThat(event.applicants().getFirst().traineeName()).isEqualTo("박보라");
+        assertThat(event.applicants().getFirst().status()).isEqualTo("신청완료");
+        assertThat(event.applicants().get(1).canceledAt()).isEqualTo("2026.05.12 21:58");
+    }
 }

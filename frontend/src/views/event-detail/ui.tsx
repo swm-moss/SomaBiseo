@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, ExternalLink, MapPin, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  CheckCircle2,
+  ExternalLink,
+  MapPin,
+  UserRound,
+  Users,
+} from "lucide-react";
 
 import { getSomaEventById } from "@/entities/soma-event/api";
+import type { SomaEvent, SomaEventApplicant } from "@/entities/soma-event/model";
 import { AddEventToCalendarButton } from "@/features/add-event-to-calendar/ui";
 import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
 import { CalendarConflictResult } from "@/features/check-calendar-conflict/ui";
@@ -22,6 +31,63 @@ const typeLabel = {
   LECTURE: "멘토특강",
   MENTORING: "자유멘토링",
 } as const;
+
+const statusLabel: Record<string, string> = {
+  OPEN: "신청 가능",
+  CLOSED: "마감",
+  FULL: "정원 마감",
+  SCHEDULED: "예정",
+  CANCELED: "취소",
+  UNKNOWN: "상태 미확인",
+};
+
+const detailLabelMap: Record<string, string> = {
+  모집명: "모집 명",
+  상태: "상태",
+  개설승인: "개설 승인",
+  접수기간: "접수 기간",
+  강의날짜: "강의 날짜",
+  진행방식: "진행 방식",
+  장소: "장소",
+  모집인원: "모집 인원",
+  작성자: "작성자",
+  등록일: "등록일",
+};
+
+function normalizedLabel(label: string) {
+  return label.replace(/\s+/g, "");
+}
+
+function displayLabel(label: string) {
+  return detailLabelMap[normalizedLabel(label)] ?? label;
+}
+
+function getDetailItems(event: SomaEvent) {
+  if (event.detailItems.length > 0) {
+    return event.detailItems;
+  }
+
+  return [
+    { label: "강의 날짜", value: event.startAt ? formatOptionalDateTime(event.startAt) : "시간 미정" },
+    { label: "장소", value: event.location ?? "장소 미정" },
+    { label: "상태", value: statusLabel[event.status] ?? event.status },
+    {
+      label: "모집 인원",
+      value: event.capacity ? `${event.capacity}명` : "미정",
+    },
+  ];
+}
+
+function contentLines(event: SomaEvent) {
+  return (event.contentText ?? event.rawText)
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function applicantTone(applicant: SomaEventApplicant) {
+  return applicant.status.includes("취소") ? "text-destructive" : "text-primary";
+}
 
 export function EventDetailPage({ eventId }: { eventId: string }) {
   const session = usePortalAuthStore((state) => state.session);
@@ -60,63 +126,162 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
         ) : null}
 
         {event ? (
-          <article className="rounded-lg bg-white p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex flex-wrap gap-2">
-                  <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
-                    {typeLabel[event.type]}
-                  </StatusBadge>
-                  <StatusBadge tone={event.status === "OPEN" ? "green" : "neutral"}>
-                    {event.status}
-                  </StatusBadge>
-                </div>
-                <h1 className="mt-4 text-[24px] font-black leading-[33px]">{event.title}</h1>
-                <p className="mt-2 text-[14px] font-bold leading-[21px] text-muted-foreground">
-                  {event.mentorName ?? "멘토 미정"}
-                </p>
-              </div>
-              <FavoriteEventButton eventId={event.id} />
-            </div>
-
-            <div className="mt-8 grid gap-4">
-              <div className="flex gap-3">
-                <CalendarClock aria-hidden="true" className="mt-0.5 size-5 text-primary" />
-                <div>
-                  <p className="font-semibold">시간</p>
-                <p className="mt-1 text-[15px] font-medium leading-[22px] text-muted-foreground">
-                    {event.endAt
-                      ? `${formatOptionalDateTime(event.startAt)} · ${formatOptionalTimeRange(
-                          event.startAt,
-                          event.endAt,
-                        )}`
-                      : formatOptionalDateTime(event.startAt)}
+          <article className="space-y-8">
+            <section className="border-b border-border/80 pb-7">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap gap-2">
+                    <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
+                      {typeLabel[event.type]}
+                    </StatusBadge>
+                    <StatusBadge tone={event.status === "OPEN" ? "green" : "neutral"}>
+                      {statusLabel[event.status] ?? event.status}
+                    </StatusBadge>
+                    {event.approvalStatus ? (
+                      <StatusBadge tone="blue">승인 {event.approvalStatus}</StatusBadge>
+                    ) : null}
+                  </div>
+                  <h1 className="mt-4 max-w-4xl text-[28px] font-black leading-[38px] tracking-normal sm:text-[34px] sm:leading-[46px]">
+                    {event.title}
+                  </h1>
+                  <p className="mt-3 text-[15px] font-bold leading-[22px] text-muted-foreground">
+                    {event.mentorName ?? event.author ?? "멘토 미정"}
                   </p>
                 </div>
+                <FavoriteEventButton eventId={event.id} />
               </div>
-              <div className="flex gap-3">
-                <MapPin aria-hidden="true" className="mt-0.5 size-5 text-primary" />
-                <div>
-                  <p className="font-semibold">장소</p>
-                <p className="mt-1 text-[15px] font-medium leading-[22px] text-muted-foreground">
-                    {event.location ?? "장소 미정"}
-                  </p>
+
+              <div className="mt-7 grid gap-3 sm:grid-cols-3">
+                <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
+                  <CalendarClock aria-hidden="true" className="mt-0.5 size-5 text-primary" />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">시간</p>
+                    <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
+                      {event.endAt
+                        ? `${formatOptionalDateTime(event.startAt)} · ${formatOptionalTimeRange(
+                            event.startAt,
+                            event.endAt,
+                          )}`
+                        : formatOptionalDateTime(event.startAt)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
+                  <MapPin aria-hidden="true" className="mt-0.5 size-5 text-primary" />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">장소</p>
+                    <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
+                      {event.location ?? "장소 미정"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
+                  <Users aria-hidden="true" className="mt-0.5 size-5 text-primary" />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">신청</p>
+                    <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
+                      {event.applicantCount ?? event.applicants.length}
+                      {event.capacity ? ` / ${event.capacity}` : ""}명
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-3">
-                <Users aria-hidden="true" className="mt-0.5 size-5 text-primary" />
-                <div>
-                  <p className="font-semibold">신청</p>
-                <p className="mt-1 text-[15px] font-medium leading-[22px] text-muted-foreground">
-                    {event.capacity ? `${event.capacity}명` : event.status}
-                  </p>
-                </div>
+            </section>
+
+            <section>
+              <h2 className="text-[20px] font-black leading-[29px]">상세 정보</h2>
+              <div className="mt-3 overflow-hidden rounded-lg border border-border/80 bg-white">
+                <dl className="grid lg:grid-cols-2">
+                  {getDetailItems(event).map((item) => (
+                    <div
+                      key={`${item.label}-${item.value}`}
+                      className="grid grid-cols-[92px_1fr] gap-4 border-b border-border/70 px-4 py-4 last:border-b-0 sm:grid-cols-[120px_1fr] lg:border-r lg:even:border-r-0 lg:[&:nth-last-child(-n+2)]:border-b-0"
+                    >
+                      <dt className="text-[14px] font-extrabold leading-[22px] text-muted-foreground">
+                        {displayLabel(item.label)}
+                      </dt>
+                      <dd className="min-w-0 text-[15px] font-bold leading-[23px] text-foreground">
+                        {item.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
-            </div>
+            </section>
 
-            <p className="mt-8 text-[17px] leading-[27px]">{event.description}</p>
+            <section>
+              <h2 className="text-[20px] font-black leading-[29px]">멘토링 내용</h2>
+              <div className="mt-3 rounded-lg bg-white px-5 py-5">
+                {contentLines(event).map((line, index) => (
+                  <p key={`${index}-${line}`} className="text-[16px] font-medium leading-[27px] text-[#4e5968]">
+                    {line}
+                  </p>
+                ))}
+              </div>
+            </section>
 
-            <div className="mt-8 space-y-3">
+            <section>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-[20px] font-black leading-[29px]">신청자 리스트</h2>
+                <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-primary">
+                  <CheckCircle2 aria-hidden="true" className="size-4" />
+                  {event.applicantCount ?? event.applicants.length}명
+                </span>
+              </div>
+              {event.applicants.length > 0 ? (
+                <>
+                  <div className="mt-3 divide-y divide-border/70 overflow-hidden rounded-lg bg-white md:hidden">
+                    {event.applicants.map((applicant) => (
+                      <div key={`${applicant.no}-${applicant.traineeName}`} className="px-4 py-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <UserRound aria-hidden="true" className="size-4 text-muted-foreground" />
+                            <p className="truncate text-[16px] font-extrabold">
+                              {applicant.traineeName}
+                            </p>
+                          </div>
+                          <p className={`shrink-0 text-[13px] font-extrabold ${applicantTone(applicant)}`}>
+                            {applicant.status}
+                          </p>
+                        </div>
+                        <p className="mt-2 text-[14px] font-semibold leading-[21px] text-muted-foreground">
+                          신청 {applicant.appliedAt}
+                          {applicant.canceledAt ? ` · 취소 ${applicant.canceledAt}` : ""}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 hidden overflow-hidden rounded-lg bg-white md:block">
+                    <table className="w-full table-fixed text-left">
+                      <thead className="border-b border-border/80 bg-muted/60">
+                        <tr className="text-[14px] font-extrabold text-muted-foreground">
+                          <th className="w-20 px-5 py-4">NO.</th>
+                          <th className="px-5 py-4">연수생</th>
+                          <th className="px-5 py-4">신청일</th>
+                          <th className="px-5 py-4">취소일</th>
+                          <th className="w-32 px-5 py-4">상태</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/70">
+                        {event.applicants.map((applicant) => (
+                          <tr key={`${applicant.no}-${applicant.traineeName}`} className="text-[15px] font-bold">
+                            <td className="px-5 py-4 text-muted-foreground">{applicant.no}</td>
+                            <td className="px-5 py-4">{applicant.traineeName}</td>
+                            <td className="px-5 py-4 text-[#4e5968]">{applicant.appliedAt}</td>
+                            <td className="px-5 py-4 text-[#4e5968]">{applicant.canceledAt ?? "-"}</td>
+                            <td className={`px-5 py-4 ${applicantTone(applicant)}`}>{applicant.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <EmptyState title="신청자 정보 없음" description="포털 상세 페이지에서 신청자 목록을 찾지 못했습니다." />
+              )}
+            </section>
+
+            <section className="space-y-3">
               <CalendarConflictResult event={event} />
               <AddEventToCalendarButton event={event} />
               <Button asChild className="w-full" variant="outline">
@@ -125,7 +290,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                   <ExternalLink aria-hidden="true" />
                 </a>
               </Button>
-            </div>
+            </section>
           </article>
         ) : null}
       </main>

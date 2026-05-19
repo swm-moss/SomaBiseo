@@ -1,4 +1,6 @@
 import type {
+  SomaEventApplicant,
+  SomaEventDetailItem,
   SomaEvent,
   SomaEventFilter,
   SomaEventStatus,
@@ -15,8 +17,19 @@ type PortalEventResponse = {
   location: string | null;
   startAt: string | null;
   endAt: string | null;
+  applicationStartAt?: string | null;
+  applicationEndAt?: string | null;
+  capacity?: number | null;
+  applicantCount?: number | null;
   status: string | null;
+  approvalStatus?: string | null;
+  operationType?: string | null;
+  author?: string | null;
+  registeredAt?: string | null;
   sourceUrl: string;
+  detailItems?: SomaEventDetailItem[] | null;
+  contentText?: string | null;
+  applicants?: SomaEventApplicant[] | null;
   rawText: string;
 };
 
@@ -49,12 +62,39 @@ function toSomaEvent(event: PortalEventResponse): SomaEvent {
     location: event.location,
     startAt: event.startAt,
     endAt: event.endAt,
-    applicationStartAt: null,
-    applicationEndAt: null,
-    capacity: null,
+    applicationStartAt: event.applicationStartAt ?? null,
+    applicationEndAt: event.applicationEndAt ?? null,
+    capacity: event.capacity ?? null,
+    applicantCount: event.applicantCount ?? null,
     status: normalizeStatus(event.status),
+    approvalStatus: event.approvalStatus ?? null,
+    operationType: event.operationType ?? null,
+    author: event.author ?? null,
+    registeredAt: event.registeredAt ?? null,
     sourceUrl: event.sourceUrl,
+    detailItems: event.detailItems ?? [],
+    contentText: event.contentText ?? null,
+    applicants: event.applicants ?? [],
+    rawText: event.rawText,
     conflict: { hasConflict: false, busyBlocks: [] },
+  };
+}
+
+function mergeEvent(summary: SomaEvent, detail: SomaEvent): SomaEvent {
+  return {
+    ...summary,
+    ...detail,
+    id: summary.id,
+    sourceId: summary.sourceId,
+    type: detail.type ?? summary.type,
+    sourceUrl: summary.sourceUrl,
+    mentorName: detail.mentorName ?? summary.mentorName,
+    topic: detail.topic || summary.topic,
+    title: detail.title || summary.title,
+    location: detail.location ?? summary.location,
+    startAt: detail.startAt ?? summary.startAt,
+    status: detail.status === "UNKNOWN" ? summary.status : detail.status,
+    conflict: summary.conflict,
   };
 }
 
@@ -98,8 +138,24 @@ export async function getSomaEvents(sessionId: string, filter: SomaEventFilter =
 
 export async function getSomaEventById(sessionId: string, eventId: string) {
   const events = await getSomaEvents(sessionId);
+  const summary = events.find((event) => event.id === eventId);
 
-  return events.find((event) => event.id === eventId) ?? null;
+  if (!summary) {
+    return null;
+  }
+
+  const detail = await unwrapApiResponse(
+    apiClient
+      .get("soma/events/detail", {
+        searchParams: {
+          sessionId,
+          sourceUrl: summary.sourceUrl,
+        },
+      })
+      .json<ApiResponse<PortalEventResponse>>(),
+  );
+
+  return mergeEvent(summary, toSomaEvent(detail));
 }
 
 export async function getDashboardEvents(sessionId: string) {

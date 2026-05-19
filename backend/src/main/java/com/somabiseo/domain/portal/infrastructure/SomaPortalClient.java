@@ -52,6 +52,9 @@ public class SomaPortalClient {
             throw new SomaPortalUnauthorizedException("SOMA 포털 로그인에 실패했습니다. 아이디와 비밀번호를 확인해 주세요.");
         }
 
+        HttpResponse<String> verificationResponse = sendRaw(httpClient, get(properties.noticeListPath()));
+        assertLoginVerified(verificationResponse);
+
         return new LoginResult(cookieManager, httpClient);
     }
 
@@ -64,6 +67,13 @@ public class SomaPortalClient {
 
     public String getEventsHtml(SomaPortalSession session, int page) {
         HttpResponse<String> response = sendRaw(session.httpClient(), get(withPage(properties.eventListPath(), page)));
+        assertMypageResponse(response);
+
+        return response.body();
+    }
+
+    public String getEventDetailHtml(SomaPortalSession session, String sourceUrl) {
+        HttpResponse<String> response = sendRaw(session.httpClient(), get(sourceUrl));
         assertMypageResponse(response);
 
         return response.body();
@@ -140,8 +150,23 @@ public class SomaPortalClient {
         }
     }
 
+    private void assertLoginVerified(HttpResponse<String> response) {
+        String path = response.uri().getPath();
+
+        if (!path.contains("/sw/mypage") || parser.looksLikeLoggedOutPage(response.body())) {
+            throw new SomaPortalUnauthorizedException("SOMA 포털 로그인에 실패했습니다. 아이디와 비밀번호를 확인해 주세요.");
+        }
+    }
+
     private URI resolve(String path) {
-        return URI.create(properties.baseUrl()).resolve(path);
+        URI baseUri = URI.create(properties.baseUrl());
+        URI resolvedUri = baseUri.resolve(path);
+
+        if (resolvedUri.getHost() != null && !resolvedUri.getHost().equals(baseUri.getHost())) {
+            throw new SomaPortalException("허용되지 않은 SOMA 포털 URL입니다.");
+        }
+
+        return resolvedUri;
     }
 
     private String withPage(String path, int page) {
