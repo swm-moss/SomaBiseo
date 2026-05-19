@@ -24,6 +24,7 @@
 - 서버에 쓰기 API가 붙는 기능은 mutation 성공 후 관련 query key를 invalidate한다.
 - Zustand는 임시 SOMA 세션, 북마크, 읽음, 관심 저장, Google Calendar 연결 mock 상태처럼 브라우저에 보관하는 클라이언트 상태에만 쓴다.
 - 관심사 설정은 `somabiseo-interest-preferences` 로컬 Zustand persist에 저장하고, 대시보드 추천 특강과 일정 목록 추천 강조에 사용한다.
+- 로그인 상태에서 관심사가 비어 있으면 AppShell에서 관심사 온보딩 모달을 보여준다. 사용자가 현재 브라우저 세션에서 나중에 하기를 누르면 `sessionStorage`로 재노출을 막는다.
 - 관심사 기반 추천은 초기에는 AI 호출 없이 제목, 주제, 장소, 본문, rawText 키워드 매칭으로 점수화한다.
 - 백엔드 영속 저장이 붙으면 Zustand에만 있는 상태를 서버 mutation과 React Query 캐시 갱신 흐름으로 옮긴다.
 

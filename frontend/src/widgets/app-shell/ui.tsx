@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { BottomNavigation } from "@/widgets/bottom-navigation/ui";
 import { PortalSessionStatus } from "@/features/auth/ui";
+import { InterestOnboardingDialog } from "@/features/user-interests/ui";
 import { NON_OFFICIAL_NOTICE, PRODUCT_NAME } from "@/shared/constants/product";
 import { routes } from "@/shared/config/routes";
 
@@ -59,6 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {NON_OFFICIAL_NOTICE}
       </div>
       {children}
+      <InterestOnboardingDialog />
       <BottomNavigation />
     </div>
   );

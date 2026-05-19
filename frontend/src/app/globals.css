@@ -167,8 +167,57 @@
     animation: sb-recommend-border-spin 3s linear infinite;
   }
 
+  .sb-interest-dialog {
+    animation: sb-interest-dialog-enter 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .sb-interest-chip-in {
+    animation: sb-interest-chip-enter 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .sb-type-caret {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    margin-left: 2px;
+    transform: translateY(2px);
+    border-radius: 999px;
+    background: var(--primary);
+    animation: sb-type-caret-blink 900ms steps(2, start) infinite;
+  }
+
   .sb-field {
     @apply mt-2 h-[52px] w-full rounded-lg border-0 bg-muted px-4 text-[17px] font-semibold text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:bg-white focus:ring-2 focus:ring-primary/20;
+  }
+}
+
+@keyframes sb-interest-dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sb-interest-chip-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sb-type-caret-blink {
+  50% {
+    opacity: 0;
   }
 }
 
@@ -180,6 +229,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sb-recommended-row {
+    animation: none;
+  }
+
+  .sb-interest-dialog,
+  .sb-interest-chip-in,
+  .sb-type-caret {
     animation: none;
   }
 }
