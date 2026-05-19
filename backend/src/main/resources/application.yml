@@ -34,6 +34,8 @@ somabiseo:
     mento-lec-view-path: /busan/sw/mypage/mentoLec/view.do?menuNo=200046
     mento-lec-apply-path: /busan/sw/mypage/mentoLec/apply.json
     mento-lec-cancel-path: /busan/sw/mypage/mentoLec/applyCancel.json
+    operator-username: ${SOMA_PORTAL_OPERATOR_USERNAME:}
+    operator-password: ${SOMA_PORTAL_OPERATOR_PASSWORD:}
     session-ttl-minutes: ${SOMA_PORTAL_SESSION_TTL_MINUTES:30}
   openai:
     api-key: ${OPENAI_API_KEY:}

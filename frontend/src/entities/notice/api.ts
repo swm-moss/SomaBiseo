@@ -49,18 +49,17 @@ function toNotice(notice: PortalNoticeResponse): Notice {
   };
 }
 
-export async function getNotices(sessionId: string, page = 1) {
-  const noticesPage = await getNoticesPage(sessionId, page);
+export async function getNotices(page = 1) {
+  const noticesPage = await getNoticesPage(page);
 
   return noticesPage.items;
 }
 
-export async function getNoticesPage(sessionId: string, page = 1) {
+export async function getNoticesPage(page = 1) {
   const response = await unwrapApiResponse(
     apiClient
       .get("soma/notices", {
         searchParams: {
-          sessionId,
           page,
         },
       })
@@ -74,9 +73,9 @@ export async function getNoticesPage(sessionId: string, page = 1) {
   };
 }
 
-export async function getNoticeById(sessionId: string, noticeId: string) {
+export async function getNoticeById(noticeId: string) {
   for (let page = 1; page <= MAX_NOTICE_LOOKUP_PAGES; page += 1) {
-    const noticesPage = await getNoticesPage(sessionId, page);
+    const noticesPage = await getNoticesPage(page);
     const notice = noticesPage.items.find((item) => item.id === noticeId);
 
     if (notice) {

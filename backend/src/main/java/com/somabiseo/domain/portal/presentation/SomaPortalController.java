@@ -46,25 +46,37 @@ public class SomaPortalController {
 
     @GetMapping("/api/soma/notices")
     ApiResponse<SomaPortalPageResponse<SomaPortalNoticeResponse>> getNotices(
-            @RequestParam String sessionId,
+            @RequestParam(required = false) String sessionId,
             @RequestParam(defaultValue = "1") int page
     ) {
+        if (!hasText(sessionId)) {
+            return ApiResponse.ok(portalService.getPublicNotices(page));
+        }
+
         return ApiResponse.ok(portalService.getNotices(sessionId, page));
     }
 
     @GetMapping("/api/soma/events")
     ApiResponse<SomaPortalPageResponse<SomaPortalEventResponse>> getEvents(
-            @RequestParam String sessionId,
+            @RequestParam(required = false) String sessionId,
             @RequestParam(defaultValue = "1") int page
     ) {
+        if (!hasText(sessionId)) {
+            return ApiResponse.ok(portalService.getPublicEvents(page));
+        }
+
         return ApiResponse.ok(portalService.getEvents(sessionId, page));
     }
 
     @GetMapping("/api/soma/events/detail")
     ApiResponse<SomaPortalEventResponse> getEventDetail(
-            @RequestParam String sessionId,
+            @RequestParam(required = false) String sessionId,
             @RequestParam String sourceUrl
     ) {
+        if (!hasText(sessionId)) {
+            return ApiResponse.ok(portalService.getPublicEventDetail(sourceUrl));
+        }
+
         return ApiResponse.ok(portalService.getEventDetail(sessionId, sourceUrl));
     }
 
@@ -73,8 +85,10 @@ public class SomaPortalController {
             @Valid @RequestBody EventAiSummaryRequest request,
             @RequestHeader(value = "Authorization", required = false) String authorization
     ) {
-        String sessionId = bearerSessionId(authorization);
-        SomaPortalEventResponse event = portalService.getEventDetail(sessionId, request.sourceUrl());
+        String sessionId = bearerSessionIdOrNull(authorization);
+        SomaPortalEventResponse event = hasText(sessionId)
+                ? portalService.getEventDetail(sessionId, request.sourceUrl())
+                : portalService.getPublicEventDetail(request.sourceUrl());
 
         return ApiResponse.ok(eventAiSummaryService.getOrCreate(event));
     }
@@ -99,6 +113,16 @@ public class SomaPortalController {
         return ApiResponse.ok(portalService.cancelMentoLec(sessionId, qustnrSn));
     }
 
+    private String bearerSessionIdOrNull(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return null;
+        }
+
+        String sessionId = authorization.substring("Bearer ".length()).trim();
+
+        return sessionId.isBlank() ? null : sessionId;
+    }
+
     private String bearerSessionId(String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             throw new SomaPortalUnauthorizedException("SOMA 포털 sessionId가 필요합니다.");
@@ -111,6 +135,10 @@ public class SomaPortalController {
         }
 
         return sessionId;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     record SomaPortalLoginRequest(

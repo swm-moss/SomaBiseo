@@ -39,7 +39,7 @@ const features = [
 ] as const;
 
 const timelineItems = [
-  "SOMA 포털 로그인",
+  "읽기 전용 데이터 동기화",
   "공지와 일정 동기화",
   "관심사 추천",
   "캘린더에 저장",
@@ -177,7 +177,7 @@ export function LandingPage() {
             className="absolute bottom-6 right-5 z-20 hidden h-12 items-center rounded-lg bg-white px-5 text-[15px] font-black text-primary shadow-[0_16px_34px_rgb(25_31_40/18%)] transition-transform hover:translate-y-[-1px] sm:inline-flex"
             href={routes.login}
           >
-            SOMA 로그인
+            시작하기
             <ArrowRight aria-hidden="true" className="ml-2 size-4" />
           </Link>
         </div>

@@ -42,7 +42,7 @@ See [프로덕션 배포 문서](docs/deployment/production.md).
 ## Implementation Docs
 
 - [프론트 초기 세팅](docs/frontend/initial-setup.md)
-- [SOMA 포털 로그인, 공지, 멘토링 기능](docs/features/soma-portal.md)
+- [SOMA 포털 읽기 어댑터, 공지, 멘토링 기능](docs/features/soma-portal.md)
 
 ## Project Context
 
@@ -56,13 +56,22 @@ docker compose up -d --build backend
 npm --prefix frontend run dev
 ```
 
-Then open `/login` on the frontend localhost URL and sign in with a SOMA portal account.
-The frontend calls `http://localhost:8080/api/soma/login`, stores only the temporary
-`sessionId` in browser storage, and uses it to load real notices and mentoring events.
+Before running real portal reads, set the read-only operator credentials as environment variables
+for the backend. These secrets are used only by the server-side adapter.
+
+```bash
+export SOMA_PORTAL_OPERATOR_USERNAME="<operator-soma-id>"
+export SOMA_PORTAL_OPERATOR_PASSWORD="<operator-soma-password>"
+```
+
+Then open `/dashboard`, `/notices`, or `/events` on the frontend localhost URL. End users do not
+enter SOMA portal credentials; the frontend calls read APIs without `sessionId`, and the backend
+uses the operator account to fetch notices and mentoring events.
 
 ## Product Guardrails
 
 - 비공식 서비스로 표현합니다.
-- SOMA 포털 비밀번호를 저장하지 않습니다.
+- 사용자에게 SOMA 포털 아이디/비밀번호를 입력받지 않습니다.
+- 읽기 전용 포털 조회는 서버 환경변수의 운영자 계정으로만 수행합니다.
 - MVP 1차에서는 신청, 취소를 넣지 않습니다. 이후에는 사용자 명시 버튼 기반 흐름만 허용하고 매크로성 자동 반복 실행은 만들지 않습니다.
-- 실제 SOMA 연동은 mock 또는 수동 import 이후에 붙입니다.
+- 실제 SOMA 연동은 읽기 전용 데이터 조회부터 붙입니다.

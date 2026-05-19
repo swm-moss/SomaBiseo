@@ -12,8 +12,8 @@ import { routes } from "@/shared/config/routes";
 import { Button } from "@/shared/ui/button";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "포털 아이디를 입력해 주세요."),
-  password: z.string().min(1, "비밀번호를 입력해 주세요."),
+  email: z.string().email("이메일 형식으로 입력해 주세요."),
+  name: z.string().min(1, "이름을 입력해 주세요."),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -28,8 +28,8 @@ export function PortalLoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     defaultValues: {
-      username: "",
-      password: "",
+      email: "",
+      name: "",
     },
   });
 
@@ -42,8 +42,8 @@ export function PortalLoginForm() {
         if (!parsed.success) {
           const firstIssue = parsed.error.issues[0];
 
-          setError(firstIssue?.path[0] === "password" ? "password" : "username", {
-            message: parsed.error.issues[0]?.message ?? "이메일을 확인해 주세요.",
+          setError(firstIssue?.path[0] === "name" ? "name" : "email", {
+            message: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요.",
           });
           return;
         }
@@ -52,51 +52,51 @@ export function PortalLoginForm() {
           const session = await loginSomaPortal(parsed.data);
 
           setSession(session);
-          toast.success("SOMA 포털에 연결됐어요.");
+          toast.success("SomaBiseo에 로그인했어요.");
           router.push(routes.dashboard);
         } catch (error) {
           setError("root", {
             message:
               error instanceof Error
                 ? error.message
-                : "로그인하지 못했습니다. 계정을 확인해 주세요.",
+                : "로그인하지 못했습니다. 입력값을 확인해 주세요.",
           });
         }
       })}
     >
       <div>
-        <label className="text-[15px] font-bold leading-[22px]" htmlFor="username">
-          SOMA 포털 아이디
+        <label className="text-[15px] font-bold leading-[22px]" htmlFor="email">
+          이메일
         </label>
         <input
           className="sb-field"
-          id="username"
-          autoComplete="username"
-          placeholder="zun_e@kakao.com"
-          type="text"
-          {...register("username")}
+          id="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          type="email"
+          {...register("email")}
         />
-        {errors.username ? (
+        {errors.email ? (
           <p className="mt-2 text-[14px] font-semibold leading-[21px] text-destructive">
-            {errors.username.message}
+            {errors.email.message}
           </p>
         ) : null}
       </div>
       <div>
-        <label className="text-[15px] font-bold leading-[22px]" htmlFor="password">
-          비밀번호
+        <label className="text-[15px] font-bold leading-[22px]" htmlFor="name">
+          이름
         </label>
         <input
           className="sb-field"
-          id="password"
-          autoComplete="current-password"
-          placeholder="SOMA 포털 비밀번호"
-          type="password"
-          {...register("password")}
+          id="name"
+          autoComplete="name"
+          placeholder="소마비서"
+          type="text"
+          {...register("name")}
         />
-        {errors.password ? (
+        {errors.name ? (
           <p className="mt-2 text-[14px] font-semibold leading-[21px] text-destructive">
-            {errors.password.message}
+            {errors.name.message}
           </p>
         ) : null}
       </div>
@@ -106,8 +106,11 @@ export function PortalLoginForm() {
         </p>
       ) : null}
       <Button className="mt-5 h-[52px] w-full" disabled={isSubmitting} type="submit">
-        {isSubmitting ? "로그인 중" : "SOMA 포털로 로그인"}
+        {isSubmitting ? "로그인 중" : "SomaBiseo 시작하기"}
       </Button>
+      <p className="mt-3 text-[13px] font-medium leading-[20px] text-muted-foreground">
+        SOMA 포털 아이디와 비밀번호는 받지 않습니다.
+      </p>
     </form>
   );
 }
@@ -133,7 +136,7 @@ export function PortalSessionStatus() {
 
           clearSession();
           void logoutSomaPortal(sessionId);
-          toast.success("포털 세션을 끊었어요.");
+          toast.success("로그아웃했어요.");
         }}
       >
         <LogOut aria-hidden="true" />

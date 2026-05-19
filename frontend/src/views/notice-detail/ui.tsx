@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 
 import { getNoticeById } from "@/entities/notice/api";
-import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
 import { BookmarkNoticeButton } from "@/features/bookmark-notice/ui";
 import { MarkNoticeReadOnView } from "@/features/mark-notice-read/ui";
 import { AppShell } from "@/widgets/app-shell/ui";
@@ -18,12 +17,9 @@ import { LoadingState } from "@/shared/ui/loading-state";
 import { StatusBadge } from "@/shared/ui/status-badge";
 
 export function NoticeDetailPage({ noticeId }: { noticeId: string }) {
-  const session = usePortalAuthStore((state) => state.session);
-  const validSession = session && !isPortalSessionExpired(session) ? session : null;
   const { data: notice, isLoading, isError, refetch } = useQuery({
-    queryKey: ["notice", validSession?.sessionId, noticeId],
-    queryFn: () => getNoticeById(validSession!.sessionId, noticeId),
-    enabled: Boolean(validSession),
+    queryKey: ["notice", noticeId],
+    queryFn: () => getNoticeById(noticeId),
   });
 
   return (
@@ -37,20 +33,9 @@ export function NoticeDetailPage({ noticeId }: { noticeId: string }) {
           </Link>
         </Button>
 
-        {!validSession ? (
-          <EmptyState
-            title="SOMA 포털 로그인이 필요해요"
-            action={
-              <Button asChild>
-                <Link href={routes.login}>로그인</Link>
-              </Button>
-            }
-          />
-        ) : null}
-
-        {validSession && isLoading ? <LoadingState /> : null}
-        {validSession && isError ? <ErrorState onRetry={() => void refetch()} /> : null}
-        {validSession && !isLoading && !isError && !notice ? (
+        {isLoading ? <LoadingState /> : null}
+        {isError ? <ErrorState onRetry={() => void refetch()} /> : null}
+        {!isLoading && !isError && !notice ? (
           <EmptyState title="공지 없음" description="목록에서 다시 선택해 주세요." />
         ) : null}
 
