@@ -2,6 +2,16 @@
 
 SomaBiseo는 프론트엔드를 Vercel, 백엔드를 Railway에 분리 배포한다.
 
+## 현재 운영 구성
+
+| 구분 | 값 |
+| --- | --- |
+| Frontend | `https://somabiseo.vercel.app` |
+| Backend Health | `https://backend-production-76bf.up.railway.app/api/health` |
+| Railway Project | `SomaBiseo` |
+| Railway Backend Service | `backend` |
+| Railway Postgres Service | `postgres-db` |
+
 ## 배포 흐름
 
 ```txt
@@ -33,7 +43,7 @@ Repository 또는 `production` Environment에 아래 variables를 등록한다.
 | 이름 | 설명 |
 | --- | --- |
 | `RAILWAY_PROJECT_ID` | Railway 프로젝트 ID |
-| `RAILWAY_SERVICE_NAME` | Railway 백엔드 서비스 이름 |
+| `RAILWAY_SERVICE_NAME` | Railway 백엔드 서비스 이름. 현재 값은 `backend` |
 | `RAILWAY_ENVIRONMENT_NAME` | Railway 환경 이름. 비워두면 `production` 사용 |
 
 ## Vercel 설정
@@ -44,7 +54,7 @@ Vercel 프로젝트는 `frontend` 디렉토리를 루트로 설정한다.
 
 | 이름 | 예시 | 설명 |
 | --- | --- | --- |
-| `NEXT_PUBLIC_API_BASE_URL` | `https://api.example.com/api` | Railway 백엔드 공개 도메인 + `/api` |
+| `NEXT_PUBLIC_API_BASE_URL` | `https://backend-production-76bf.up.railway.app/api` | Railway 백엔드 공개 도메인 + `/api` |
 
 권장 설정:
 
@@ -67,13 +77,14 @@ railway up backend --path-as-root
 
 | 이름 | 예시 | 설명 |
 | --- | --- | --- |
-| `DATABASE_JDBC_URL` | `jdbc:postgresql://host:5432/db` | Spring Boot용 JDBC URL |
+| `DATABASE_JDBC_URL` | `jdbc:postgresql://postgres-db.railway.internal:5432/railway` | Spring Boot용 JDBC URL |
 | `DATABASE_USERNAME` | `somabiseo` | DB 사용자 |
 | `DATABASE_PASSWORD` | `********` | DB 비밀번호 |
 | `CORS_ALLOWED_ORIGINS` | `https://somabiseo.vercel.app` | Vercel 프론트 도메인 |
 | `SOMA_PORTAL_BASE_URL` | `https://www.swmaestro.ai` | SOMA 포털 기준 URL |
 
 Railway Postgres의 기본 `DATABASE_URL`은 JDBC 형식이 아닐 수 있다. 그 경우 Railway 변수 참조로 `DATABASE_JDBC_URL`을 `jdbc:postgresql://...` 형태로 따로 만든다.
+백엔드와 Postgres가 같은 Railway 프로젝트에 있으면 공개 DB 도메인 대신 `postgres-db.railway.internal` private DNS를 사용한다.
 
 ## 최초 구축 체크리스트
 

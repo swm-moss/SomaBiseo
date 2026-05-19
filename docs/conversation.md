@@ -1,0 +1,51 @@
+# Conversation Notes
+
+이 문서는 SomaBiseo를 같이 만들며 결정한 제품, 기술, 인프라 맥락을 에이전트가 이어받기 위한 기록이다.
+
+## 제품 방향
+
+- SomaBiseo는 소프트웨어마에스트로 연수생을 위한 비공식 일정, 공지, 멘토링 비서다.
+- 공식 소마 앱처럼 보이지 않게 표현한다.
+- SOMA 포털 비밀번호를 저장하지 않는다.
+- 사용자가 직접 요청한 읽기, 신청, 취소 흐름은 만들 수 있지만 매크로성 자동 반복 실행은 만들지 않는다.
+- 초기 핵심 가치는 공지, 멘토특강, 자유멘토링을 한곳에서 보기 좋게 정리하는 것이다.
+
+## 프론트 상태 관리와 캐싱
+
+- 서버 상태는 TanStack Query, 클라이언트 로컬 상태는 Zustand를 사용한다.
+- TanStack Query 대상은 공지 목록, 공지 상세, 일정 목록, 일정 상세, 대시보드, 캘린더 충돌 조회처럼 API에서 가져오는 데이터다.
+- QueryClient 기본 정책은 `frontend/src/shared/api/query-client.ts`에 둔다.
+- 현재 서버 상태 캐싱 정책은 `staleTime: 60초`, `gcTime: 5분`, `refetchOnWindowFocus: false`, query retry 1회다.
+- query key에는 사용자 SOMA 세션 ID, 필터, 상세 ID처럼 응답을 바꾸는 값을 반드시 포함한다.
+- 서버에 쓰기 API가 붙는 기능은 mutation 성공 후 관련 query key를 invalidate한다.
+- Zustand는 임시 SOMA 세션, 북마크, 읽음, 관심 저장, Google Calendar 연결 mock 상태처럼 브라우저에 보관하는 클라이언트 상태에만 쓴다.
+- 백엔드 영속 저장이 붙으면 Zustand에만 있는 상태를 서버 mutation과 React Query 캐시 갱신 흐름으로 옮긴다.
+
+## 프론트 구현 규칙
+
+- Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui 계열 컴포넌트를 기준으로 한다.
+- 이 프로젝트의 Next.js 문서는 `frontend/node_modules/next/dist/docs/`에서 확인한 뒤 구현한다.
+- FSD 레이어는 `app`, `views`, `widgets`, `features`, `entities`, `shared`를 사용한다.
+- Next의 Pages Router 예약 폴더와 충돌하지 않도록 페이지 조립 레이어 이름은 `pages`가 아니라 `views`다.
+- 카드 남발 금지, 섹션당 역할 1개만, 필러 카피 금지.
+- 모바일 퍼스트로 만들되 데스크톱에서도 헤더와 상세 화면이 깨지지 않아야 한다.
+
+## 인프라와 배포
+
+- 프론트엔드는 Vercel, 백엔드는 Railway에 분리 배포한다.
+- 프로덕션 프론트 URL은 `https://somabiseo.vercel.app`이다.
+- 프로덕션 백엔드 health URL은 `https://backend-production-76bf.up.railway.app/api/health`이다.
+- Railway 프로젝트 이름은 `SomaBiseo`이며 백엔드 서비스는 `backend`, 데이터베이스 서비스는 `postgres-db`다.
+- Railway 백엔드는 Dockerfile 기반으로 배포하고 `/api/health`를 healthcheck로 사용한다.
+- Railway Postgres는 private network를 사용하며 JDBC 접속 문자열은 `DATABASE_JDBC_URL`로 제공한다.
+- 프론트는 `NEXT_PUBLIC_API_BASE_URL`로 Railway 백엔드 공개 도메인 + `/api`를 바라본다.
+- 백엔드는 `CORS_ALLOWED_ORIGINS`에 Vercel 프론트 도메인을 등록한다.
+- GitHub Actions의 `CI`는 PR과 `main` push에서 실행한다.
+- `main`의 `CI`가 성공하면 `Deploy Production` 워크플로우가 Vercel과 Railway 배포를 실행한다.
+- 배포 관련 세부 사항은 `docs/deployment/production.md`를 최신 상태로 유지한다.
+
+## 현재 작업 흐름
+
+- 기능 수정은 별도 브랜치에서 진행하고 GitHub Issue와 PR을 만든다.
+- 커밋 메시지는 `docs/conventions/commit-message.md`를 따른다.
+- 작업 완료 전 `npm --prefix frontend run lint`, `npm --prefix frontend run build`, 필요한 백엔드 테스트를 실행한다.
