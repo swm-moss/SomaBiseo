@@ -123,6 +123,26 @@ class SomaPortalHtmlParserTest {
     }
 
     @Test
+    void doesNotTreatLoggedInMypageWithOtherCenterLoginLinkAsLoggedOut() {
+        String html = """
+                <html>
+                  <body>
+                    <header>
+                      <a href="/sw/member/user/forLogin.do?menuNo=200025" class="lock">로그인</a>
+                      <a href="/busan/sw/member/user/logout.do">로그아웃</a>
+                      <a href="/busan/sw/mypage/myNotice/list.do?menuNo=200038">MY PAGE</a>
+                    </header>
+                    <main>
+                      <h1>공지사항</h1>
+                    </main>
+                  </body>
+                </html>
+                """;
+
+        assertThat(parser.looksLikeLoggedOutPage(html)).isFalse();
+    }
+
+    @Test
     void detectsWrongPasswordAlertPageAsLoggedOut() {
         String html = """
                 <!doctype html>
