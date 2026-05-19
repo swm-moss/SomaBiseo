@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { BottomNavigation } from "@/widgets/bottom-navigation/ui";
@@ -11,8 +12,29 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b border-border/70 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-[60px] w-full max-w-[480px] items-center justify-between px-5 sm:px-6">
-          <Link className="text-[17px] font-black" href={routes.dashboard}>
-            {PRODUCT_NAME}
+          <Link
+            aria-label={`${PRODUCT_NAME} 대시보드로 이동`}
+            className="flex min-w-0 items-center gap-2"
+            href={routes.dashboard}
+          >
+            <Image
+              alt=""
+              aria-hidden="true"
+              className="size-8 shrink-0 rounded-md"
+              height={32}
+              src="/brand/somabiseo-icon-64.png"
+              unoptimized
+              width={32}
+            />
+            <Image
+              alt={PRODUCT_NAME}
+              className="h-auto w-[92px] object-contain"
+              height={240}
+              priority
+              src="/brand/somabiseo-logo.png"
+              unoptimized
+              width={720}
+            />
           </Link>
           <nav className="hidden items-center gap-5 text-sm font-semibold text-muted-foreground lg:flex">
             <Link className="hover:text-foreground" href={routes.dashboard}>
