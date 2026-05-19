@@ -71,6 +71,76 @@ class SomaPortalHtmlParserTest {
     }
 
     @Test
+    void parsesMentoLecListMetadataFromTableColumns() {
+        String html = """
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>343</td>
+                      <td class="tit">
+                        <a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=9343">
+                          [멘토 특강] [오프라인] 지속 성장하는 AI 서비스 위한 CI/CD와 자동화 개선 루프
+                        </a>
+                      </td>
+                      <td>2026-05-16 ~ 2026-06-01</td>
+                      <td>2026-06-01(월) 20:00 ~ 22:00</td>
+                      <td>2 /8</td>
+                      <td>-</td>
+                      <td>[접수중]</td>
+                      <td>강민준</td>
+                      <td>2026-05-16</td>
+                    </tr>
+                  </tbody>
+                </table>
+                """;
+
+        List<SomaPortalEventResponse> events = parser.parseEvents(html, "https://www.swmaestro.ai");
+
+        SomaPortalEventResponse event = events.getFirst();
+
+        assertThat(event.mentorName()).isEqualTo("강민준");
+        assertThat(event.author()).isEqualTo("강민준");
+        assertThat(event.location()).isEqualTo("오프라인");
+        assertThat(event.operationType()).isEqualTo("오프라인");
+        assertThat(event.applicantCount()).isEqualTo(2);
+        assertThat(event.capacity()).isEqualTo(8);
+        assertThat(event.status()).isEqualTo("OPEN");
+        assertThat(event.approvalStatus()).isNull();
+        assertThat(event.registeredAt()).isNotNull();
+        assertThat(event.startAt()).isNotNull();
+        assertThat(event.endAt()).isNotNull();
+    }
+
+    @Test
+    void usesListAuthorInsteadOfTopicAsMentorName() {
+        String html = """
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>345</td>
+                      <td class="tit">
+                        <a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=9345">
+                          [자유 멘토링] 신홍재님 팀 멘토링 > 주제: 아이디어 멘토링
+                        </a>
+                      </td>
+                      <td>2026-05-19 ~ 2026-06-04</td>
+                      <td>2026-06-04(목) 09:00 ~ 10:00</td>
+                      <td>1 /3</td>
+                      <td>-</td>
+                      <td>[접수중]</td>
+                      <td>안재홍</td>
+                      <td>2026-05-19</td>
+                    </tr>
+                  </tbody>
+                </table>
+                """;
+
+        List<SomaPortalEventResponse> events = parser.parseEvents(html, "https://www.swmaestro.ai");
+
+        assertThat(events.getFirst().mentorName()).isEqualTo("안재홍");
+    }
+
+    @Test
     void infersEventStatusesFromPortalText() {
         String html = """
                 <table>

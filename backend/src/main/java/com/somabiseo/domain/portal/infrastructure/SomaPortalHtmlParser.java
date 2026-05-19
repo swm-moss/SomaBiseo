@@ -35,9 +35,10 @@ import java.util.regex.Pattern;
 public class SomaPortalHtmlParser {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final Pattern DATE_PATTERN = Pattern.compile("(20\\d{2})[.\\-/년 ]\\s*(\\d{1,2})[.\\-/월 ]\\s*(\\d{1,2})");
-    private static final Pattern DATE_TIME_PATTERN = Pattern.compile("(20\\d{2})[.\\-/년 ]\\s*(\\d{1,2})[.\\-/월 ]\\s*(\\d{1,2})\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
+    private static final Pattern DATE_TIME_PATTERN = Pattern.compile("(20\\d{2})[.\\-/년 ]\\s*(\\d{1,2})[.\\-/월 ]\\s*(\\d{1,2})(?:\\([^)]*\\))?\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
     private static final Pattern CAPACITY_PATTERN = Pattern.compile("(\\d+)\\s*명");
     private static final Pattern APPLICANT_COUNT_PATTERN = Pattern.compile("신청자\\s*리스트\\s*\\[\\s*(\\d+)\\s*명\\s*]");
+    private static final Pattern ROW_APPLICANT_CAPACITY_PATTERN = Pattern.compile("(\\d+)\\s*/\\s*(\\d+)");
     private static final Pattern TIME_AFTER_RANGE_PATTERN = Pattern.compile("~\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
     private static final Pattern HREF_PAGE_INDEX_PATTERN = Pattern.compile("(?:[?&]|^)pageIndex=(\\d+)");
     private static final Pattern SCRIPT_PAGE_INDEX_PATTERN = Pattern.compile("(?:fnLinkPage|linkPage|fn_egov_link_page|goPage|movePage|goPaging)\\s*\\(\\s*'?(\\d+)'?\\s*\\)");
@@ -167,25 +168,35 @@ public class SomaPortalHtmlParser {
         return parseBoardItems(html, baseUrl).stream()
                 .map(item -> {
                     EventType type = inferEventType(item.title() + " " + item.rawText());
+                    String operationType = inferOperationType(item.title() + " " + item.rawText()).orElse(null);
+                    DateTimeRange lectureRange = parseEventLectureRange(item)
+                            .orElseGet(() -> new DateTimeRange(inferDateTime(item.rawText()).orElse(item.date()), null));
+                    DateTimeRange applicationRange = parseEventApplicationRange(item)
+                            .orElseGet(() -> new DateTimeRange(null, null));
+                    ApplicantCapacity applicantCapacity = parseEventApplicantCapacity(item)
+                            .orElse(new ApplicantCapacity(null, null));
+                    String author = parseEventAuthor(item).orElse(null);
+                    String mentorName = firstNonBlank(author, inferMentorName(item.rawText()).orElse(null));
+                    String location = inferLocation(item.rawText()).orElse(operationType);
 
                     return new SomaPortalEventResponse(
                             item.sourceId(),
                             type,
                             item.title(),
-                            inferMentorName(item.rawText()).orElse(null),
+                            mentorName.isBlank() ? null : mentorName,
                             inferTopic(item.title()),
-                            inferLocation(item.rawText()).orElse(null),
-                            inferDateTime(item.rawText()).orElse(item.date()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            inferStatus(item.rawText()),
-                            null,
-                            null,
-                            null,
-                            null,
+                            location,
+                            lectureRange.startAt(),
+                            lectureRange.endAt(),
+                            applicationRange.startAt(),
+                            applicationRange.endAt(),
+                            applicantCapacity.capacity(),
+                            applicantCapacity.applicantCount(),
+                            parseEventStatusText(item).map(this::inferStatus).orElseGet(() -> inferStatus(item.rawText())),
+                            parseEventApprovalStatus(item).orElse(null),
+                            operationType,
+                            author,
+                            parseEventRegisteredAt(item).orElse(null),
                             item.sourceUrl(),
                             List.of(),
                             null,
@@ -353,8 +364,12 @@ public class SomaPortalHtmlParser {
         String href = absoluteUrl(link.attr("href"), baseUrl);
         String rawText = clean(row.text());
         OffsetDateTime date = inferDate(rawText).orElse(null);
+        List<String> cells = row.select("th, td").stream()
+                .map(cell -> clean(cell.text()))
+                .filter(cell -> !cell.isBlank())
+                .toList();
 
-        return Optional.of(new PortalBoardItem(sourceIdFromHref(href), title, href, date, rawText));
+        return Optional.of(new PortalBoardItem(sourceIdFromHref(href), title, href, date, rawText, cells));
     }
 
     private Optional<PortalBoardItem> parseLink(Element link, String baseUrl) {
@@ -734,6 +749,110 @@ public class SomaPortalHtmlParser {
         return EventType.MENTORING;
     }
 
+    private Optional<String> parseEventAuthor(PortalBoardItem item) {
+        List<String> cells = item.cells();
+
+        if (cells.size() < 3 || !hasDateLikeText(cells.getLast())) {
+            return Optional.empty();
+        }
+
+        String author = clean(cells.get(cells.size() - 2));
+
+        if (!isEventAuthorCandidate(author)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(author);
+    }
+
+    private Optional<String> parseEventApprovalStatus(PortalBoardItem item) {
+        List<String> cells = item.cells();
+
+        if (cells.size() < 5 || !hasDateLikeText(cells.getLast())) {
+            return Optional.empty();
+        }
+
+        String approvalStatus = clean(cells.get(cells.size() - 4));
+
+        return approvalStatus.isBlank() || "-".equals(approvalStatus)
+                ? Optional.empty()
+                : Optional.of(approvalStatus);
+    }
+
+    private Optional<String> parseEventStatusText(PortalBoardItem item) {
+        List<String> cells = item.cells();
+
+        if (cells.size() < 4 || !hasDateLikeText(cells.getLast())) {
+            return Optional.empty();
+        }
+
+        String status = clean(cells.get(cells.size() - 3));
+
+        return status.isBlank() ? Optional.empty() : Optional.of(status);
+    }
+
+    private Optional<OffsetDateTime> parseEventRegisteredAt(PortalBoardItem item) {
+        if (item.cells().isEmpty()) {
+            return Optional.ofNullable(item.date());
+        }
+
+        return parseDate(item.cells().getLast()).or(() -> Optional.ofNullable(item.date()));
+    }
+
+    private Optional<DateTimeRange> parseEventApplicationRange(PortalBoardItem item) {
+        return item.cells().stream()
+                .map(this::parseDateRange)
+                .flatMap(Optional::stream)
+                .findFirst();
+    }
+
+    private Optional<DateTimeRange> parseEventLectureRange(PortalBoardItem item) {
+        return item.cells().stream()
+                .map(this::parseDateTimeRange)
+                .flatMap(Optional::stream)
+                .findFirst()
+                .or(() -> parseDateTimeRange(item.rawText()));
+    }
+
+    private Optional<ApplicantCapacity> parseEventApplicantCapacity(PortalBoardItem item) {
+        return item.cells().stream()
+                .map(ROW_APPLICANT_CAPACITY_PATTERN::matcher)
+                .filter(Matcher::find)
+                .map(matcher -> new ApplicantCapacity(
+                        Integer.parseInt(matcher.group(1)),
+                        Integer.parseInt(matcher.group(2))
+                ))
+                .findFirst();
+    }
+
+    private Optional<String> inferOperationType(String text) {
+        if (text.contains("온라인")) {
+            return Optional.of("온라인");
+        }
+
+        if (text.contains("오프라인")) {
+            return Optional.of("오프라인");
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean hasDateLikeText(String text) {
+        return inferDate(text).isPresent() || parseDateTimeRange(text).isPresent();
+    }
+
+    private boolean isEventAuthorCandidate(String value) {
+        String cleaned = clean(value);
+
+        return !cleaned.isBlank()
+                && !cleaned.contains("[")
+                && !cleaned.contains("]")
+                && !cleaned.contains(">")
+                && !cleaned.contains(":")
+                && !cleaned.contains("/")
+                && isNameToken(cleaned);
+    }
+
     private Optional<String> inferMentorName(String text) {
         int mentorMarker = text.lastIndexOf("멘토");
 
@@ -871,6 +990,33 @@ public class SomaPortalHtmlParser {
         }
 
         return Optional.of(new DateTimeRange(startAt, endAt));
+    }
+
+    private Optional<DateTimeRange> parseDateRange(String text) {
+        String cleaned = clean(text);
+
+        if (cleaned.isBlank()) {
+            return Optional.empty();
+        }
+
+        Matcher matcher = DATE_PATTERN.matcher(cleaned);
+
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+
+        OffsetDateTime startAt = toDateOffsetDateTime(matcher);
+        OffsetDateTime endAt = matcher.find() ? toDateOffsetDateTime(matcher) : null;
+
+        return Optional.of(new DateTimeRange(startAt, endAt));
+    }
+
+    private OffsetDateTime toDateOffsetDateTime(Matcher matcher) {
+        return LocalDate.of(
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                Integer.parseInt(matcher.group(3))
+        ).atStartOfDay(SEOUL).toOffsetDateTime();
     }
 
     private OffsetDateTime toOffsetDateTime(Matcher matcher) {
@@ -1218,6 +1364,12 @@ public class SomaPortalHtmlParser {
     private record DateTimeRange(
             OffsetDateTime startAt,
             OffsetDateTime endAt
+    ) {
+    }
+
+    private record ApplicantCapacity(
+            Integer applicantCount,
+            Integer capacity
     ) {
     }
 }
