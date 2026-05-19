@@ -66,4 +66,11 @@ public class SomaPortalService {
 
         return htmlParser.parseEvents(html, portalClient.baseUrl());
     }
+
+    public SomaPortalEventResponse getEventDetail(String sessionId, String sourceUrl) {
+        SomaPortalSession session = sessionStore.get(sessionId);
+        String html = portalClient.getEventDetailHtml(session, sourceUrl);
+
+        return htmlParser.parseEventDetail(html, portalClient.baseUrl(), sourceUrl);
+    }
 }

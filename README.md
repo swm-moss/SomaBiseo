@@ -39,6 +39,11 @@ Postgres is exposed on `127.0.0.1:${POSTGRES_PORT:-15432}` to avoid clashing wit
 Frontend deploys to Vercel and backend deploys to Railway after CI passes on `main`.
 See [프로덕션 배포 문서](docs/deployment/production.md).
 
+## Project Context
+
+Agent handoff notes, React Query caching policy, and current infrastructure decisions live in
+[Conversation Notes](docs/conversation.md).
+
 ## Local Real Portal Test
 
 ```bash
@@ -54,5 +59,5 @@ The frontend calls `http://localhost:8080/api/soma/login`, stores only the tempo
 
 - 비공식 서비스로 표현합니다.
 - SOMA 포털 비밀번호를 저장하지 않습니다.
-- MVP 1차에서는 신청, 취소 자동화를 만들지 않습니다.
+- MVP 1차에서는 신청, 취소를 넣지 않습니다. 이후에는 사용자 명시 버튼 기반 흐름만 허용하고 매크로성 자동 반복 실행은 만들지 않습니다.
 - 실제 SOMA 연동은 mock 또는 수동 import 이후에 붙입니다.

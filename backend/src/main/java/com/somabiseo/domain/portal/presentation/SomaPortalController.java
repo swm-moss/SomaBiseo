@@ -52,6 +52,14 @@ public class SomaPortalController {
         return ApiResponse.ok(portalService.getEvents(sessionId, page));
     }
 
+    @GetMapping("/api/soma/events/detail")
+    ApiResponse<SomaPortalEventResponse> getEventDetail(
+            @RequestParam String sessionId,
+            @RequestParam String sourceUrl
+    ) {
+        return ApiResponse.ok(portalService.getEventDetail(sessionId, sourceUrl));
+    }
+
     record SomaPortalLoginRequest(
             @NotBlank String username,
             @NotBlank String password

@@ -1,6 +1,8 @@
 package com.somabiseo.domain.portal.infrastructure;
 
 import com.somabiseo.domain.portal.domain.PortalBoardItem;
+import com.somabiseo.domain.portal.domain.SomaPortalEventApplicantResponse;
+import com.somabiseo.domain.portal.domain.SomaPortalEventDetailItem;
 import com.somabiseo.domain.portal.domain.SomaPortalEventResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalException;
 import com.somabiseo.domain.portal.domain.SomaPortalNoticeResponse;
@@ -33,6 +35,9 @@ public class SomaPortalHtmlParser {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final Pattern DATE_PATTERN = Pattern.compile("(20\\d{2})[.\\-/년 ]\\s*(\\d{1,2})[.\\-/월 ]\\s*(\\d{1,2})");
     private static final Pattern DATE_TIME_PATTERN = Pattern.compile("(20\\d{2})[.\\-/년 ]\\s*(\\d{1,2})[.\\-/월 ]\\s*(\\d{1,2})\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
+    private static final Pattern CAPACITY_PATTERN = Pattern.compile("(\\d+)\\s*명");
+    private static final Pattern APPLICANT_COUNT_PATTERN = Pattern.compile("신청자\\s*리스트\\s*\\[\\s*(\\d+)\\s*명\\s*]");
+    private static final Pattern TIME_AFTER_RANGE_PATTERN = Pattern.compile("~\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
 
     public String parseCsrfToken(String html) {
         Document document = Jsoup.parse(html);
@@ -47,10 +52,14 @@ public class SomaPortalHtmlParser {
 
     public boolean looksLikeLoginPage(String html) {
         Document document = Jsoup.parse(html);
+        String text = document.text();
 
         return !document.select("form#login_form").isEmpty()
-                || document.text().contains("아이디를 입력해 주세요")
-                || document.text().contains("비밀번호를 입력해 주세요");
+                || text.contains("아이디를 입력해 주세요")
+                || text.contains("비밀번호를 입력해 주세요")
+                || text.contains("아이디 혹은 비밀번호가 일치 하지 않습니다")
+                || text.contains("아이디 혹은 비밀번호가 일치하지 않습니다")
+                || html.contains("forLogin.do?menuNo=200025");
     }
 
     public boolean looksLikeLoggedOutPage(String html) {
@@ -118,12 +127,74 @@ public class SomaPortalHtmlParser {
                             inferLocation(item.rawText()).orElse(null),
                             inferDateTime(item.rawText()).orElse(item.date()),
                             null,
+                            null,
+                            null,
+                            null,
+                            null,
                             inferStatus(item.rawText()),
+                            null,
+                            null,
+                            null,
+                            null,
                             item.sourceUrl(),
+                            List.of(),
+                            null,
+                            List.of(),
                             item.rawText()
                     );
                 })
                 .toList();
+    }
+
+    public SomaPortalEventResponse parseEventDetail(String html, String baseUrl, String sourceUrl) {
+        Document document = Jsoup.parse(html, baseUrl);
+        String resolvedSourceUrl = absoluteUrl(sourceUrl, baseUrl);
+        Element infoTable = findInfoTable(document).orElse(null);
+        Map<String, String> detailMap = infoTable == null ? Map.of() : parseDetailMap(infoTable);
+        Element applicantTable = findApplicantTable(document).orElse(null);
+        List<SomaPortalEventApplicantResponse> applicants = applicantTable == null
+                ? List.of()
+                : parseApplicants(applicantTable);
+        String rawText = clean(document.text());
+        String title = firstNonBlank(
+                detailMap.get("모집 명"),
+                detailMap.get("모집명"),
+                inferTitle(document),
+                "SOMA 일정"
+        );
+        String lectureDate = firstNonBlank(detailMap.get("강의날짜"), detailMap.get("강의 날짜"));
+        DateTimeRange lectureRange = parseDateTimeRange(lectureDate)
+                .orElseGet(() -> new DateTimeRange(inferDateTime(rawText).orElse(null), null));
+        String applicationPeriod = firstNonBlank(detailMap.get("접수 기간"), detailMap.get("접수기간"));
+        DateTimeRange applicationRange = parseDateTimeRange(applicationPeriod)
+                .orElseGet(() -> new DateTimeRange(null, null));
+
+        return new SomaPortalEventResponse(
+                sourceIdFromHref(resolvedSourceUrl),
+                inferEventType(title + " " + rawText),
+                title,
+                inferMentorName(rawText).orElse(null),
+                inferTopic(title),
+                firstNonBlank(detailMap.get("장소"), inferLocation(rawText).orElse(null)),
+                lectureRange.startAt(),
+                lectureRange.endAt(),
+                applicationRange.startAt(),
+                applicationRange.endAt(),
+                parseCapacity(detailMap.get("모집인원")).orElse(null),
+                parseApplicantCount(rawText).orElse(applicants.isEmpty() ? null : applicants.size()),
+                inferStatus(firstNonBlank(detailMap.get("상태"), rawText)),
+                detailMap.get("개설승인"),
+                detailMap.get("진행방식"),
+                detailMap.get("작성자"),
+                parseDate(detailMap.get("등록일")).orElse(null),
+                resolvedSourceUrl,
+                detailMap.entrySet().stream()
+                        .map(entry -> new SomaPortalEventDetailItem(entry.getKey(), entry.getValue()))
+                        .toList(),
+                parseContentText(document, infoTable, applicantTable).orElse(null),
+                applicants,
+                rawText
+        );
     }
 
     public List<PortalBoardItem> parseBoardItems(String html, String baseUrl) {
@@ -198,6 +269,149 @@ public class SomaPortalHtmlParser {
         String href = absoluteUrl(link.attr("href"), baseUrl);
 
         return Optional.of(new PortalBoardItem(sourceIdFromHref(href), title, href, null, title));
+    }
+
+    private Optional<Element> findInfoTable(Document document) {
+        return document.select("table").stream()
+                .filter(table -> {
+                    String text = clean(table.text());
+
+                    return text.contains("모집 명")
+                            || text.contains("접수 기간")
+                            || text.contains("강의날짜")
+                            || text.contains("모집인원");
+                })
+                .findFirst();
+    }
+
+    private Map<String, String> parseDetailMap(Element table) {
+        Map<String, String> details = new LinkedHashMap<>();
+
+        for (Element row : table.select("tr")) {
+            Elements cells = row.select("th, td");
+
+            for (int index = 0; index + 1 < cells.size(); index += 2) {
+                String label = clean(cells.get(index).text()).replace(" ", "");
+                String value = clean(cells.get(index + 1).text());
+
+                if (!label.isBlank() && !value.isBlank() && label.length() <= 10) {
+                    details.put(label, value);
+                }
+            }
+        }
+
+        return details;
+    }
+
+    private Optional<Element> findApplicantTable(Document document) {
+        return document.select("table").stream()
+                .filter(table -> {
+                    String text = clean(table.text());
+
+                    return text.contains("연수생") && text.contains("신청일") && text.contains("상태");
+                })
+                .findFirst();
+    }
+
+    private List<SomaPortalEventApplicantResponse> parseApplicants(Element table) {
+        Elements headerCells = table.select("tr").stream()
+                .filter(row -> !row.select("th").isEmpty())
+                .findFirst()
+                .map(row -> row.select("th, td"))
+                .orElseGet(Elements::new);
+
+        Map<String, Integer> headerIndex = new LinkedHashMap<>();
+
+        for (int index = 0; index < headerCells.size(); index++) {
+            headerIndex.put(clean(headerCells.get(index).text()).replace(" ", ""), index);
+        }
+
+        int noIndex = headerIndex.getOrDefault("NO.", headerIndex.getOrDefault("NO", 0));
+        int nameIndex = headerIndex.getOrDefault("연수생", 1);
+        int appliedAtIndex = headerIndex.getOrDefault("신청일", 2);
+        int canceledAtIndex = headerIndex.getOrDefault("취소일", 3);
+        int statusIndex = headerIndex.getOrDefault("상태", 4);
+        List<SomaPortalEventApplicantResponse> applicants = new ArrayList<>();
+
+        for (Element row : table.select("tr")) {
+            if (!row.select("th").isEmpty()) {
+                continue;
+            }
+
+            Elements cells = row.select("td");
+
+            if (cells.size() <= Math.max(statusIndex, nameIndex)) {
+                continue;
+            }
+
+            String traineeName = cellText(cells, nameIndex);
+
+            if (traineeName.isBlank() || traineeName.equals("연수생")) {
+                continue;
+            }
+
+            String canceledAt = cellText(cells, canceledAtIndex);
+
+            applicants.add(new SomaPortalEventApplicantResponse(
+                    cellText(cells, noIndex),
+                    traineeName,
+                    cellText(cells, appliedAtIndex),
+                    "-".equals(canceledAt) ? null : canceledAt,
+                    cellText(cells, statusIndex).replace("[", "").replace("]", "")
+            ));
+        }
+
+        return applicants;
+    }
+
+    private String cellText(Elements cells, int index) {
+        if (index < 0 || index >= cells.size()) {
+            return "";
+        }
+
+        return clean(cells.get(index).text());
+    }
+
+    private Optional<String> parseContentText(Document document, Element infoTable, Element applicantTable) {
+        Element start = infoTable == null ? null : infoTable.nextElementSibling();
+        StringBuilder builder = new StringBuilder();
+
+        while (start != null && start != applicantTable) {
+            if (applicantTable != null && start.select("table").contains(applicantTable)) {
+                break;
+            }
+
+            String text = cleanMultilineText(start);
+
+            if (!text.isBlank() && !text.contains("신청자 리스트")) {
+                if (!builder.isEmpty()) {
+                    builder.append("\n\n");
+                }
+
+                builder.append(text);
+            }
+
+            start = start.nextElementSibling();
+        }
+
+        if (!builder.isEmpty()) {
+            return Optional.of(builder.toString());
+        }
+
+        Document clone = document.clone();
+        clone.select("script, style, header, nav, footer, table").remove();
+        String fallback = cleanMultilineText(clone.body());
+
+        return fallback.isBlank() ? Optional.empty() : Optional.of(fallback);
+    }
+
+    private String cleanMultilineText(Element element) {
+        Element clone = element.clone();
+
+        clone.select("br").after("\n");
+        clone.select("p, div, li, h1, h2, h3, h4, h5").forEach(block -> block.append("\n"));
+
+        return cleanMultiline(clone.wholeText());
     }
 
     private EventType inferEventType(String text) {
@@ -312,6 +526,55 @@ public class SomaPortalHtmlParser {
         return Optional.of(dateTime.atZone(SEOUL).toOffsetDateTime());
     }
 
+    private Optional<DateTimeRange> parseDateTimeRange(String text) {
+        String cleaned = clean(text);
+
+        if (cleaned.isBlank()) {
+            return Optional.empty();
+        }
+
+        Matcher matcher = DATE_TIME_PATTERN.matcher(cleaned);
+
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+
+        OffsetDateTime startAt = toOffsetDateTime(matcher);
+        OffsetDateTime endAt = null;
+        int firstMatchEnd = matcher.end();
+
+        if (matcher.find()) {
+            endAt = toOffsetDateTime(matcher);
+        } else {
+            Matcher timeMatcher = TIME_AFTER_RANGE_PATTERN.matcher(cleaned.substring(firstMatchEnd));
+
+            if (timeMatcher.find()) {
+                int hour = Integer.parseInt(timeMatcher.group(1));
+                int minute = timeMatcher.group(2) == null || timeMatcher.group(2).isBlank()
+                        ? 0
+                        : Integer.parseInt(timeMatcher.group(2));
+
+                endAt = startAt.withHour(hour).withMinute(minute);
+            }
+        }
+
+        return Optional.of(new DateTimeRange(startAt, endAt));
+    }
+
+    private OffsetDateTime toOffsetDateTime(Matcher matcher) {
+        int minute = matcher.group(5) == null || matcher.group(5).isBlank()
+                ? 0
+                : Integer.parseInt(matcher.group(5));
+
+        return LocalDateTime.of(
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                Integer.parseInt(matcher.group(3)),
+                Integer.parseInt(matcher.group(4)),
+                minute
+        ).atZone(SEOUL).toOffsetDateTime();
+    }
+
     private Optional<OffsetDateTime> parseDate(String value) {
         String cleaned = clean(value);
 
@@ -335,6 +598,26 @@ public class SomaPortalHtmlParser {
         }
 
         return Optional.empty();
+    }
+
+    private Optional<Integer> parseCapacity(String text) {
+        Matcher matcher = CAPACITY_PATTERN.matcher(clean(text));
+
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(Integer.parseInt(matcher.group(1)));
+    }
+
+    private Optional<Integer> parseApplicantCount(String text) {
+        Matcher matcher = APPLICANT_COUNT_PATTERN.matcher(clean(text));
+
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(Integer.parseInt(matcher.group(1)));
     }
 
     private String inferStatus(String text) {
@@ -394,6 +677,26 @@ public class SomaPortalHtmlParser {
         return params;
     }
 
+    private String inferTitle(Document document) {
+        return document.select("h1, h2, h3, h4, .tit, .title").stream()
+                .map(element -> clean(element.text()))
+                .filter(text -> !text.isBlank())
+                .findFirst()
+                .orElse("");
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            String cleaned = clean(value);
+
+            if (!cleaned.isBlank()) {
+                return cleaned;
+            }
+        }
+
+        return "";
+    }
+
     private String clean(String value) {
         if (value == null) {
             return "";
@@ -402,9 +705,27 @@ public class SomaPortalHtmlParser {
         return value.replace('\u00a0', ' ').replaceAll("\\s+", " ").trim();
     }
 
+    private String cleanMultiline(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value.replace('\u00a0', ' ')
+                .replaceAll("[ \\t\\x0B\\f\\r]+", " ")
+                .replaceAll(" *\\n *", "\n")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
+    }
+
     public record PortalAutoSubmitForm(
             String action,
             Map<String, String> values
+    ) {
+    }
+
+    private record DateTimeRange(
+            OffsetDateTime startAt,
+            OffsetDateTime endAt
     ) {
     }
 }

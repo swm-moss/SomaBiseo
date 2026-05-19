@@ -11,10 +11,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b border-border/70 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-[60px] w-full max-w-[480px] items-center justify-between px-5 sm:px-6">
+        <div className="mx-auto flex h-16 w-full max-w-[1120px] items-center gap-5 px-5 sm:px-6 lg:px-8">
           <Link
             aria-label={`${PRODUCT_NAME} 대시보드로 이동`}
-            className="flex min-w-0 items-center gap-2"
+            className="flex min-w-0 shrink-0 items-center gap-2"
             href={routes.dashboard}
           >
             <Image
@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
             <Image
               alt={PRODUCT_NAME}
-              className="h-auto w-[92px] object-contain"
+              className="h-auto w-[86px] object-contain sm:w-[96px]"
               height={240}
               priority
               src="/brand/somabiseo-logo.png"
@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               width={720}
             />
           </Link>
-          <nav className="hidden items-center gap-5 text-sm font-semibold text-muted-foreground lg:flex">
+          <nav className="hidden min-w-0 flex-1 items-center gap-6 text-[15px] font-bold text-muted-foreground lg:flex">
             <Link className="hover:text-foreground" href={routes.dashboard}>
               대시보드
             </Link>
@@ -50,7 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               설정
             </Link>
           </nav>
-          <PortalSessionStatus />
+          <div className="ml-auto flex shrink-0 items-center">
+            <PortalSessionStatus />
+          </div>
         </div>
       </header>
       <div className="border-b border-border/70 bg-[#eaf3ff] px-5 py-2 text-center text-[12px] font-semibold leading-[18px] text-primary">

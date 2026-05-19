@@ -16,6 +16,7 @@ export class ApiResponseError extends Error {
 export const apiClient = ky.create({
   prefix: process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080/api",
   credentials: "include",
+  throwHttpErrors: false,
   timeout: 10_000,
 });
 
