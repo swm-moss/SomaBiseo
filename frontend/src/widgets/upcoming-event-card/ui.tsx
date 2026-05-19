@@ -2,9 +2,11 @@ import Link from "next/link";
 import { AlertTriangle, MapPin } from "lucide-react";
 
 import type { SomaEvent } from "@/entities/soma-event/model";
+import type { EventRecommendation } from "@/features/user-interests/model";
 import { FavoriteEventButton } from "@/features/favorite-event/ui";
 import { routes } from "@/shared/config/routes";
 import { formatOptionalDateTime } from "@/shared/lib/date";
+import { cn } from "@/shared/lib/utils";
 import { StatusBadge } from "@/shared/ui/status-badge";
 
 const typeLabel = {
@@ -12,14 +14,25 @@ const typeLabel = {
   MENTORING: "자유멘토링",
 } as const;
 
-export function UpcomingEventCard({ event }: { event: SomaEvent }) {
+export function UpcomingEventCard({
+  event,
+  recommendation,
+}: {
+  event: SomaEvent;
+  recommendation?: EventRecommendation;
+}) {
   return (
-    <article className="sb-list-row">
+    <article className={cn("sb-list-row", recommendation?.isRecommended && "sb-recommended-row")}>
       <Link className="min-w-0 flex-1" href={routes.eventDetail(event.id)}>
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
             {typeLabel[event.type]}
           </StatusBadge>
+          {recommendation?.isRecommended ? (
+            <StatusBadge tone="blue">
+              추천 {recommendation.matchedTopics.map((topic) => topic.label).join(", ")}
+            </StatusBadge>
+          ) : null}
           {event.conflict.hasConflict ? (
             <StatusBadge tone="amber">
               <AlertTriangle aria-hidden="true" className="mr-1 size-3" />

@@ -1,4 +1,5 @@
 import { ConnectGoogleCalendarPanel } from "@/features/connect-google-calendar/ui";
+import { InterestPreferencePanel } from "@/features/user-interests/ui";
 import { AppShell } from "@/widgets/app-shell/ui";
 import { MVP_GUARDRAILS } from "@/shared/constants/product";
 import { PageHeader } from "@/shared/ui/page-header";
@@ -8,6 +9,9 @@ export function SettingsPage() {
     <AppShell>
       <main className="sb-page">
         <PageHeader title="설정" description="캘린더 연결과 비공식 서비스 범위를 확인합니다." />
+        <section className="sb-section">
+          <InterestPreferencePanel />
+        </section>
         <section className="sb-section">
           <ConnectGoogleCalendarPanel />
         </section>

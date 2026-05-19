@@ -40,6 +40,12 @@
   --sidebar-ring: #3182f6;
 }
 
+@property --sb-recommend-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -139,7 +145,41 @@
     @apply flex min-h-24 gap-3 border-b border-border/80 px-5 py-5 last:border-b-0;
   }
 
+  .sb-recommended-row {
+    --sb-recommend-angle: 0deg;
+    position: relative;
+    margin: 8px;
+    border: 2px solid transparent;
+    border-radius: calc(var(--radius) * 1.4);
+    background:
+      linear-gradient(#ffffff, #ffffff) padding-box,
+      conic-gradient(
+        from var(--sb-recommend-angle),
+        #3182f6,
+        #7c3aed,
+        #ec4899,
+        #f97316,
+        #22c55e,
+        #3182f6
+      )
+      border-box;
+    box-shadow: 0 10px 28px rgb(49 130 246 / 14%);
+    animation: sb-recommend-border-spin 3s linear infinite;
+  }
+
   .sb-field {
     @apply mt-2 h-[52px] w-full rounded-lg border-0 bg-muted px-4 text-[17px] font-semibold text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:bg-white focus:ring-2 focus:ring-primary/20;
+  }
+}
+
+@keyframes sb-recommend-border-spin {
+  to {
+    --sb-recommend-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-recommended-row {
+    animation: none;
   }
 }

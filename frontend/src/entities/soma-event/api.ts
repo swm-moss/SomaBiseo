@@ -10,6 +10,7 @@ import type {
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
 
 const MAX_EVENT_LOOKUP_PAGES = 10;
+const MAX_DASHBOARD_EVENT_PAGES = 3;
 
 type PortalPage<T> = {
   items: T[];
@@ -143,6 +144,19 @@ export async function getSomaEvents(sessionId: string, filter: SomaEventFilter =
   return eventsPage.items.filter((event) => matchesFilter(event, filter));
 }
 
+async function getSomaEventsPages(sessionId: string, maxPages: number) {
+  const firstPage = await getSomaEventsPage(sessionId, 1);
+  const events = [...firstPage.items];
+  let currentPage = firstPage;
+
+  for (let page = 2; page <= maxPages && currentPage.hasNextPage; page += 1) {
+    currentPage = await getSomaEventsPage(sessionId, page);
+    events.push(...currentPage.items);
+  }
+
+  return events.sort(byStartAt);
+}
+
 export async function getSomaEventsPage(sessionId: string, page = 1) {
   const response = await unwrapApiResponse(
     apiClient
@@ -252,7 +266,7 @@ function normalizePortalPage<T>(
 }
 
 export async function getDashboardEvents(sessionId: string) {
-  const events = await getSomaEvents(sessionId);
+  const events = await getSomaEventsPages(sessionId, MAX_DASHBOARD_EVENT_PAGES);
   const today = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Seoul",
     year: "numeric",
@@ -263,6 +277,7 @@ export async function getDashboardEvents(sessionId: string) {
   return {
     todayEvents: events.filter((event) => event.startAt?.startsWith(today)),
     upcomingEvents: events.slice(0, 3),
+    recommendationCandidates: events,
     deadlineSoonEvents: events.filter((event) => event.status === "OPEN").slice(0, 3),
     conflictedEvents: events.filter((event) => event.conflict.hasConflict),
   };

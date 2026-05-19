@@ -7,6 +7,10 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getSomaEventsPage } from "@/entities/soma-event/api";
 import type { SomaEventType } from "@/entities/soma-event/model";
 import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
+import {
+  getEventRecommendation,
+  useInterestPreferenceStore,
+} from "@/features/user-interests/model";
 import { UpcomingEventCard } from "@/widgets/upcoming-event-card/ui";
 import { routes } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -27,6 +31,7 @@ export function EventList() {
   const [tab, setTab] = useState<EventTab>("ALL");
   const [page, setPage] = useState(1);
   const session = usePortalAuthStore((state) => state.session);
+  const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
   const validSession = session && !isPortalSessionExpired(session) ? session : null;
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["events", validSession?.sessionId, page],
@@ -76,7 +81,11 @@ export function EventList() {
           {events.length > 0 ? (
             <div className="sb-list-surface">
               {events.map((event) => (
-                <UpcomingEventCard key={event.id} event={event} />
+                <UpcomingEventCard
+                  key={event.id}
+                  event={event}
+                  recommendation={getEventRecommendation(event, selectedTopicIds)}
+                />
               ))}
             </div>
           ) : null}
