@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
-import { getNotices } from "@/entities/notice/api";
+import { getNoticesPage, PORTAL_NOTICE_PAGE_SIZE } from "@/entities/notice/api";
 import type { NoticeFilter } from "@/entities/notice/model";
 import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
 import { BookmarkNoticeButton } from "@/features/bookmark-notice/ui";
@@ -13,6 +13,7 @@ import { useNoticeReadStore } from "@/features/mark-notice-read/model";
 import { routes } from "@/shared/config/routes";
 import { getRelativePublishedAt } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
 import { LoadingState } from "@/shared/ui/loading-state";
@@ -32,18 +33,23 @@ export function NoticeList() {
   const bookmarkedNoticeIds = useNoticeBookmarkStore((state) => state.bookmarkedNoticeIds);
   const readNoticeIds = useNoticeReadStore((state) => state.readNoticeIds);
   const validSession = session && !isPortalSessionExpired(session) ? session : null;
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["notices", validSession?.sessionId],
-    queryFn: () => getNotices(validSession!.sessionId),
-    enabled: Boolean(validSession),
-  });
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ["notices", validSession?.sessionId],
+      queryFn: ({ pageParam }) => getNoticesPage(validSession!.sessionId, pageParam),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, allPages) =>
+        lastPage.length >= PORTAL_NOTICE_PAGE_SIZE ? allPages.length + 1 : undefined,
+      enabled: Boolean(validSession),
+    });
+  const allNotices = useMemo(() => data?.pages.flat() ?? [], [data]);
 
   const notices = useMemo(() => {
-    if (!data) {
+    if (allNotices.length === 0) {
       return [];
     }
 
-    return data.filter((notice) => {
+    return allNotices.filter((notice) => {
       if (filter === "IMPORTANT") {
         return notice.isImportant;
       }
@@ -58,7 +64,7 @@ export function NoticeList() {
 
       return true;
     });
-  }, [bookmarkedNoticeIds, data, filter, readNoticeIds]);
+  }, [allNotices, bookmarkedNoticeIds, filter, readNoticeIds]);
 
   return (
     <section className="sb-section">
@@ -112,6 +118,24 @@ export function NoticeList() {
                   </article>
                 );
               })}
+            </div>
+          ) : null}
+          {hasNextPage ? (
+            <div className="mt-5 flex flex-col items-center gap-2">
+              <Button
+                className="w-full sm:w-auto"
+                disabled={isFetchingNextPage}
+                onClick={() => void fetchNextPage()}
+                type="button"
+                variant="outline"
+              >
+                {isFetchingNextPage ? "불러오는 중" : "다음 페이지 더 보기"}
+              </Button>
+              {data ? (
+                <p className="text-[13px] font-medium leading-[19.5px] text-muted-foreground">
+                  {data.pages.length}페이지까지 불러왔어요
+                </p>
+              ) : null}
             </div>
           ) : null}
         </>

@@ -27,6 +27,7 @@ password={portal-password}
 ```
 
 목록 페이지는 `pageIndex` query로 페이지를 넘깁니다.
+프론트 목록은 첫 페이지만 고정 조회하지 않고 사용자가 요청할 때마다 다음 `pageIndex`를 불러오는 방식으로 처리합니다.
 
 ## SomaBiseo API
 

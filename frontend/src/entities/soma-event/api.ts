@@ -8,6 +8,9 @@ import type {
 } from "@/entities/soma-event/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
 
+export const PORTAL_EVENT_PAGE_SIZE = 10;
+const MAX_EVENT_LOOKUP_PAGES = 10;
+
 type PortalEventResponse = {
   sourceId: string;
   type: SomaEventType;
@@ -128,6 +131,12 @@ function matchesFilter(event: SomaEvent, filter: SomaEventFilter) {
 }
 
 export async function getSomaEvents(sessionId: string, filter: SomaEventFilter = {}, page = 1) {
+  const events = await getSomaEventsPage(sessionId, page);
+
+  return events.filter((event) => matchesFilter(event, filter));
+}
+
+export async function getSomaEventsPage(sessionId: string, page = 1) {
   const events = await unwrapApiResponse(
     apiClient
       .get("soma/events", {
@@ -139,14 +148,26 @@ export async function getSomaEvents(sessionId: string, filter: SomaEventFilter =
       .json<ApiResponse<PortalEventResponse[]>>(),
   );
 
-  return events.map(toSomaEvent).filter((event) => matchesFilter(event, filter)).sort(byStartAt);
+  return events.map(toSomaEvent).sort(byStartAt);
 }
 
 export async function getSomaEventById(sessionId: string, eventId: string) {
-  const events = await getSomaEvents(sessionId);
-  const summary = events.find((event) => event.id === eventId);
+  let summary: SomaEvent | null = null;
 
-  if (!summary) {
+  for (let page = 1; page <= MAX_EVENT_LOOKUP_PAGES; page += 1) {
+    const events = await getSomaEventsPage(sessionId, page);
+    summary = events.find((event) => event.id === eventId) ?? null;
+
+    if (summary) {
+      break;
+    }
+
+    if (events.length < PORTAL_EVENT_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  if (summary == null) {
     return null;
   }
 

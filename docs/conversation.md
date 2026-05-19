@@ -17,6 +17,8 @@
 - QueryClient 기본 정책은 `frontend/src/shared/api/query-client.ts`에 둔다.
 - 현재 서버 상태 캐싱 정책은 `staleTime: 60초`, `gcTime: 5분`, `refetchOnWindowFocus: false`, query retry 1회다.
 - query key에는 사용자 SOMA 세션 ID, 필터, 상세 ID처럼 응답을 바꾸는 값을 반드시 포함한다.
+- SOMA 포털 공지와 멘토링 목록은 `pageIndex` 기반 다중 페이지 목록이므로 React Query `useInfiniteQuery`로 페이지 단위 캐싱한다.
+- 목록 화면은 사용자가 `다음 페이지 더 보기`를 눌렀을 때만 다음 페이지를 요청해서 포털 요청 범위를 통제한다.
 - 서버에 쓰기 API가 붙는 기능은 mutation 성공 후 관련 query key를 invalidate한다.
 - Zustand는 임시 SOMA 세션, 북마크, 읽음, 관심 저장, Google Calendar 연결 mock 상태처럼 브라우저에 보관하는 클라이언트 상태에만 쓴다.
 - 백엔드 영속 저장이 붙으면 Zustand에만 있는 상태를 서버 mutation과 React Query 캐시 갱신 흐름으로 옮긴다.
