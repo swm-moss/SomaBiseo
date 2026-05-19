@@ -8,7 +8,6 @@ import type {
 } from "@/entities/soma-event/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
 
-export const PORTAL_EVENT_PAGE_SIZE = 10;
 const MAX_EVENT_LOOKUP_PAGES = 10;
 
 type PortalPage<T> = {
@@ -154,7 +153,7 @@ export async function getSomaEventsPage(sessionId: string, page = 1) {
       })
       .json<ApiResponse<PortalEventResponse[] | PortalPage<PortalEventResponse>>>(),
   );
-  const pageResponse = normalizePortalPage(response, page, PORTAL_EVENT_PAGE_SIZE);
+  const pageResponse = normalizePortalPage(response, page);
 
   return {
     ...pageResponse,
@@ -223,16 +222,13 @@ export async function cancelMentoLecApplication(sessionId: string, qustnrSn: str
 function normalizePortalPage<T>(
   response: T[] | PortalPage<T>,
   requestedPage: number,
-  pageSize: number,
 ): PortalPage<T> {
   if (Array.isArray(response)) {
-    const hasNextPage = response.length >= pageSize;
-
     return {
       items: response,
       page: requestedPage,
-      totalPages: hasNextPage ? requestedPage + 1 : requestedPage,
-      hasNextPage,
+      totalPages: requestedPage,
+      hasNextPage: false,
     };
   }
 

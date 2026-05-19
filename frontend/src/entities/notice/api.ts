@@ -1,7 +1,6 @@
 import type { Notice, NoticeCategory } from "@/entities/notice/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
 
-export const PORTAL_NOTICE_PAGE_SIZE = 10;
 const MAX_NOTICE_LOOKUP_PAGES = 10;
 
 export type PortalPage<T> = {
@@ -67,7 +66,7 @@ export async function getNoticesPage(sessionId: string, page = 1) {
       })
       .json<ApiResponse<PortalNoticeResponse[] | PortalPage<PortalNoticeResponse>>>(),
   );
-  const pageResponse = normalizePortalPage(response, page, PORTAL_NOTICE_PAGE_SIZE);
+  const pageResponse = normalizePortalPage(response, page);
 
   return {
     ...pageResponse,
@@ -95,16 +94,13 @@ export async function getNoticeById(sessionId: string, noticeId: string) {
 function normalizePortalPage<T>(
   response: T[] | PortalPage<T>,
   requestedPage: number,
-  pageSize: number,
 ): PortalPage<T> {
   if (Array.isArray(response)) {
-    const hasNextPage = response.length >= pageSize;
-
     return {
       items: response,
       page: requestedPage,
-      totalPages: hasNextPage ? requestedPage + 1 : requestedPage,
-      hasNextPage,
+      totalPages: requestedPage,
+      hasNextPage: false,
     };
   }
 

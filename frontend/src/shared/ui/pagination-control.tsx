@@ -1,10 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { cn } from "@/shared/lib/utils";
-
-type PaginationItem = number | "ellipsis";
 
 type PaginationControlProps = {
   page: number;
@@ -13,20 +11,13 @@ type PaginationControlProps = {
   isDisabled?: boolean;
 };
 
-function getPaginationItems(page: number, totalPages: number): PaginationItem[] {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
+const PAGE_WINDOW_SIZE = 10;
 
-  if (page <= 4) {
-    return [1, 2, 3, 4, 5, "ellipsis", totalPages];
-  }
+function getPaginationItems(page: number, totalPages: number) {
+  const startPage = Math.floor((page - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
+  const endPage = Math.min(startPage + PAGE_WINDOW_SIZE - 1, totalPages);
 
-  if (page >= totalPages - 3) {
-    return [1, "ellipsis", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-  }
-
-  return [1, "ellipsis", page - 1, page, page + 1, "ellipsis", totalPages];
+  return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
 }
 
 export function PaginationControl({
@@ -51,50 +42,59 @@ export function PaginationControl({
 
   return (
     <nav aria-label="페이지" className="-mx-5 mt-5 overflow-x-auto px-5">
-      <div className="flex min-w-max items-center justify-center gap-1">
+      <div className="flex min-w-max items-center justify-center gap-2">
+        <button
+          aria-label="처음 페이지"
+          className="sb-tap grid size-10 place-items-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          disabled={page <= 1 || isDisabled}
+          type="button"
+          onClick={() => goToPage(1)}
+        >
+          <ChevronsLeft className="size-5" />
+        </button>
         <button
           aria-label="이전 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="sb-tap grid size-10 place-items-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page <= 1 || isDisabled}
           type="button"
           onClick={() => goToPage(page - 1)}
         >
           <ChevronLeft className="size-5" />
         </button>
-        {getPaginationItems(page, safeTotalPages).map((item, index) =>
-          item === "ellipsis" ? (
-            <span
-              key={`ellipsis-${index}`}
-              className="grid size-10 place-items-center text-[15px] font-medium text-muted-foreground"
-            >
-              ...
-            </span>
-          ) : (
-            <button
-              key={item}
-              aria-current={item === page ? "page" : undefined}
-              className={cn(
-                "sb-tap size-10 rounded-lg text-[15px] font-semibold transition-colors disabled:opacity-50",
-                item === page
-                  ? "bg-foreground text-white"
-                  : "bg-white text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-              disabled={isDisabled}
-              type="button"
-              onClick={() => goToPage(item)}
-            >
-              {item}
-            </button>
-          ),
-        )}
+        {getPaginationItems(page, safeTotalPages).map((item) => (
+          <button
+            key={item}
+            aria-current={item === page ? "page" : undefined}
+            className={cn(
+              "sb-tap size-10 rounded-full text-[16px] font-semibold transition-colors disabled:opacity-50",
+              item === page
+                ? "bg-primary text-white"
+                : "text-foreground hover:bg-muted",
+            )}
+            disabled={isDisabled}
+            type="button"
+            onClick={() => goToPage(item)}
+          >
+            {item}
+          </button>
+        ))}
         <button
           aria-label="다음 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="sb-tap grid size-10 place-items-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page >= safeTotalPages || isDisabled}
           type="button"
           onClick={() => goToPage(page + 1)}
         >
           <ChevronRight className="size-5" />
+        </button>
+        <button
+          aria-label="마지막 페이지"
+          className="sb-tap grid size-10 place-items-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          disabled={page >= safeTotalPages || isDisabled}
+          type="button"
+          onClick={() => goToPage(safeTotalPages)}
+        >
+          <ChevronsRight className="size-5" />
         </button>
       </div>
     </nav>
