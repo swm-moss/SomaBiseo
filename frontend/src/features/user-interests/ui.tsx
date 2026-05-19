@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
 import { Sparkles, WandSparkles, X } from "lucide-react";
 
@@ -11,6 +11,21 @@ import {
 } from "@/features/user-interests/model";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
+
+const DISMISS_KEY = "somabiseo-interest-onboarding-dismissed";
+const dismissListeners = new Set<() => void>();
+const subscribeDismiss = (notify: () => void) => {
+  dismissListeners.add(notify);
+  return () => {
+    dismissListeners.delete(notify);
+  };
+};
+const getDismissSnapshot = () => window.sessionStorage.getItem(DISMISS_KEY) === "true";
+const getDismissServerSnapshot = () => false;
+
+const subscribeMounted = () => () => {};
+const getMountedSnapshot = () => true;
+const getMountedServerSnapshot = () => false;
 
 export function InterestPreferencePanel() {
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
@@ -57,13 +72,19 @@ export function InterestOnboardingDialog() {
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
   const toggleTopic = useInterestPreferenceStore((state) => state.toggleTopic);
   const clearTopics = useInterestPreferenceStore((state) => state.clearTopics);
-  const [dismissed, setDismissed] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.sessionStorage.getItem("somabiseo-interest-onboarding-dismissed") === "true",
+  const mounted = useSyncExternalStore(
+    subscribeMounted,
+    getMountedSnapshot,
+    getMountedServerSnapshot,
+  );
+  const dismissed = useSyncExternalStore(
+    subscribeDismiss,
+    getDismissSnapshot,
+    getDismissServerSnapshot,
   );
   const [typedText, setTypedText] = useState("");
-  const shouldOpen = !dismissed && (selectedTopicIds.length === 0 || typedText.length > 0);
+  const shouldOpen =
+    mounted && !dismissed && (selectedTopicIds.length === 0 || typedText.length > 0);
   const typingText = "요즘 끌리는 분야를 알려주면, 맞는 멘토링을 먼저 보여드릴게요.";
 
   useEffect(() => {
@@ -93,8 +114,10 @@ export function InterestOnboardingDialog() {
   );
 
   const closeForSession = () => {
-    window.sessionStorage.setItem("somabiseo-interest-onboarding-dismissed", "true");
-    setDismissed(true);
+    window.sessionStorage.setItem(DISMISS_KEY, "true");
+    dismissListeners.forEach((notify) => {
+      notify();
+    });
   };
 
   if (!shouldOpen) {
