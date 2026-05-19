@@ -39,6 +39,11 @@ Postgres is exposed on `127.0.0.1:${POSTGRES_PORT:-15432}` to avoid clashing wit
 Frontend deploys to Vercel and backend deploys to Railway after CI passes on `main`.
 See [프로덕션 배포 문서](docs/deployment/production.md).
 
+## Implementation Docs
+
+- [프론트 초기 세팅](docs/frontend/initial-setup.md)
+- [SOMA 포털 로그인, 공지, 멘토링 기능](docs/features/soma-portal.md)
+
 ## Project Context
 
 Agent handoff notes, React Query caching policy, and current infrastructure decisions live in
