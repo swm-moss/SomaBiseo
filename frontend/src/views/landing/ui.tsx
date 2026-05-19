@@ -111,71 +111,53 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div aria-hidden="true" className="sb-landing-machine absolute left-1/2 top-[42%] z-10 w-[292px] sm:top-[44%] sm:w-[430px] lg:top-[45%] lg:w-[520px]">
-            <div className="sb-monitor-stage relative aspect-[1.18]">
-              <div className="sb-monitor-shadow absolute bottom-2 left-1/2 h-14 w-[88%] -translate-x-1/2 rounded-[999px]" />
-              <div className="sb-monitor-mug absolute bottom-[16%] left-0 hidden h-[70px] w-[52px] rounded-[14px] bg-[#ff5d61] shadow-[0_18px_34px_rgb(25_31_40/24%)] sm:block">
-                <span className="absolute left-3 top-4 size-2.5 rounded-full bg-white" />
-                <span className="absolute right-3 top-4 size-2.5 rounded-full bg-white" />
-                <span className="absolute -right-4 top-5 h-8 w-5 rounded-r-full border-[6px] border-[#ff8b8f]" />
-              </div>
-              <div className="absolute bottom-[11%] right-1 hidden size-[62px] rounded-full bg-[radial-gradient(circle_at_32%_28%,#eafffa,#6ee7b7_40%,#22c55e)] shadow-[0_18px_34px_rgb(25_31_40/16%)] sm:block" />
-              <div className="absolute left-[8%] top-[10%] h-11 w-8 -rotate-[16deg] rounded-md bg-[#dffb75] shadow-[0_14px_24px_rgb(25_31_40/16%)]" />
-              <div className="absolute right-[9%] top-[18%] h-12 w-9 rotate-[10deg] rounded-md bg-[#fff27a] shadow-[0_14px_24px_rgb(25_31_40/14%)]" />
-              <span className="absolute left-[2%] top-[21%] text-[38px] font-black leading-none text-[#48f29b] drop-shadow-[0_8px_16px_rgb(25_31_40/18%)]">
-                ✦
-              </span>
-              <span className="absolute right-[2%] top-[38%] text-[30px] font-black leading-none text-[#ff8abe] drop-shadow-[0_8px_16px_rgb(25_31_40/18%)]">
-                ✦
-              </span>
-
-              <div className="sb-monitor-shell absolute left-1/2 top-[10%] w-[78%] -translate-x-1/2">
-                <div className="sb-monitor-buttons absolute -right-8 top-[28%] hidden w-8 flex-col gap-4 sm:flex">
-                  <span className="size-4 rounded-full bg-[#ff6b94] shadow-inner" />
-                  <span className="size-5 rounded-full bg-[#f7c843] shadow-inner" />
-                  <span className="size-4 rounded-full bg-[#8bd8ff] shadow-inner" />
-                </div>
-                <div className="sb-monitor-face relative rounded-[30px] p-5 sm:rounded-[42px] sm:p-7">
-                  <div className="sb-monitor-screen relative overflow-hidden rounded-[18px] border-[7px] border-[#6a91bd] bg-[#dffaff] shadow-inner sm:rounded-[26px] sm:border-[10px]">
-                    <div className="absolute inset-0 bg-[linear-gradient(135deg,#5ce1ff_0%,#b6fbff_45%,#7bd760_100%)]" />
-                    <div className="absolute inset-x-0 top-0 h-[34%] bg-[radial-gradient(circle_at_72%_52%,#fff_0_10%,transparent_11%),radial-gradient(circle_at_60%_62%,#fff_0_13%,transparent_14%)] opacity-90" />
-                    <div className="absolute left-3 top-3 grid gap-2">
-                      {["N", "AI", "7", "S"].map((item, index) => (
-                        <span
-                          key={item}
-                          className="grid size-7 place-items-center rounded-md bg-white/82 text-[10px] font-black text-[#1f2937] shadow-[0_5px_10px_rgb(25_31_40/12%)]"
-                          style={{ transform: `translateX(${index % 2 === 0 ? 0 : 6}px)` }}
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="absolute bottom-5 right-5 w-[62%] rounded-lg border border-[#a9b5c4] bg-white/94 shadow-[0_12px_26px_rgb(25_31_40/18%)]">
-                      <div className="flex h-7 items-center gap-1.5 border-b border-border/80 px-2">
-                        <span className="size-2 rounded-full bg-[#ff5d61]" />
-                        <span className="size-2 rounded-full bg-[#ffd166]" />
-                        <span className="size-2 rounded-full bg-[#22c55e]" />
+          <div aria-hidden="true" className="sb-landing-machine absolute left-1/2 top-[50%] z-10 w-[300px] sm:top-[52%] sm:w-[440px] lg:top-[53%] lg:w-[560px]">
+            <div className="sb-monitor-stage relative aspect-[1.7]">
+              <div className="sb-monitor-shadow absolute bottom-[-5%] left-1/2 h-12 w-[82%] -translate-x-1/2 rounded-[999px]" />
+              <div className="sb-monitor-shell absolute left-1/2 top-[6%] w-full -translate-x-1/2">
+                <div className="sb-monitor-face relative rounded-[30px] p-4 sm:rounded-[38px] sm:p-6">
+                  <div className="sb-monitor-screen relative overflow-hidden rounded-[20px] bg-[#f9fbff] p-4 sm:rounded-[28px] sm:p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2.5 rounded-full bg-[#ff6b6b]" />
+                        <span className="size-2.5 rounded-full bg-[#ffd166]" />
+                        <span className="size-2.5 rounded-full bg-[#35d07f]" />
                       </div>
-                      <div className="p-3 text-center">
-                        <p className="text-[10px] font-black text-primary sm:text-[12px]">추천 AI</p>
-                        <p className="mt-1 text-[13px] font-black leading-[18px] text-foreground sm:text-[17px] sm:leading-[23px]">
-                          오늘 볼 소마 일정
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold text-primary sm:text-[12px]">
+                        추천 AI
+                      </span>
+                    </div>
+
+                    <div className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-[1fr_0.84fr] sm:gap-4">
+                      <div>
+                        <p className="text-[12px] font-semibold text-muted-foreground sm:text-[14px]">
+                          오늘 확인할 일정
                         </p>
-                        <p className="mt-1 text-[9px] font-bold text-muted-foreground sm:text-[11px]">
-                          충돌 없음 · 오승근
+                        <p className="mt-2 text-[22px] font-black leading-[29px] text-foreground sm:text-[34px] sm:leading-[42px]">
+                          AI 운영 특강
                         </p>
+                        <p className="mt-2 text-[13px] font-semibold leading-[20px] text-[#4e5968] sm:text-[16px] sm:leading-[24px]">
+                          5월 31일 오전 09:00 · 오승근 멘토
+                        </p>
+                      </div>
+
+                      <div className="grid gap-2 text-[12px] font-bold sm:text-[14px]">
+                        <div className="flex items-center justify-between rounded-lg bg-[#eef6ff] px-3 py-2 text-primary">
+                          <span>공지</span>
+                          <span>3개</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg bg-[#ecfdf3] px-3 py-2 text-[#0f8f4a]">
+                          <span>충돌</span>
+                          <span>없음</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg bg-[#fff7ed] px-3 py-2 text-[#d75a00]">
+                          <span>마감</span>
+                          <span>오늘</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="sb-monitor-neck absolute left-1/2 top-[66%] h-[58px] w-[70px] -translate-x-1/2 rounded-b-[18px] sm:h-[80px] sm:w-[100px]" />
-              <div className="sb-monitor-base absolute bottom-[8%] left-1/2 h-[62px] w-[58%] -translate-x-1/2 rounded-[24px] sm:h-[78px]">
-                <div className="absolute left-1/2 top-[42%] h-5 w-[62%] -translate-x-1/2 rounded-full bg-[#1479ff] shadow-inner sm:h-7" />
-                <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded-md bg-white/55 px-3 py-1 text-[9px] font-black uppercase text-[#4b7db2] sm:text-[10px]">
-                  Soma Brief
-                </span>
               </div>
             </div>
           </div>
