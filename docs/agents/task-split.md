@@ -33,3 +33,4 @@
 - Event Agent owns `backend/src/main/java/com/somabiseo/domain/somaevent`.
 - Calendar Agent owns `backend/src/main/java/com/somabiseo/domain/calendar`.
 - Source Adapter Agent owns `backend/src/main/java/com/somabiseo/domain/source`.
+- Review Agent owns `backend/src/main/java/com/somabiseo/domain/review`, `frontend/src/entities/review`, `frontend/src/features/write-review`, `frontend/src/widgets/{review-list,review-detail-list,dashboard-review-prompt}`, `frontend/src/views/{reviews,review-detail}`.

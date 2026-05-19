@@ -79,3 +79,17 @@ GET  /api/calendar/conflicts?eventId=1
 POST /api/calendar/events/{eventId}
 DELETE /api/calendar/events/{eventId}
 ```
+
+## Reviews
+
+```txt
+GET  /api/reviews/writable
+GET  /api/reviews/recent-events?limit=3
+GET  /api/reviews/summaries?eventIds=a,b
+GET  /api/events/{eventId}/reviews?page=1&size=10
+POST /api/events/{eventId}/reviews
+```
+
+POST body는 `{"authorName": "...", "content": "20~500자"}`다. 본문 길이/종료 후 3일 윈도/신청자 명단 매칭/중복 작성 4가지 검증을 서버가 수행한다. 작성자는 백엔드가 동결한 신청자 명단에서 선택하므로 후기 작성 자체에 인증 헤더는 필요 없다.
+
+요약 응답(`/api/reviews/summaries`)은 요청한 eventIds 순서대로 `{eventId, reviewCount, lastCreatedAt}` 배열을 돌려준다.
