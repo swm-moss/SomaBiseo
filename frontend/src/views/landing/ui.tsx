@@ -111,43 +111,73 @@ export function LandingPage() {
             </p>
           </div>
 
-          <div aria-hidden="true" className="sb-landing-machine absolute left-1/2 top-[47%] z-10 w-[270px] sm:top-[50%] sm:w-[390px] lg:w-[470px]">
-            <div className="absolute -left-7 top-[54%] hidden size-12 rounded-lg bg-[#ff5d61] shadow-[0_14px_30px_rgb(25_31_40/22%)] sm:block">
-              <span className="absolute left-3 top-3 size-2 rounded-full bg-white" />
-              <span className="absolute right-3 top-3 size-2 rounded-full bg-white" />
-            </div>
-            <div className="absolute -right-8 top-[30%] hidden size-11 rounded-lg bg-[#27c46a] shadow-[0_14px_30px_rgb(25_31_40/16%)] sm:block" />
-            <div className="absolute right-5 top-[-30px] h-14 w-11 rotate-[9deg] rounded-md bg-[#e8ff73] shadow-[0_12px_24px_rgb(25_31_40/14%)]" />
-            <div className="rounded-lg bg-[#9fd7ff] p-4 shadow-[0_26px_70px_rgb(25_31_40/28%)]">
-              <div className="rounded-lg border-[6px] border-[#5c93c9] bg-[#ecfbff] p-4 shadow-inner">
-                <div className="flex items-center gap-2 border-b border-[#c7e5ef] pb-3">
-                  <span className="size-2 rounded-full bg-[#ff5d61]" />
-                  <span className="size-2 rounded-full bg-[#ffd166]" />
-                  <span className="size-2 rounded-full bg-[#27c46a]" />
-                  <span className="ml-auto text-[11px] font-bold text-[#4e5968]">today.soma</span>
+          <div aria-hidden="true" className="sb-landing-machine absolute left-1/2 top-[42%] z-10 w-[292px] sm:top-[44%] sm:w-[430px] lg:top-[45%] lg:w-[520px]">
+            <div className="sb-monitor-stage relative aspect-[1.18]">
+              <div className="sb-monitor-shadow absolute bottom-2 left-1/2 h-14 w-[88%] -translate-x-1/2 rounded-[999px]" />
+              <div className="sb-monitor-mug absolute bottom-[16%] left-0 hidden h-[70px] w-[52px] rounded-[14px] bg-[#ff5d61] shadow-[0_18px_34px_rgb(25_31_40/24%)] sm:block">
+                <span className="absolute left-3 top-4 size-2.5 rounded-full bg-white" />
+                <span className="absolute right-3 top-4 size-2.5 rounded-full bg-white" />
+                <span className="absolute -right-4 top-5 h-8 w-5 rounded-r-full border-[6px] border-[#ff8b8f]" />
+              </div>
+              <div className="absolute bottom-[11%] right-1 hidden size-[62px] rounded-full bg-[radial-gradient(circle_at_32%_28%,#eafffa,#6ee7b7_40%,#22c55e)] shadow-[0_18px_34px_rgb(25_31_40/16%)] sm:block" />
+              <div className="absolute left-[8%] top-[10%] h-11 w-8 -rotate-[16deg] rounded-md bg-[#dffb75] shadow-[0_14px_24px_rgb(25_31_40/16%)]" />
+              <div className="absolute right-[9%] top-[18%] h-12 w-9 rotate-[10deg] rounded-md bg-[#fff27a] shadow-[0_14px_24px_rgb(25_31_40/14%)]" />
+              <span className="absolute left-[2%] top-[21%] text-[38px] font-black leading-none text-[#48f29b] drop-shadow-[0_8px_16px_rgb(25_31_40/18%)]">
+                ✦
+              </span>
+              <span className="absolute right-[2%] top-[38%] text-[30px] font-black leading-none text-[#ff8abe] drop-shadow-[0_8px_16px_rgb(25_31_40/18%)]">
+                ✦
+              </span>
+
+              <div className="sb-monitor-shell absolute left-1/2 top-[10%] w-[78%] -translate-x-1/2">
+                <div className="sb-monitor-buttons absolute -right-8 top-[28%] hidden w-8 flex-col gap-4 sm:flex">
+                  <span className="size-4 rounded-full bg-[#ff6b94] shadow-inner" />
+                  <span className="size-5 rounded-full bg-[#f7c843] shadow-inner" />
+                  <span className="size-4 rounded-full bg-[#8bd8ff] shadow-inner" />
                 </div>
-                <div className="mt-4 grid gap-3">
-                  <div className="rounded-lg bg-white px-4 py-3 shadow-[0_8px_20px_rgb(25_31_40/8%)]">
-                    <p className="text-[12px] font-bold text-primary">추천 AI</p>
-                    <p className="mt-1 text-[17px] font-black leading-[24px] text-foreground">
-                      CI/CD와 자동화 개선 루프
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg bg-[#f2f4f6] px-3 py-3">
-                      <p className="text-[11px] font-bold text-muted-foreground">멘토</p>
-                      <p className="mt-1 text-[15px] font-black">오승근</p>
+                <div className="sb-monitor-face relative rounded-[30px] p-5 sm:rounded-[42px] sm:p-7">
+                  <div className="sb-monitor-screen relative overflow-hidden rounded-[18px] border-[7px] border-[#6a91bd] bg-[#dffaff] shadow-inner sm:rounded-[26px] sm:border-[10px]">
+                    <div className="absolute inset-0 bg-[linear-gradient(135deg,#5ce1ff_0%,#b6fbff_45%,#7bd760_100%)]" />
+                    <div className="absolute inset-x-0 top-0 h-[34%] bg-[radial-gradient(circle_at_72%_52%,#fff_0_10%,transparent_11%),radial-gradient(circle_at_60%_62%,#fff_0_13%,transparent_14%)] opacity-90" />
+                    <div className="absolute left-3 top-3 grid gap-2">
+                      {["N", "AI", "7", "S"].map((item, index) => (
+                        <span
+                          key={item}
+                          className="grid size-7 place-items-center rounded-md bg-white/82 text-[10px] font-black text-[#1f2937] shadow-[0_5px_10px_rgb(25_31_40/12%)]"
+                          style={{ transform: `translateX(${index % 2 === 0 ? 0 : 6}px)` }}
+                        >
+                          {item}
+                        </span>
+                      ))}
                     </div>
-                    <div className="rounded-lg bg-[#e9fbf0] px-3 py-3">
-                      <p className="text-[11px] font-bold text-emerald-700">충돌</p>
-                      <p className="mt-1 text-[15px] font-black text-emerald-800">없음</p>
+                    <div className="absolute bottom-5 right-5 w-[62%] rounded-lg border border-[#a9b5c4] bg-white/94 shadow-[0_12px_26px_rgb(25_31_40/18%)]">
+                      <div className="flex h-7 items-center gap-1.5 border-b border-border/80 px-2">
+                        <span className="size-2 rounded-full bg-[#ff5d61]" />
+                        <span className="size-2 rounded-full bg-[#ffd166]" />
+                        <span className="size-2 rounded-full bg-[#22c55e]" />
+                      </div>
+                      <div className="p-3 text-center">
+                        <p className="text-[10px] font-black text-primary sm:text-[12px]">추천 AI</p>
+                        <p className="mt-1 text-[13px] font-black leading-[18px] text-foreground sm:text-[17px] sm:leading-[23px]">
+                          오늘 볼 소마 일정
+                        </p>
+                        <p className="mt-1 text-[9px] font-bold text-muted-foreground sm:text-[11px]">
+                          충돌 없음 · 오승근
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              <div className="sb-monitor-neck absolute left-1/2 top-[66%] h-[58px] w-[70px] -translate-x-1/2 rounded-b-[18px] sm:h-[80px] sm:w-[100px]" />
+              <div className="sb-monitor-base absolute bottom-[8%] left-1/2 h-[62px] w-[58%] -translate-x-1/2 rounded-[24px] sm:h-[78px]">
+                <div className="absolute left-1/2 top-[42%] h-5 w-[62%] -translate-x-1/2 rounded-full bg-[#1479ff] shadow-inner sm:h-7" />
+                <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded-md bg-white/55 px-3 py-1 text-[9px] font-black uppercase text-[#4b7db2] sm:text-[10px]">
+                  Soma Brief
+                </span>
+              </div>
             </div>
-            <div className="mx-auto h-8 w-[64%] rounded-b-lg bg-[#58a6f7] shadow-[0_14px_28px_rgb(25_31_40/20%)]" />
-            <div className="mx-auto h-5 w-[42%] rounded-b-lg bg-[#2f80ed]" />
           </div>
 
           <p className="absolute bottom-6 left-5 z-20 max-w-[260px] text-[11px] font-medium leading-[17px] text-white/65 sm:left-7 sm:max-w-[360px] sm:text-[12px]">
