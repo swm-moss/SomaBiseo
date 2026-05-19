@@ -1,6 +1,7 @@
 import type {
   SomaEventApplicant,
   SomaEventDetailItem,
+  EventAiSummary,
   SomaEvent,
   SomaEventFilter,
   SomaEventStatus,
@@ -216,6 +217,21 @@ export async function cancelMentoLecApplication(sessionId: string, qustnrSn: str
         },
       })
       .json<ApiResponse<MentoLecApplicationResponse>>(),
+  );
+}
+
+export async function summarizeSomaEvent(sessionId: string, sourceUrl: string) {
+  return unwrapApiResponse(
+    apiClient
+      .post("soma/events/summary", {
+        headers: {
+          Authorization: `Bearer ${sessionId}`,
+        },
+        json: {
+          sourceUrl,
+        },
+      })
+      .json<ApiResponse<EventAiSummary>>(),
   );
 }
 

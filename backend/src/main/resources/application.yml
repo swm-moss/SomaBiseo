@@ -35,3 +35,9 @@ somabiseo:
     mento-lec-apply-path: /busan/sw/mypage/mentoLec/apply.json
     mento-lec-cancel-path: /busan/sw/mypage/mentoLec/applyCancel.json
     session-ttl-minutes: ${SOMA_PORTAL_SESSION_TTL_MINUTES:30}
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${OPENAI_SUMMARY_MODEL:gpt-5.4-mini}
+    max-input-characters: ${OPENAI_SUMMARY_MAX_INPUT_CHARACTERS:18000}
+    timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:30}

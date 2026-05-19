@@ -23,6 +23,22 @@ export type SomaEventApplicant = {
   status: string;
 };
 
+export type EventAiSummary = {
+  sourceId: string;
+  contentHash: string;
+  model: string;
+  cached: boolean;
+  oneLine: string;
+  summaryBullets: string[];
+  targetAudience: string[];
+  keyTopics: string[];
+  takeaways: string[];
+  difficulty: "입문" | "중급" | "심화" | "미정";
+  inputTokens: number | null;
+  outputTokens: number | null;
+  generatedAt: string;
+};
+
 export type SomaEvent = {
   id: string;
   sourceId: string;

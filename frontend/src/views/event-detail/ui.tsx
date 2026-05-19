@@ -8,12 +8,14 @@ import {
   CheckCircle2,
   ExternalLink,
   MapPin,
+  RefreshCcw,
+  Sparkles,
   UserRound,
   Users,
 } from "lucide-react";
 
-import { getSomaEventById } from "@/entities/soma-event/api";
-import type { SomaEvent, SomaEventApplicant } from "@/entities/soma-event/model";
+import { getSomaEventById, summarizeSomaEvent } from "@/entities/soma-event/api";
+import type { EventAiSummary, SomaEvent, SomaEventApplicant } from "@/entities/soma-event/model";
 import { AddEventToCalendarButton } from "@/features/add-event-to-calendar/ui";
 import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
 import { CalendarConflictResult } from "@/features/check-calendar-conflict/ui";
@@ -89,6 +91,92 @@ function applicantTone(applicant: SomaEventApplicant) {
   return applicant.status.includes("취소") ? "text-destructive" : "text-primary";
 }
 
+function AiSummarySection({
+  isError,
+  isLoading,
+  onRetry,
+  summary,
+}: {
+  isError: boolean;
+  isLoading: boolean;
+  onRetry: () => void;
+  summary: EventAiSummary | undefined;
+}) {
+  return (
+    <section>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Sparkles aria-hidden="true" className="size-5 text-primary" />
+          <h2 className="text-[20px] font-bold leading-[29px]">AI 요약</h2>
+        </div>
+        {summary ? (
+          <span className="text-[13px] font-semibold text-muted-foreground">
+            {summary.cached ? "캐시됨" : "새 요약"}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-3 rounded-lg bg-white px-5 py-5">
+        {isLoading ? (
+          <div className="space-y-3" aria-label="AI 요약 생성 중">
+            <div className="h-5 w-4/5 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-full animate-pulse rounded bg-muted" />
+            <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+          </div>
+        ) : null}
+
+        {isError ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[15px] font-semibold leading-[23px] text-muted-foreground">
+              요약을 만들지 못했어요.
+            </p>
+            <Button className="shrink-0" onClick={onRetry} variant="ghost">
+              <RefreshCcw aria-hidden="true" />
+              다시
+            </Button>
+          </div>
+        ) : null}
+
+        {!isLoading && !isError && summary ? (
+          <div className="space-y-5">
+            <p className="text-[17px] font-bold leading-[27px] text-foreground">{summary.oneLine}</p>
+
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge tone="blue">난이도 {summary.difficulty}</StatusBadge>
+              {summary.keyTopics.slice(0, 4).map((topic) => (
+                <StatusBadge key={topic} tone="neutral">
+                  {topic}
+                </StatusBadge>
+              ))}
+            </div>
+
+            <div className="space-y-5">
+              <SummaryList title="핵심" items={summary.summaryBullets} />
+              <SummaryList title="추천 대상" items={summary.targetAudience} />
+              <SummaryList title="얻는 것" items={summary.takeaways} />
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function SummaryList({ items, title }: { items: string[]; title: string }) {
+  return (
+    <div>
+      <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">{title}</p>
+      <ul className="mt-2 space-y-2">
+        {items.map((item) => (
+          <li key={item} className="text-[15px] font-medium leading-[23px] text-[#4e5968]">
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function EventDetailPage({ eventId }: { eventId: string }) {
   const session = usePortalAuthStore((state) => state.session);
   const validSession = session && !isPortalSessionExpired(session) ? session : null;
@@ -96,6 +184,17 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
     queryKey: ["event", validSession?.sessionId, eventId],
     queryFn: () => getSomaEventById(validSession!.sessionId, eventId),
     enabled: Boolean(validSession),
+  });
+  const {
+    data: aiSummary,
+    isError: isAiSummaryError,
+    isLoading: isAiSummaryLoading,
+    refetch: refetchAiSummary,
+  } = useQuery({
+    queryKey: ["event-ai-summary", validSession?.sessionId, event?.sourceId, event?.sourceUrl],
+    queryFn: () => summarizeSomaEvent(validSession!.sessionId, event!.sourceUrl),
+    enabled: Boolean(validSession && event?.sourceUrl),
+    staleTime: 10 * 60_000,
   });
   const eventContentLines = event ? contentLines(event) : [];
 
@@ -188,6 +287,13 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                 </div>
               </div>
             </section>
+
+            <AiSummarySection
+              isError={isAiSummaryError}
+              isLoading={isAiSummaryLoading}
+              onRetry={() => void refetchAiSummary()}
+              summary={aiSummary}
+            />
 
             <section>
               <h2 className="text-[20px] font-black leading-[29px]">상세 정보</h2>

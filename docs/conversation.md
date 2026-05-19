@@ -19,6 +19,8 @@
 - query key에는 사용자 SOMA 세션 ID, 필터, 상세 ID처럼 응답을 바꾸는 값을 반드시 포함한다.
 - SOMA 포털 공지와 멘토링 목록은 `pageIndex` 기반 다중 페이지 목록이므로 React Query query key에 `page`를 포함해 페이지 단위 캐싱한다.
 - 목록 화면은 무한 스크롤보다 1, 2, 3 번호 페이지네이션을 우선 사용해서 현재 위치와 이동 가능한 페이지를 명확히 보여준다.
+- 멘토링/특강 AI 요약은 상세 본문을 기준으로 백엔드에서 `contentHash`를 계산하고, 같은 `sourceId + contentHash`가 있으면 DB 캐시를 반환한다.
+- AI 요약은 상세 조회와 분리된 `POST /api/soma/events/summary`에서 생성한다. 프론트는 TanStack Query의 `event-ai-summary` key로 읽고, 백엔드 캐시가 비용 중복을 막는다.
 - 서버에 쓰기 API가 붙는 기능은 mutation 성공 후 관련 query key를 invalidate한다.
 - Zustand는 임시 SOMA 세션, 북마크, 읽음, 관심 저장, Google Calendar 연결 mock 상태처럼 브라우저에 보관하는 클라이언트 상태에만 쓴다.
 - 백엔드 영속 저장이 붙으면 Zustand에만 있는 상태를 서버 mutation과 React Query 캐시 갱신 흐름으로 옮긴다.
@@ -42,6 +44,8 @@
 - Railway Postgres는 private network를 사용하며 JDBC 접속 문자열은 `DATABASE_JDBC_URL`로 제공한다.
 - 프론트는 `NEXT_PUBLIC_API_BASE_URL`로 Railway 백엔드 공개 도메인 + `/api`를 바라본다.
 - 백엔드는 `CORS_ALLOWED_ORIGINS`에 Vercel 프론트 도메인을 등록한다.
+- 백엔드 AI 요약 기능은 `OPENAI_API_KEY`가 있을 때만 동작한다. 키는 코드나 커밋에 저장하지 않고 Railway 환경변수로만 설정한다.
+- AI 요약 모델은 기본 `gpt-5.4-mini`이며, 필요하면 `OPENAI_SUMMARY_MODEL`로 교체한다.
 - GitHub Actions의 `CI`는 PR과 `main` push에서 실행한다.
 - `main`의 `CI`가 성공하면 `Deploy Production` 워크플로우가 Vercel과 Railway 배포를 실행한다.
 - 배포 관련 세부 사항은 `docs/deployment/production.md`를 최신 상태로 유지한다.

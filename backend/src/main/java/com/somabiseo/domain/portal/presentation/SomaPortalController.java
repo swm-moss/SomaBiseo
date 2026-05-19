@@ -1,5 +1,8 @@
 package com.somabiseo.domain.portal.presentation;
 
+import com.somabiseo.domain.eventsummary.application.EventAiSummaryService;
+import com.somabiseo.domain.eventsummary.domain.EventAiSummaryResponse;
+import com.somabiseo.domain.eventsummary.presentation.EventAiSummaryRequest;
 import com.somabiseo.domain.portal.application.SomaPortalService;
 import com.somabiseo.domain.portal.domain.SomaPortalEventResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalLoginResponse;
@@ -22,9 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class SomaPortalController {
     private final SomaPortalService portalService;
+    private final EventAiSummaryService eventAiSummaryService;
 
-    public SomaPortalController(SomaPortalService portalService) {
+    public SomaPortalController(SomaPortalService portalService, EventAiSummaryService eventAiSummaryService) {
         this.portalService = portalService;
+        this.eventAiSummaryService = eventAiSummaryService;
     }
 
     @PostMapping("/api/soma/login")
@@ -61,6 +66,17 @@ public class SomaPortalController {
             @RequestParam String sourceUrl
     ) {
         return ApiResponse.ok(portalService.getEventDetail(sessionId, sourceUrl));
+    }
+
+    @PostMapping("/api/soma/events/summary")
+    ApiResponse<EventAiSummaryResponse> summarizeEvent(
+            @Valid @RequestBody EventAiSummaryRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        String sessionId = bearerSessionId(authorization);
+        SomaPortalEventResponse event = portalService.getEventDetail(sessionId, request.sourceUrl());
+
+        return ApiResponse.ok(eventAiSummaryService.getOrCreate(event));
     }
 
     @PostMapping("/api/soma/mento-lecs/{qustnrSn}/apply")
