@@ -65,7 +65,7 @@ export function PortalLoginForm() {
       })}
     >
       <div>
-        <label className="text-[15px] font-bold leading-[22px]" htmlFor="username">
+        <label className="text-[15px] font-semibold leading-[22px]" htmlFor="username">
           SOMA 포털 아이디
         </label>
         <input
@@ -83,7 +83,7 @@ export function PortalLoginForm() {
         ) : null}
       </div>
       <div>
-        <label className="text-[15px] font-bold leading-[22px]" htmlFor="password">
+        <label className="text-[15px] font-semibold leading-[22px]" htmlFor="password">
           비밀번호
         </label>
         <input
@@ -121,11 +121,13 @@ export function PortalSessionStatus() {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="hidden max-w-44 truncate text-xs font-semibold text-muted-foreground sm:inline">
+    <div className="flex min-w-0 items-center gap-1.5 lg:max-w-[184px] xl:max-w-[320px]">
+      <span className="hidden min-w-0 max-w-40 truncate text-[13px] font-medium text-muted-foreground xl:inline">
         {session.username}
       </span>
       <Button
+        aria-label="로그아웃"
+        className="px-2 xl:px-3"
         size="sm"
         variant="ghost"
         onClick={() => {
@@ -137,7 +139,7 @@ export function PortalSessionStatus() {
         }}
       >
         <LogOut aria-hidden="true" />
-        로그아웃
+        <span className="hidden xl:inline">로그아웃</span>
       </Button>
     </div>
   );

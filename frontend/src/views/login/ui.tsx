@@ -16,7 +16,7 @@ export function LoginPage() {
           unoptimized
           width={720}
         />
-        <h1 className="mt-3 text-[30px] font-black leading-[40px]">소마 생활을 정리해요.</h1>
+        <h1 className="mt-3 text-[30px] font-bold leading-[40px]">소마 생활을 정리해요.</h1>
         <p className="mt-3 text-[17px] leading-[25.5px] text-muted-foreground">
           {PRODUCT_TAGLINE}
         </p>

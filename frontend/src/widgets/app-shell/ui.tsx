@@ -11,16 +11,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 border-b border-border/70 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-[1120px] items-center gap-5 px-5 sm:px-6 lg:px-8">
+        <div className="mx-auto grid h-16 w-full max-w-[1120px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5 sm:px-6 lg:gap-5 lg:px-8">
           <Link
             aria-label={`${PRODUCT_NAME} 대시보드로 이동`}
-            className="flex min-w-0 shrink-0 items-center gap-2"
+            className="flex w-10 shrink-0 items-center gap-2 xl:w-[138px]"
             href={routes.dashboard}
           >
             <Image
               alt=""
               aria-hidden="true"
-              className="size-8 shrink-0 rounded-md"
+              className="size-10 shrink-0 rounded-lg"
               height={32}
               src="/brand/somabiseo-icon-64.png"
               unoptimized
@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
             <Image
               alt={PRODUCT_NAME}
-              className="h-auto w-[86px] object-contain sm:w-[96px]"
+              className="hidden h-auto w-[90px] shrink-0 object-contain xl:block"
               height={240}
               priority
               src="/brand/somabiseo-logo.png"
@@ -36,21 +36,21 @@ export function AppShell({ children }: { children: ReactNode }) {
               width={720}
             />
           </Link>
-          <nav className="hidden min-w-0 flex-1 items-center gap-6 text-[15px] font-bold text-muted-foreground lg:flex">
-            <Link className="hover:text-foreground" href={routes.dashboard}>
+          <nav className="hidden min-w-0 items-center justify-center gap-4 text-[15px] font-semibold text-muted-foreground lg:flex xl:gap-7">
+            <Link className="shrink-0 hover:text-foreground" href={routes.dashboard}>
               대시보드
             </Link>
-            <Link className="hover:text-foreground" href={routes.notices}>
+            <Link className="shrink-0 hover:text-foreground" href={routes.notices}>
               공지
             </Link>
-            <Link className="hover:text-foreground" href={routes.events}>
+            <Link className="shrink-0 hover:text-foreground" href={routes.events}>
               일정
             </Link>
-            <Link className="hover:text-foreground" href={routes.settings}>
+            <Link className="shrink-0 hover:text-foreground" href={routes.settings}>
               설정
             </Link>
           </nav>
-          <div className="ml-auto flex shrink-0 items-center">
+          <div className="min-w-0 justify-self-end">
             <PortalSessionStatus />
           </div>
         </div>

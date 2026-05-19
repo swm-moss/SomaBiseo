@@ -29,7 +29,7 @@ export function SegmentControl<T extends string>({
           <button
             key={option.value}
             className={cn(
-              "sb-tap shrink-0 rounded-lg px-4 text-[15px] font-bold transition-colors",
+              "sb-tap shrink-0 rounded-lg px-4 text-[15px] font-semibold transition-colors",
               isSelected
                 ? "bg-foreground text-white"
                 : "bg-white text-muted-foreground hover:bg-muted",

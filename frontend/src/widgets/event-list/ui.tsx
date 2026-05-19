@@ -41,7 +41,7 @@ export function EventList() {
           description="로그인하면 실제 멘토특강과 자유멘토링 목록을 불러옵니다."
           action={
             <Link
-              className="inline-flex h-12 items-center rounded-lg bg-primary px-5 text-[16px] font-bold text-primary-foreground"
+              className="inline-flex h-12 items-center rounded-lg bg-primary px-5 text-[16px] font-semibold text-primary-foreground"
               href={routes.login}
             >
               로그인

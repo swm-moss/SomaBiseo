@@ -62,7 +62,7 @@ export function NoticeDetailPage({ noticeId }: { noticeId: string }) {
                   {notice.isImportant ? <StatusBadge tone="red">중요</StatusBadge> : null}
                   <StatusBadge>{notice.category}</StatusBadge>
                 </div>
-                <h1 className="mt-4 text-[24px] font-black leading-[33px]">{notice.title}</h1>
+                <h1 className="mt-4 text-[24px] font-bold leading-[33px]">{notice.title}</h1>
                 <p className="mt-2 text-[14px] font-medium leading-[21px] text-muted-foreground">
                   {formatDateTime(notice.publishedAt)}
                 </p>

@@ -21,7 +21,7 @@ export function StatusBadge({ className, tone = "neutral", ...props }: StatusBad
   return (
     <span
       className={cn(
-        "inline-flex min-h-6 items-center rounded-md px-2 text-[13px] font-bold leading-[19.5px]",
+        "inline-flex min-h-6 items-center rounded-md px-2 text-[13px] font-semibold leading-[19.5px]",
         toneClassName[tone],
         className,
       )}

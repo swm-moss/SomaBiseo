@@ -120,7 +120,7 @@
   }
 
   .sb-section-title {
-    @apply text-[20px] font-extrabold leading-[29px] text-foreground;
+    @apply text-[20px] font-semibold leading-[29px] text-foreground;
   }
 
   .sb-section-description {

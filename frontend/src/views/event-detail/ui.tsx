@@ -141,10 +141,10 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                       <StatusBadge tone="blue">승인 {event.approvalStatus}</StatusBadge>
                     ) : null}
                   </div>
-                  <h1 className="mt-4 max-w-4xl text-[28px] font-black leading-[38px] tracking-normal sm:text-[34px] sm:leading-[46px]">
+                  <h1 className="mt-4 max-w-4xl text-[28px] font-bold leading-[38px] tracking-normal sm:text-[34px] sm:leading-[46px]">
                     {event.title}
                   </h1>
-                  <p className="mt-3 text-[15px] font-bold leading-[22px] text-muted-foreground">
+                  <p className="mt-3 text-[15px] font-semibold leading-[22px] text-muted-foreground">
                     {event.mentorName ?? event.author ?? "멘토 미정"}
                   </p>
                 </div>
@@ -155,8 +155,8 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                 <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
                   <CalendarClock aria-hidden="true" className="mt-0.5 size-5 text-primary" />
                   <div className="min-w-0">
-                    <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">시간</p>
-                    <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
+                    <p className="text-[13px] font-semibold leading-[19px] text-muted-foreground">시간</p>
+                    <p className="mt-1 text-[15px] font-semibold leading-[22px]">
                       {event.endAt
                         ? `${formatOptionalDateTime(event.startAt)} · ${formatOptionalTimeRange(
                             event.startAt,
@@ -169,8 +169,8 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                 <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
                   <MapPin aria-hidden="true" className="mt-0.5 size-5 text-primary" />
                   <div className="min-w-0">
-                    <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">장소</p>
-                    <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
+                    <p className="text-[13px] font-semibold leading-[19px] text-muted-foreground">장소</p>
+                    <p className="mt-1 text-[15px] font-semibold leading-[22px]">
                       {event.location ?? "장소 미정"}
                     </p>
                   </div>
@@ -178,8 +178,8 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                 <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
                   <Users aria-hidden="true" className="mt-0.5 size-5 text-primary" />
                   <div className="min-w-0">
-                    <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">신청</p>
-                    <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
+                    <p className="text-[13px] font-semibold leading-[19px] text-muted-foreground">신청</p>
+                    <p className="mt-1 text-[15px] font-semibold leading-[22px]">
                       {event.applicantCount ?? event.applicants.length}
                       {event.capacity ? ` / ${event.capacity}` : ""}명
                     </p>
@@ -189,7 +189,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
             </section>
 
             <section>
-              <h2 className="text-[20px] font-black leading-[29px]">상세 정보</h2>
+              <h2 className="text-[20px] font-semibold leading-[29px]">상세 정보</h2>
               <div className="mt-3 overflow-hidden rounded-lg border border-border/80 bg-white">
                 <dl className="grid lg:grid-cols-2">
                   {getDetailItems(event).map((item) => (
@@ -197,10 +197,10 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                       key={`${item.label}-${item.value}`}
                       className="grid grid-cols-[92px_1fr] gap-4 border-b border-border/70 px-4 py-4 last:border-b-0 sm:grid-cols-[120px_1fr] lg:border-r lg:even:border-r-0 lg:[&:nth-last-child(-n+2)]:border-b-0"
                     >
-                      <dt className="text-[14px] font-extrabold leading-[22px] text-muted-foreground">
+                      <dt className="text-[14px] font-semibold leading-[22px] text-muted-foreground">
                         {displayLabel(item.label)}
                       </dt>
-                      <dd className="min-w-0 text-[15px] font-bold leading-[23px] text-foreground">
+                      <dd className="min-w-0 text-[15px] font-medium leading-[23px] text-foreground">
                         {item.value}
                       </dd>
                     </div>
@@ -210,7 +210,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
             </section>
 
             <section>
-              <h2 className="text-[20px] font-black leading-[29px]">멘토링 내용</h2>
+              <h2 className="text-[20px] font-semibold leading-[29px]">멘토링 내용</h2>
               <div className="mt-3 rounded-lg bg-white px-5 py-5">
                 {contentLines(event).map((line, index) => (
                   <p key={`${index}-${line}`} className="text-[16px] font-medium leading-[27px] text-[#4e5968]">
@@ -222,8 +222,8 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
 
             <section>
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[20px] font-black leading-[29px]">신청자 리스트</h2>
-                <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-primary">
+                <h2 className="text-[20px] font-semibold leading-[29px]">신청자 리스트</h2>
+                <span className="inline-flex items-center gap-1 text-[14px] font-semibold text-primary">
                   <CheckCircle2 aria-hidden="true" className="size-4" />
                   {event.applicantCount ?? event.applicants.length}명
                 </span>
@@ -236,11 +236,11 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex min-w-0 items-center gap-2">
                             <UserRound aria-hidden="true" className="size-4 text-muted-foreground" />
-                            <p className="truncate text-[16px] font-extrabold">
+                            <p className="truncate text-[16px] font-semibold">
                               {applicant.traineeName}
                             </p>
                           </div>
-                          <p className={`shrink-0 text-[13px] font-extrabold ${applicantTone(applicant)}`}>
+                          <p className={`shrink-0 text-[13px] font-semibold ${applicantTone(applicant)}`}>
                             {applicant.status}
                           </p>
                         </div>
@@ -254,7 +254,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                   <div className="mt-3 hidden overflow-hidden rounded-lg bg-white md:block">
                     <table className="w-full table-fixed text-left">
                       <thead className="border-b border-border/80 bg-muted/60">
-                        <tr className="text-[14px] font-extrabold text-muted-foreground">
+                        <tr className="text-[14px] font-semibold text-muted-foreground">
                           <th className="w-20 px-5 py-4">NO.</th>
                           <th className="px-5 py-4">연수생</th>
                           <th className="px-5 py-4">신청일</th>
@@ -264,7 +264,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                       </thead>
                       <tbody className="divide-y divide-border/70">
                         {event.applicants.map((applicant) => (
-                          <tr key={`${applicant.no}-${applicant.traineeName}`} className="text-[15px] font-bold">
+                          <tr key={`${applicant.no}-${applicant.traineeName}`} className="text-[15px] font-medium">
                             <td className="px-5 py-4 text-muted-foreground">{applicant.no}</td>
                             <td className="px-5 py-4">{applicant.traineeName}</td>
                             <td className="px-5 py-4 text-[#4e5968]">{applicant.appliedAt}</td>

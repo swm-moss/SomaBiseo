@@ -14,7 +14,7 @@ export function ErrorState({
   return (
     <div className="rounded-lg bg-white p-5">
       <AlertCircle aria-hidden="true" className="size-5 text-destructive" />
-      <p className="mt-3 text-[17px] font-bold leading-[25.5px]">{title}</p>
+      <p className="mt-3 text-[17px] font-semibold leading-[25.5px]">{title}</p>
       <p className="mt-1 text-[15px] leading-[22px] text-muted-foreground">{description}</p>
       {onRetry ? (
         <Button className="mt-4" variant="outline" onClick={onRetry}>

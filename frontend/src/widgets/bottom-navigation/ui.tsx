@@ -27,7 +27,7 @@ export function BottomNavigation() {
             <Link
               key={href}
               className={cn(
-                "flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg text-[12px] font-bold text-muted-foreground",
+                "flex min-h-[60px] flex-col items-center justify-center gap-1 rounded-lg text-[12px] font-semibold text-muted-foreground",
                 isActive && "bg-[#eaf3ff] text-primary",
               )}
               href={href}

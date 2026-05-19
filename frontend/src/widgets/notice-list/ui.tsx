@@ -68,7 +68,7 @@ export function NoticeList() {
           description="로그인하면 실제 공지사항을 localhost에서 바로 불러옵니다."
           action={
             <Link
-              className="inline-flex h-12 items-center rounded-lg bg-primary px-5 text-[16px] font-bold text-primary-foreground"
+              className="inline-flex h-12 items-center rounded-lg bg-primary px-5 text-[16px] font-semibold text-primary-foreground"
               href={routes.login}
             >
               로그인
@@ -98,7 +98,7 @@ export function NoticeList() {
                       </div>
                       <h3
                         className={cn(
-                          "mt-2 line-clamp-2 text-[17px] font-extrabold leading-[25.5px]",
+                          "mt-2 line-clamp-2 text-[17px] font-semibold leading-[25.5px]",
                           isRead && "text-muted-foreground",
                         )}
                       >

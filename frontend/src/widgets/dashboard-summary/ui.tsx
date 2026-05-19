@@ -33,7 +33,7 @@ export function DashboardSummary() {
         description="로그인하면 실제 공지와 멘토링 일정이 이 화면에 표시됩니다."
         action={
           <Link
-            className="inline-flex h-12 items-center rounded-lg bg-primary px-5 text-[16px] font-bold text-primary-foreground"
+            className="inline-flex h-12 items-center rounded-lg bg-primary px-5 text-[16px] font-semibold text-primary-foreground"
             href={routes.login}
           >
             로그인
@@ -60,17 +60,17 @@ export function DashboardSummary() {
         <div className="grid grid-cols-2 overflow-hidden rounded-lg bg-white">
           <Link className="min-h-28 border-r border-border/80 p-5" href={routes.events}>
             <CalendarDays aria-hidden="true" className="size-5 text-primary" />
-            <p className="mt-3 text-[14px] font-bold leading-[21px] text-muted-foreground">
+            <p className="mt-3 text-[14px] font-semibold leading-[21px] text-muted-foreground">
               이번 주 일정
             </p>
-            <p className="mt-1 text-[26px] font-black leading-[35px]">{upcoming.length}개</p>
+            <p className="mt-1 text-[26px] font-bold leading-[35px]">{upcoming.length}개</p>
           </Link>
           <Link className="min-h-28 p-5" href={routes.notices}>
             <Bell aria-hidden="true" className="size-5 text-primary" />
-            <p className="mt-3 text-[14px] font-bold leading-[21px] text-muted-foreground">
+            <p className="mt-3 text-[14px] font-semibold leading-[21px] text-muted-foreground">
               새 공지
             </p>
-            <p className="mt-1 text-[26px] font-black leading-[35px]">{newNotices.length}개</p>
+            <p className="mt-1 text-[26px] font-bold leading-[35px]">{newNotices.length}개</p>
           </Link>
         </div>
       </section>
@@ -90,7 +90,7 @@ export function DashboardSummary() {
                 className="block border-b border-border/80 px-5 py-5 last:border-b-0"
                 href={routes.eventDetail(event.id)}
               >
-                <p className="text-[17px] font-extrabold leading-[25.5px]">{event.title}</p>
+                <p className="text-[17px] font-semibold leading-[25.5px]">{event.title}</p>
                 <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
                   {formatOptionalDateTime(event.startAt)}
                 </p>
@@ -112,7 +112,7 @@ export function DashboardSummary() {
               className="block border-b border-border/80 px-5 py-5 last:border-b-0"
               href={routes.eventDetail(event.id)}
             >
-              <p className="text-[17px] font-extrabold leading-[25.5px]">{event.title}</p>
+              <p className="text-[17px] font-semibold leading-[25.5px]">{event.title}</p>
               <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
                 {event.mentorName ?? "멘토 미정"} · {formatOptionalDateTime(event.startAt)}
               </p>
@@ -130,7 +130,7 @@ export function DashboardSummary() {
               className="block border-b border-border/80 px-5 py-5 last:border-b-0"
               href={routes.eventDetail(event.id)}
             >
-              <p className="text-[17px] font-extrabold leading-[25.5px]">{event.title}</p>
+              <p className="text-[17px] font-semibold leading-[25.5px]">{event.title}</p>
               <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
                 {event.status === "OPEN" ? "신청 가능" : event.status}
               </p>
