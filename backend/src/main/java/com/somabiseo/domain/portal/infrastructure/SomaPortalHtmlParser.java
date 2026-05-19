@@ -1046,7 +1046,7 @@ public class SomaPortalHtmlParser {
                 ? 0
                 : Integer.parseInt(matcher.group(5));
 
-        LocalDateTime dateTime = LocalDateTime.of(
+        LocalDateTime dateTime = dateTimeWithOverflowHour(
                 Integer.parseInt(matcher.group(1)),
                 Integer.parseInt(matcher.group(2)),
                 Integer.parseInt(matcher.group(3)),
@@ -1085,7 +1085,13 @@ public class SomaPortalHtmlParser {
                         ? 0
                         : Integer.parseInt(timeMatcher.group(2));
 
-                endAt = startAt.withHour(hour).withMinute(minute);
+                endAt = dateTimeWithOverflowHour(
+                        startAt.getYear(),
+                        startAt.getMonthValue(),
+                        startAt.getDayOfMonth(),
+                        hour,
+                        minute
+                ).atZone(SEOUL).toOffsetDateTime();
             }
         }
 
@@ -1124,13 +1130,24 @@ public class SomaPortalHtmlParser {
                 ? 0
                 : Integer.parseInt(matcher.group(5));
 
-        return LocalDateTime.of(
+        return dateTimeWithOverflowHour(
                 Integer.parseInt(matcher.group(1)),
                 Integer.parseInt(matcher.group(2)),
                 Integer.parseInt(matcher.group(3)),
                 Integer.parseInt(matcher.group(4)),
                 minute
         ).atZone(SEOUL).toOffsetDateTime();
+    }
+
+    private LocalDateTime dateTimeWithOverflowHour(int year, int month, int day, int hour, int minute) {
+        if (hour < 24) {
+            return LocalDateTime.of(year, month, day, hour, minute);
+        }
+
+        return LocalDate.of(year, month, day)
+                .atStartOfDay()
+                .plusHours(hour)
+                .withMinute(minute);
     }
 
     private Optional<OffsetDateTime> parseDate(String value) {

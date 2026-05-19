@@ -52,6 +52,9 @@
 - 프론트는 `NEXT_PUBLIC_API_BASE_URL`로 Railway 백엔드 공개 도메인 + `/api`를 바라본다.
 - 백엔드는 `CORS_ALLOWED_ORIGINS`에 Vercel 프론트 도메인을 등록한다.
 - 백엔드의 SOMA 읽기 전용 어댑터는 `SOMA_PORTAL_OPERATOR_USERNAME`, `SOMA_PORTAL_OPERATOR_PASSWORD` 환경변수로 로그인한다. 이 값은 코드, 문서, PR 본문에 노출하지 않는다.
+- SOMA 공지/멘토링 데이터는 매 요청마다 포털을 크롤링하지 않는다. `notices`, `soma_events` 테이블에 저장하고, `SOMA_PORTAL_CACHE_TTL_MINUTES`가 지난 경우에만 운영자 계정으로 페이지 단위 동기화한다.
+- 포털 동기화 범위는 `SOMA_PORTAL_SYNC_PAGE_LIMIT`로 제한한다. 기본값은 60페이지이며, 현재 부산센터 멘토링 목록 전체 페이지를 담을 수 있게 둔다.
+- 멘토링 상세, 본문, 신청자 리스트는 상세 첫 조회 때 `soma_events`에 저장하고 이후에는 DB 캐시를 우선 사용한다.
 - 백엔드 AI 요약 기능은 `OPENAI_API_KEY`가 있을 때만 동작한다. 키는 코드나 커밋에 저장하지 않고 Railway 환경변수로만 설정한다.
 - AI 요약 모델은 기본 `gpt-5.4-mini`이며, 필요하면 `OPENAI_SUMMARY_MODEL`로 교체한다.
 - GitHub Actions의 `CI`는 PR과 `main` push에서 실행한다.

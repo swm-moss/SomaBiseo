@@ -67,6 +67,8 @@ export SOMA_PORTAL_OPERATOR_PASSWORD="<operator-soma-password>"
 Then open `/dashboard`, `/notices`, or `/events` on the frontend localhost URL. End users do not
 enter SOMA portal credentials; the frontend calls read APIs without `sessionId`, and the backend
 uses the operator account to fetch notices and mentoring events.
+Fetched notices and mentoring events are stored in Postgres and refreshed by TTL instead of being
+crawled on every request.
 
 ## Product Guardrails
 
