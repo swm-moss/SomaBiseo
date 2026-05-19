@@ -210,13 +210,16 @@ public class SomaPortalHtmlParser {
     public SomaPortalEventResponse parseEventDetail(String html, String baseUrl, String sourceUrl) {
         Document document = Jsoup.parse(html, baseUrl);
         String resolvedSourceUrl = absoluteUrl(sourceUrl, baseUrl);
-        Element infoTable = findInfoTable(document).orElse(null);
-        Map<String, String> detailMap = infoTable == null ? parseDetailMapFromText(document) : parseDetailMap(infoTable);
+        Element detailElement = findDetailElement(document).orElse(null);
+        Map<String, String> detailMap = detailElement == null
+                ? parseDetailMapFromText(document)
+                : parseDetailMap(detailElement);
         Element applicantTable = findApplicantTable(document).orElse(null);
         List<SomaPortalEventApplicantResponse> applicants = applicantTable == null
                 ? List.of()
                 : parseApplicants(applicantTable);
-        String rawText = clean(document.text());
+        Element detailRoot = findDetailRoot(document, detailElement, applicantTable);
+        String rawText = clean(detailRoot.text());
         String title = firstNonBlank(
                 detailMap.get("모집 명"),
                 detailMap.get("모집명"),
@@ -252,7 +255,7 @@ public class SomaPortalHtmlParser {
                 detailMap.entrySet().stream()
                         .map(entry -> new SomaPortalEventDetailItem(entry.getKey(), entry.getValue()))
                         .toList(),
-                parseContentText(document, infoTable, applicantTable, detailMap).orElse(null),
+                parseContentText(document, detailElement, applicantTable, detailMap).orElse(null),
                 applicants,
                 rawText
         );
@@ -384,7 +387,15 @@ public class SomaPortalHtmlParser {
         return Optional.of(new PortalBoardItem(sourceIdFromHref(href), title, href, null, title));
     }
 
-    private Optional<Element> findInfoTable(Document document) {
+    private Optional<Element> findDetailElement(Document document) {
+        Optional<Element> topDetail = document.select(".bbs-view-new .top, .bbs-view .top, .board-view .top, .view .top").stream()
+                .filter(this::looksLikeDetailBlock)
+                .findFirst();
+
+        if (topDetail.isPresent()) {
+            return topDetail;
+        }
+
         return document.select("table").stream()
                 .filter(table -> {
                     String text = clean(table.text());
@@ -397,7 +408,25 @@ public class SomaPortalHtmlParser {
                 .findFirst();
     }
 
-    private Map<String, String> parseDetailMap(Element table) {
+    private boolean looksLikeDetailBlock(Element element) {
+        String text = clean(element.text());
+
+        return text.contains("모집 명")
+                || text.contains("모집명")
+                || text.contains("접수 기간")
+                || text.contains("강의날짜")
+                || text.contains("모집인원");
+    }
+
+    private Map<String, String> parseDetailMap(Element element) {
+        if ("table".equals(element.tagName())) {
+            return parseTableDetailMap(element);
+        }
+
+        return parseGroupDetailMap(element);
+    }
+
+    private Map<String, String> parseTableDetailMap(Element table) {
         Map<String, String> details = new LinkedHashMap<>();
 
         for (Element row : table.select("tr")) {
@@ -410,6 +439,31 @@ public class SomaPortalHtmlParser {
                 if (!label.isBlank() && !value.isBlank() && label.length() <= 10) {
                     details.put(label, value);
                 }
+            }
+        }
+
+        return details;
+    }
+
+    private Map<String, String> parseGroupDetailMap(Element element) {
+        Map<String, String> details = new LinkedHashMap<>();
+
+        for (Element group : element.select(".group")) {
+            Element labelElement = group.selectFirst("strong.t, dt, .t");
+
+            if (labelElement == null) {
+                continue;
+            }
+
+            String label = clean(labelElement.text()).replace(" ", "");
+            Element valueElement = group.clone();
+
+            valueElement.select("strong.t, dt, .t").remove();
+
+            String value = clean(valueElement.text());
+
+            if (!label.isBlank() && !value.isBlank() && label.length() <= 10) {
+                details.put(label, value);
             }
         }
 
@@ -531,11 +585,20 @@ public class SomaPortalHtmlParser {
 
     private Optional<String> parseContentText(
             Document document,
-            Element infoTable,
+            Element detailElement,
             Element applicantTable,
             Map<String, String> detailMap
     ) {
-        Element start = infoTable == null ? null : infoTable.nextElementSibling();
+        Optional<String> content = document.select(".bbs-view-new .cont, .bbs-view .cont, .board-view .cont, .view-content").stream()
+                .map(this::cleanContentBlock)
+                .filter(text -> !text.isBlank())
+                .findFirst();
+
+        if (content.isPresent()) {
+            return content;
+        }
+
+        Element start = detailElement == null ? null : detailElement.nextElementSibling();
         StringBuilder builder = new StringBuilder();
 
         while (start != null && start != applicantTable) {
@@ -564,8 +627,45 @@ public class SomaPortalHtmlParser {
             return cleanContentText(builder.toString());
         }
 
-        return parseContentTextFromBody(document, infoTable, detailMap);
+        return parseContentTextFromBody(document, detailElement, detailMap);
     }
+
+    private String cleanContentBlock(Element element) {
+        Element clone = element.clone();
+
+        clone.select("script, style, table, .pagination, .btn, .btns").remove();
+
+        return cleanMultilineText(clone);
+    }
+
+    private Element findDetailRoot(Document document, Element detailElement, Element applicantTable) {
+        Element root = closestDetailRoot(detailElement);
+
+        if (root != null) {
+            return root;
+        }
+
+        root = closestDetailRoot(applicantTable);
+
+        if (root != null) {
+            return root;
+        }
+
+        Element selected = document.selectFirst(".bbs-view-new, .bbs-view, .board-view, .view-content, main, #content, #contents");
+
+        return selected == null ? document.body() : selected;
+    }
+
+    private Element closestDetailRoot(Element element) {
+        if (element == null) {
+            return null;
+        }
+
+        Element closest = element.closest(".bbs-view-new, .bbs-view, .board-view, .view-content, main, #content, #contents");
+
+        return closest == null ? element.parent() : closest;
+    }
+
 
     private String cleanMultilineText(Element element) {
         Element clone = element.clone();
@@ -578,7 +678,7 @@ public class SomaPortalHtmlParser {
 
     private Optional<String> parseContentTextFromBody(
             Document document,
-            Element infoTable,
+            Element detailElement,
             Map<String, String> detailMap
     ) {
         Element body = document.body();
@@ -592,12 +692,12 @@ public class SomaPortalHtmlParser {
         String bodyText = cleanMultilineText(clone.body());
         String content = bodyText;
 
-        if (infoTable != null) {
-            String infoTableText = cleanMultilineText(infoTable);
-            int infoTableIndex = content.indexOf(infoTableText);
+        if (detailElement != null) {
+            String detailText = cleanMultilineText(detailElement);
+            int detailIndex = content.indexOf(detailText);
 
-            if (infoTableIndex >= 0) {
-                content = content.substring(infoTableIndex + infoTableText.length());
+            if (detailIndex >= 0) {
+                content = content.substring(detailIndex + detailText.length());
             }
         } else {
             content = trimBeforeContentStart(content, detailMap);
