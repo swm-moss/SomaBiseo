@@ -336,4 +336,127 @@ class SomaPortalHtmlParserTest {
         assertThat(event.applicants().getFirst().status()).isEqualTo("신청완료");
         assertThat(event.applicants().get(1).canceledAt()).isEqualTo("2026.05.12 21:58");
     }
+
+    @Test
+    void parsesEventDetailFromDivLayoutWithoutNavigationNoise() {
+        String html = """
+                <html>
+                  <head>
+                    <title>AI·SW마에스트로 부산</title>
+                  </head>
+                  <body>
+                    <header>
+                      <a>메뉴 건너띄기</a>
+                      <a>상단메뉴 바로가기</a>
+                      <a>본문 바로가기</a>
+                      <nav>공지사항 팀매칭 월간일정 멘토링 / 특강 게시판 보고 게시판 회원정보</nav>
+                    </header>
+                    <main id="content">
+                      <h1>자유 멘토링 / 멘토 특강</h1>
+                      <div class="bbs-view-new">
+                        <div class="top">
+                          <div class="group">
+                            <strong class="t">모집 명</strong>
+                            <div>[멘토 특강] 떠먹여주는 생성형 금융 Agent 서비스 기획</div>
+                          </div>
+                          <div class="half_w clearfix">
+                            <div class="group">
+                              <strong class="t">상태</strong>
+                              <div>[마감]</div>
+                            </div>
+                            <div class="group">
+                              <strong class="t">개설 승인</strong>
+                              <div>OK</div>
+                            </div>
+                          </div>
+                          <div class="half_w clearfix">
+                            <div class="group">
+                              <strong class="t">접수 기간</strong>
+                              <div>2026.05.17 12시00분 ~ 2026.06.03 09시00분</div>
+                            </div>
+                            <div class="group">
+                              <strong class="t">강의날짜</strong>
+                              <div>2026.06.03 09:00시 ~ 12:00시</div>
+                            </div>
+                          </div>
+                          <div class="half_w clearfix">
+                            <div class="group">
+                              <strong class="t">진행방식</strong>
+                              <div>온라인</div>
+                            </div>
+                            <div class="group">
+                              <strong class="t">장소</strong>
+                              <div>온라인(webex)</div>
+                            </div>
+                          </div>
+                          <div class="half_w clearfix">
+                            <div class="group">
+                              <strong class="t">모집인원</strong>
+                              <div>9명</div>
+                            </div>
+                            <div class="group">
+                              <strong class="t">작성자</strong>
+                              <div>이태영</div>
+                            </div>
+                          </div>
+                          <div class="group">
+                            <strong class="t">등록일</strong>
+                            <div>2026.05.13</div>
+                          </div>
+                        </div>
+                        <div class="cont">
+                          <p>금융 서비스는 어렵다고 느껴지시나요?</p>
+                          <p>좋은 금융 서비스는 좋은 모델이 아니라 좋은 구조에서 시작됩니다.</p>
+                          <p>WebEX URL https://soma.webex.com/example</p>
+                        </div>
+                        <div class="btns">
+                          <a>취소하기</a>
+                          <a>목록</a>
+                        </div>
+                        <h4>신청자 리스트 [9 명]</h4>
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>NO.</th>
+                              <th>연수생</th>
+                              <th>신청일</th>
+                              <th>취소일</th>
+                              <th>상태</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>9</td>
+                              <td>김태환</td>
+                              <td>2026.05.18 09:04</td>
+                              <td>-</td>
+                              <td>[신청완료]</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </main>
+                    <footer>개인정보처리방침 이메일무단수집거부 이용약관</footer>
+                  </body>
+                </html>
+                """;
+
+        SomaPortalEventResponse event = parser.parseEventDetail(
+                html,
+                "https://www.swmaestro.ai",
+                "/busan/sw/mypage/mentoLec/view.do?qustnrSn=9281"
+        );
+
+        assertThat(event.title()).isEqualTo("[멘토 특강] 떠먹여주는 생성형 금융 Agent 서비스 기획");
+        assertThat(event.title()).doesNotContain("AI·SW마에스트로 부산");
+        assertThat(event.location()).isEqualTo("온라인(webex)");
+        assertThat(event.location()).doesNotContain("모집인원", "작성자", "WebEX");
+        assertThat(event.capacity()).isEqualTo(9);
+        assertThat(event.applicantCount()).isEqualTo(9);
+        assertThat(event.contentText()).contains("금융 서비스는 어렵다고 느껴지시나요?", "WebEX URL");
+        assertThat(event.contentText()).doesNotContain("메뉴 건너띄기", "공지사항", "신청자 리스트", "개인정보처리방침");
+        assertThat(event.rawText()).doesNotContain("메뉴 건너띄기", "개인정보처리방침");
+        assertThat(event.applicants()).hasSize(1);
+        assertThat(event.applicants().getFirst().traineeName()).isEqualTo("김태환");
+    }
 }
