@@ -30,6 +30,13 @@ SomaBiseo는 소프트웨어마에스트로 연수생을 위한 비공식 일정
 - 사용자가 명시적으로 요청한 SOMA 포털 읽기 전용 API는 `domain/portal`에 격리합니다. 포털 비밀번호를 저장하지 않고, 임시 세션 쿠키만 메모리 TTL로 보관합니다.
 - Google Calendar OAuth, FreeBusy, 이벤트 생성은 백엔드에서 다루되 초기 구현은 mock으로 시작합니다.
 
+## 배포 규칙
+
+- 프론트엔드는 Vercel, 백엔드는 Railway로 배포합니다.
+- `main`으로 병합되면 GitHub Actions의 CI가 먼저 통과해야 프로덕션 배포 워크플로우가 실행됩니다.
+- 배포 설정, 시크릿, 환경변수를 바꾸면 [프로덕션 배포 문서](docs/deployment/production.md)를 함께 갱신합니다.
+- Railway 백엔드는 `PORT` 환경변수를 우선 지원해야 하며, healthcheck는 `/api/health`를 사용합니다.
+
 ## 커밋 규칙
 
 - 커밋을 만들 때는 [커밋 메시지 컨벤션](docs/conventions/commit-message.md)을 반드시 따릅니다.

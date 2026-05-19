@@ -1,3 +1,7 @@
-.gradle
-build
+.gradle/
+build/
 HELP.md
+out/
+*.log
+.env
+.env.*

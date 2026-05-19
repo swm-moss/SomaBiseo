@@ -11,3 +11,5 @@ frontend/out/
 .env
 .env.local
 .env.*.local
+.vercel/
+.railway/

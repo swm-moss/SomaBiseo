@@ -34,6 +34,11 @@ curl http://localhost:8080/api/health
 
 Postgres is exposed on `127.0.0.1:${POSTGRES_PORT:-15432}` to avoid clashing with an existing local `5432`.
 
+## Production Deployment
+
+Frontend deploys to Vercel and backend deploys to Railway after CI passes on `main`.
+See [프로덕션 배포 문서](docs/deployment/production.md).
+
 ## Local Real Portal Test
 
 ```bash
