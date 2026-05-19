@@ -79,7 +79,7 @@ function getDetailItems(event: SomaEvent) {
 }
 
 function contentLines(event: SomaEvent) {
-  return (event.contentText ?? event.rawText)
+  return (event.contentText ?? "")
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
@@ -97,6 +97,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
     queryFn: () => getSomaEventById(validSession!.sessionId, eventId),
     enabled: Boolean(validSession),
   });
+  const eventContentLines = event ? contentLines(event) : [];
 
   return (
     <AppShell>
@@ -212,11 +213,15 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
             <section>
               <h2 className="text-[20px] font-black leading-[29px]">멘토링 내용</h2>
               <div className="mt-3 rounded-lg bg-white px-5 py-5">
-                {contentLines(event).map((line, index) => (
-                  <p key={`${index}-${line}`} className="text-[16px] font-medium leading-[27px] text-[#4e5968]">
-                    {line}
-                  </p>
-                ))}
+                {eventContentLines.length > 0 ? (
+                  eventContentLines.map((line, index) => (
+                    <p key={`${index}-${line}`} className="text-[16px] font-medium leading-[27px] text-[#4e5968]">
+                      {line}
+                    </p>
+                  ))
+                ) : (
+                  <EmptyState title="본문 없음" description="포털 상세 페이지에서 본문 영역을 찾지 못했습니다." />
+                )}
               </div>
             </section>
 

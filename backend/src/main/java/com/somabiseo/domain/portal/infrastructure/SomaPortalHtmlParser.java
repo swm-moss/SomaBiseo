@@ -43,6 +43,40 @@ public class SomaPortalHtmlParser {
     private static final Pattern SCRIPT_PAGE_INDEX_PATTERN = Pattern.compile("(?:fnLinkPage|linkPage|fn_egov_link_page|goPage|movePage|goPaging)\\s*\\(\\s*'?(\\d+)'?\\s*\\)");
     private static final Pattern TOTAL_PAGE_TEXT_PATTERN = Pattern.compile("(?:총|전체)\\s*(\\d+)\\s*페이지");
     private static final Pattern TOTAL_COUNT_TEXT_PATTERN = Pattern.compile("(?:총|전체)\\s*(\\d+)\\s*(?:건|개)");
+    private static final List<String> CONTENT_STOP_MARKERS = List.of(
+            "취소하기",
+            "목록",
+            "※ 무단불참",
+            "신청자 리스트",
+            "처음 목록",
+            "이전 목록",
+            "다음 목록",
+            "끝 목록",
+            "개인정보처리방침"
+    );
+    private static final List<String> PORTAL_CHROME_LINES = List.of(
+            "메뉴 건너띄기",
+            "상단메뉴 바로가기",
+            "본문 바로가기",
+            "로딩 중입니다...",
+            "자유 멘토링 멘토 특강",
+            "HOME",
+            "마이페이지",
+            "사업소개",
+            "모집안내",
+            "도전과 성장",
+            "알림마당",
+            "멘토링 / 특강 게시판",
+            "공지사항",
+            "팀매칭",
+            "월간일정",
+            "보고 게시판",
+            "활동보고서 작성",
+            "회의실 예약",
+            "창업기업",
+            "회원정보",
+            "접수내역"
+    );
 
     public String parseCsrfToken(String html) {
         Document document = Jsoup.parse(html);
@@ -166,7 +200,7 @@ public class SomaPortalHtmlParser {
         Document document = Jsoup.parse(html, baseUrl);
         String resolvedSourceUrl = absoluteUrl(sourceUrl, baseUrl);
         Element infoTable = findInfoTable(document).orElse(null);
-        Map<String, String> detailMap = infoTable == null ? Map.of() : parseDetailMap(infoTable);
+        Map<String, String> detailMap = infoTable == null ? parseDetailMapFromText(document) : parseDetailMap(infoTable);
         Element applicantTable = findApplicantTable(document).orElse(null);
         List<SomaPortalEventApplicantResponse> applicants = applicantTable == null
                 ? List.of()
@@ -207,7 +241,7 @@ public class SomaPortalHtmlParser {
                 detailMap.entrySet().stream()
                         .map(entry -> new SomaPortalEventDetailItem(entry.getKey(), entry.getValue()))
                         .toList(),
-                parseContentText(document, infoTable, applicantTable).orElse(null),
+                parseContentText(document, infoTable, applicantTable, detailMap).orElse(null),
                 applicants,
                 rawText
         );
@@ -367,6 +401,50 @@ public class SomaPortalHtmlParser {
         return details;
     }
 
+    private Map<String, String> parseDetailMapFromText(Document document) {
+        Map<String, String> details = new LinkedHashMap<>();
+        List<String> lines = cleanLines(cleanMultilineText(document.body()));
+
+        for (int index = 0; index < lines.size(); index += 1) {
+            String label = normalizeDetailLabel(lines.get(index));
+
+            if (!isDetailLabel(label) || details.containsKey(label)) {
+                continue;
+            }
+
+            String value = collectDetailValue(lines, index + 1, label);
+
+            if (!value.isBlank()) {
+                details.put(label, value);
+            }
+        }
+
+        return details;
+    }
+
+    private String collectDetailValue(List<String> lines, int startIndex, String label) {
+        int maxLines = switch (label) {
+            case "접수기간" -> 3;
+            case "강의날짜" -> 2;
+            default -> 1;
+        };
+        List<String> values = new ArrayList<>();
+
+        for (int index = startIndex; index < lines.size() && values.size() < maxLines; index += 1) {
+            String line = lines.get(index);
+
+            if (isDetailLabel(normalizeDetailLabel(line)) || isContentStopText(line)) {
+                break;
+            }
+
+            if (!line.isBlank()) {
+                values.add(line);
+            }
+        }
+
+        return clean(String.join(" ", values));
+    }
+
     private Optional<Element> findApplicantTable(Document document) {
         return document.select("table").stream()
                 .filter(table -> {
@@ -436,7 +514,12 @@ public class SomaPortalHtmlParser {
         return clean(cells.get(index).text());
     }
 
-    private Optional<String> parseContentText(Document document, Element infoTable, Element applicantTable) {
+    private Optional<String> parseContentText(
+            Document document,
+            Element infoTable,
+            Element applicantTable,
+            Map<String, String> detailMap
+    ) {
         Element start = infoTable == null ? null : infoTable.nextElementSibling();
         StringBuilder builder = new StringBuilder();
 
@@ -447,7 +530,11 @@ public class SomaPortalHtmlParser {
 
             String text = cleanMultilineText(start);
 
-            if (!text.isBlank() && !text.contains("신청자 리스트")) {
+            if (isContentStopText(text)) {
+                break;
+            }
+
+            if (!text.isBlank()) {
                 if (!builder.isEmpty()) {
                     builder.append("\n\n");
                 }
@@ -459,14 +546,10 @@ public class SomaPortalHtmlParser {
         }
 
         if (!builder.isEmpty()) {
-            return Optional.of(builder.toString());
+            return cleanContentText(builder.toString());
         }
 
-        Document clone = document.clone();
-        clone.select("script, style, header, nav, footer, table").remove();
-        String fallback = cleanMultilineText(clone.body());
-
-        return fallback.isBlank() ? Optional.empty() : Optional.of(fallback);
+        return parseContentTextFromBody(document, infoTable, detailMap);
     }
 
     private String cleanMultilineText(Element element) {
@@ -476,6 +559,171 @@ public class SomaPortalHtmlParser {
         clone.select("p, div, li, h1, h2, h3, h4, h5").forEach(block -> block.append("\n"));
 
         return cleanMultiline(clone.wholeText());
+    }
+
+    private Optional<String> parseContentTextFromBody(
+            Document document,
+            Element infoTable,
+            Map<String, String> detailMap
+    ) {
+        Element body = document.body();
+
+        if (body == null) {
+            return Optional.empty();
+        }
+
+        Document clone = document.clone();
+        clone.select("script, style, header, nav, footer").remove();
+        String bodyText = cleanMultilineText(clone.body());
+        String content = bodyText;
+
+        if (infoTable != null) {
+            String infoTableText = cleanMultilineText(infoTable);
+            int infoTableIndex = content.indexOf(infoTableText);
+
+            if (infoTableIndex >= 0) {
+                content = content.substring(infoTableIndex + infoTableText.length());
+            }
+        } else {
+            content = trimBeforeContentStart(content, detailMap);
+        }
+
+        content = trimAfterContentStop(content);
+
+        return cleanContentText(content);
+    }
+
+    private String trimBeforeContentStart(String text, Map<String, String> detailMap) {
+        List<String> lines = cleanLines(text);
+        int contentStartIndex = findContentStartLine(lines, detailMap);
+
+        if (contentStartIndex <= 0 || contentStartIndex >= lines.size()) {
+            return text;
+        }
+
+        return String.join("\n", lines.subList(contentStartIndex, lines.size()));
+    }
+
+    private int findContentStartLine(List<String> lines, Map<String, String> detailMap) {
+        for (String label : List.of("등록일", "작성자", "모집인원", "장소", "진행방식", "강의날짜", "접수기간", "상태", "모집명")) {
+            if (!detailMap.containsKey(label)) {
+                continue;
+            }
+
+            for (int index = 0; index < lines.size(); index += 1) {
+                if (normalizeDetailLabel(lines.get(index)).equals(label)) {
+                    int valueEndIndex = index + 1 + countDetailValueLines(lines, index + 1, label);
+
+                    if (valueEndIndex > index + 1) {
+                        return valueEndIndex;
+                    }
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    private int countDetailValueLines(List<String> lines, int startIndex, String label) {
+        int maxLines = switch (label) {
+            case "접수기간" -> 3;
+            case "강의날짜" -> 2;
+            default -> 1;
+        };
+        int count = 0;
+
+        for (int index = startIndex; index < lines.size() && count < maxLines; index += 1) {
+            String line = lines.get(index);
+
+            if (isDetailLabel(normalizeDetailLabel(line)) || isContentStopText(line)) {
+                break;
+            }
+
+            if (!line.isBlank()) {
+                count += 1;
+            }
+        }
+
+        return count;
+    }
+
+    private Optional<String> cleanContentText(String text) {
+        StringBuilder builder = new StringBuilder();
+
+        for (String line : cleanMultiline(text).split("\\n+")) {
+            String cleaned = clean(line);
+
+            if (cleaned.isBlank() || PORTAL_CHROME_LINES.contains(cleaned)) {
+                continue;
+            }
+
+            if (isContentStopText(cleaned)) {
+                break;
+            }
+
+            if (!builder.isEmpty()) {
+                builder.append('\n');
+            }
+
+            builder.append(cleaned);
+        }
+
+        String result = builder.toString().trim();
+
+        return result.isBlank() ? Optional.empty() : Optional.of(result);
+    }
+
+    private String trimAfterContentStop(String text) {
+        int endIndex = text.length();
+
+        for (String marker : CONTENT_STOP_MARKERS) {
+            int markerIndex = text.indexOf(marker);
+
+            if (markerIndex >= 0) {
+                endIndex = Math.min(endIndex, markerIndex);
+            }
+        }
+
+        return text.substring(0, endIndex);
+    }
+
+    private boolean isContentStopText(String text) {
+        String cleaned = clean(text);
+
+        return CONTENT_STOP_MARKERS.stream().anyMatch(cleaned::contains);
+    }
+
+    private List<String> cleanLines(String text) {
+        List<String> lines = new ArrayList<>();
+
+        for (String line : cleanMultiline(text).split("\\n+")) {
+            String cleaned = clean(line);
+
+            if (!cleaned.isBlank()) {
+                lines.add(cleaned);
+            }
+        }
+
+        return lines;
+    }
+
+    private String normalizeDetailLabel(String label) {
+        return clean(label).replace(" ", "");
+    }
+
+    private boolean isDetailLabel(String label) {
+        return List.of(
+                "모집명",
+                "상태",
+                "개설승인",
+                "접수기간",
+                "강의날짜",
+                "진행방식",
+                "장소",
+                "모집인원",
+                "작성자",
+                "등록일"
+        ).contains(label);
     }
 
     private EventType inferEventType(String text) {
