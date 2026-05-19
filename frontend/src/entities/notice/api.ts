@@ -4,6 +4,13 @@ import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/cli
 export const PORTAL_NOTICE_PAGE_SIZE = 10;
 const MAX_NOTICE_LOOKUP_PAGES = 10;
 
+export type PortalPage<T> = {
+  items: T[];
+  page: number;
+  totalPages: number;
+  hasNextPage: boolean;
+};
+
 type PortalNoticeResponse = {
   sourceId: string;
   title: string;
@@ -44,11 +51,13 @@ function toNotice(notice: PortalNoticeResponse): Notice {
 }
 
 export async function getNotices(sessionId: string, page = 1) {
-  return getNoticesPage(sessionId, page);
+  const noticesPage = await getNoticesPage(sessionId, page);
+
+  return noticesPage.items;
 }
 
 export async function getNoticesPage(sessionId: string, page = 1) {
-  const notices = await unwrapApiResponse(
+  const response = await unwrapApiResponse(
     apiClient
       .get("soma/notices", {
         searchParams: {
@@ -56,25 +65,48 @@ export async function getNoticesPage(sessionId: string, page = 1) {
           page,
         },
       })
-      .json<ApiResponse<PortalNoticeResponse[]>>(),
+      .json<ApiResponse<PortalNoticeResponse[] | PortalPage<PortalNoticeResponse>>>(),
   );
+  const pageResponse = normalizePortalPage(response, page, PORTAL_NOTICE_PAGE_SIZE);
 
-  return notices.map(toNotice);
+  return {
+    ...pageResponse,
+    items: pageResponse.items.map(toNotice),
+  };
 }
 
 export async function getNoticeById(sessionId: string, noticeId: string) {
   for (let page = 1; page <= MAX_NOTICE_LOOKUP_PAGES; page += 1) {
-    const notices = await getNoticesPage(sessionId, page);
-    const notice = notices.find((item) => item.id === noticeId);
+    const noticesPage = await getNoticesPage(sessionId, page);
+    const notice = noticesPage.items.find((item) => item.id === noticeId);
 
     if (notice) {
       return notice;
     }
 
-    if (notices.length < PORTAL_NOTICE_PAGE_SIZE) {
+    if (!noticesPage.hasNextPage) {
       break;
     }
   }
 
   return null;
+}
+
+function normalizePortalPage<T>(
+  response: T[] | PortalPage<T>,
+  requestedPage: number,
+  pageSize: number,
+): PortalPage<T> {
+  if (Array.isArray(response)) {
+    const hasNextPage = response.length >= pageSize;
+
+    return {
+      items: response,
+      page: requestedPage,
+      totalPages: hasNextPage ? requestedPage + 1 : requestedPage,
+      hasNextPage,
+    };
+  }
+
+  return response;
 }

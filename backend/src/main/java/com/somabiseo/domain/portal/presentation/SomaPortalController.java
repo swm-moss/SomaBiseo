@@ -5,6 +5,7 @@ import com.somabiseo.domain.portal.domain.SomaPortalEventResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalLoginResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalNoticeResponse;
+import com.somabiseo.domain.portal.domain.SomaPortalPageResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalUnauthorizedException;
 import com.somabiseo.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 public class SomaPortalController {
@@ -41,7 +40,7 @@ public class SomaPortalController {
     }
 
     @GetMapping("/api/soma/notices")
-    ApiResponse<List<SomaPortalNoticeResponse>> getNotices(
+    ApiResponse<SomaPortalPageResponse<SomaPortalNoticeResponse>> getNotices(
             @RequestParam String sessionId,
             @RequestParam(defaultValue = "1") int page
     ) {
@@ -49,7 +48,7 @@ public class SomaPortalController {
     }
 
     @GetMapping("/api/soma/events")
-    ApiResponse<List<SomaPortalEventResponse>> getEvents(
+    ApiResponse<SomaPortalPageResponse<SomaPortalEventResponse>> getEvents(
             @RequestParam String sessionId,
             @RequestParam(defaultValue = "1") int page
     ) {

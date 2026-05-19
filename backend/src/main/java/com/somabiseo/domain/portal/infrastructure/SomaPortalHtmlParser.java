@@ -39,6 +39,8 @@ public class SomaPortalHtmlParser {
     private static final Pattern CAPACITY_PATTERN = Pattern.compile("(\\d+)\\s*명");
     private static final Pattern APPLICANT_COUNT_PATTERN = Pattern.compile("신청자\\s*리스트\\s*\\[\\s*(\\d+)\\s*명\\s*]");
     private static final Pattern TIME_AFTER_RANGE_PATTERN = Pattern.compile("~\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
+    private static final Pattern HREF_PAGE_INDEX_PATTERN = Pattern.compile("(?:[?&]|^)pageIndex=(\\d+)");
+    private static final Pattern SCRIPT_PAGE_INDEX_PATTERN = Pattern.compile("(?:fnLinkPage|linkPage|fn_egov_link_page|goPage|movePage|goPaging)\\s*\\(\\s*'?(\\d+)'?\\s*\\)");
 
     public String parseCsrfToken(String html) {
         Document document = Jsoup.parse(html);
@@ -246,6 +248,48 @@ public class SomaPortalHtmlParser {
         }
 
         return new ArrayList<>(items.values());
+    }
+
+    public int parseTotalPages(String html, int fallbackPage) {
+        Document document = Jsoup.parse(html);
+        int totalPages = Math.max(fallbackPage, 1);
+
+        for (Element element : document.select("a[href], a[onclick], button[onclick]")) {
+            if (!isPaginationElement(element)) {
+                continue;
+            }
+
+            totalPages = Math.max(totalPages, maxPageIndex(element.attr("href")));
+            totalPages = Math.max(totalPages, maxPageIndex(element.attr("onclick")));
+        }
+
+        for (Element element : document.select(".pagination a, .paging a, .page a, .paginate a, .bbs-page a")) {
+            String text = clean(element.text());
+
+            if (text.matches("\\d+")) {
+                totalPages = Math.max(totalPages, Integer.parseInt(text));
+            }
+        }
+
+        return totalPages;
+    }
+
+    public boolean hasPaginationLinks(String html) {
+        Document document = Jsoup.parse(html);
+
+        for (Element element : document.select("a[href], a[onclick], button[onclick]")) {
+            if (!isPaginationElement(element)) {
+                continue;
+            }
+
+            if (maxPageIndex(element.attr("href")) > 0 || maxPageIndex(element.attr("onclick")) > 0) {
+                return true;
+            }
+        }
+
+        return document.select(".pagination a, .paging a, .page a, .paginate a, .bbs-page a").stream()
+                .map(element -> clean(element.text()))
+                .anyMatch(text -> text.matches("\\d+"));
     }
 
     private Optional<PortalBoardItem> parseGalleryItem(Element element, String baseUrl) {
@@ -798,6 +842,58 @@ public class SomaPortalHtmlParser {
         }
 
         return params;
+    }
+
+    private int maxPageIndex(String value) {
+        String cleaned = clean(value);
+
+        if (cleaned.isBlank()) {
+            return 0;
+        }
+
+        int maxPage = 0;
+        Matcher hrefMatcher = HREF_PAGE_INDEX_PATTERN.matcher(cleaned);
+
+        while (hrefMatcher.find()) {
+            maxPage = Math.max(maxPage, Integer.parseInt(hrefMatcher.group(1)));
+        }
+
+        Matcher scriptMatcher = SCRIPT_PAGE_INDEX_PATTERN.matcher(cleaned);
+
+        while (scriptMatcher.find()) {
+            maxPage = Math.max(maxPage, Integer.parseInt(scriptMatcher.group(1)));
+        }
+
+        return maxPage;
+    }
+
+    private boolean isPaginationElement(Element element) {
+        return looksLikePaginationText(clean(element.text())) || hasPaginationContainer(element);
+    }
+
+    private boolean looksLikePaginationText(String text) {
+        return text.matches("\\d+")
+                || List.of("처음", "이전", "다음", "끝", "처음 목록", "이전 목록", "다음 목록", "끝 목록")
+                .contains(text);
+    }
+
+    private boolean hasPaginationContainer(Element element) {
+        Element current = element;
+
+        while (current != null) {
+            String marker = (current.className() + " " + current.id()).toLowerCase();
+
+            if (marker.contains("pagination")
+                    || marker.contains("paging")
+                    || marker.contains("paginate")
+                    || marker.contains("bbs-page")) {
+                return true;
+            }
+
+            current = current.parent();
+        }
+
+        return false;
     }
 
     private String inferTitle(Document document) {

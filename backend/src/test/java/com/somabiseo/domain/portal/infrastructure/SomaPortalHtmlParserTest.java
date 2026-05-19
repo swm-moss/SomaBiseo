@@ -179,6 +179,36 @@ class SomaPortalHtmlParserTest {
     }
 
     @Test
+    void parsesTotalPagesFromPaginationLinks() {
+        String html = """
+                <div class="paging">
+                  <a href="?menuNo=200046&pageIndex=1">1</a>
+                  <a href="?menuNo=200046&pageIndex=2">2</a>
+                  <a href="javascript:fnLinkPage(3)">다음 목록</a>
+                  <a onclick="goPage('5')">끝 목록</a>
+                </div>
+                """;
+
+        int totalPages = parser.parseTotalPages(html, 1);
+
+        assertThat(totalPages).isEqualTo(5);
+    }
+
+    @Test
+    void doesNotUseNextPageLinkAsTotalPages() {
+        String html = """
+                <div class="paging">
+                  <a href="?menuNo=200046&pageIndex=1">1</a>
+                  <a href="javascript:fnLinkPage(2)">다음 목록</a>
+                </div>
+                """;
+
+        int totalPages = parser.parseTotalPages(html, 1);
+
+        assertThat(totalPages).isEqualTo(1);
+    }
+
+    @Test
     void detectsLoggedOutMainPage() {
         String html = """
                 <html>

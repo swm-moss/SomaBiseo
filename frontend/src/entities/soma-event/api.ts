@@ -11,6 +11,13 @@ import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/cli
 export const PORTAL_EVENT_PAGE_SIZE = 10;
 const MAX_EVENT_LOOKUP_PAGES = 10;
 
+type PortalPage<T> = {
+  items: T[];
+  page: number;
+  totalPages: number;
+  hasNextPage: boolean;
+};
+
 type PortalEventResponse = {
   sourceId: string;
   type: SomaEventType;
@@ -131,13 +138,13 @@ function matchesFilter(event: SomaEvent, filter: SomaEventFilter) {
 }
 
 export async function getSomaEvents(sessionId: string, filter: SomaEventFilter = {}, page = 1) {
-  const events = await getSomaEventsPage(sessionId, page);
+  const eventsPage = await getSomaEventsPage(sessionId, page);
 
-  return events.filter((event) => matchesFilter(event, filter));
+  return eventsPage.items.filter((event) => matchesFilter(event, filter));
 }
 
 export async function getSomaEventsPage(sessionId: string, page = 1) {
-  const events = await unwrapApiResponse(
+  const response = await unwrapApiResponse(
     apiClient
       .get("soma/events", {
         searchParams: {
@@ -145,24 +152,28 @@ export async function getSomaEventsPage(sessionId: string, page = 1) {
           page,
         },
       })
-      .json<ApiResponse<PortalEventResponse[]>>(),
+      .json<ApiResponse<PortalEventResponse[] | PortalPage<PortalEventResponse>>>(),
   );
+  const pageResponse = normalizePortalPage(response, page, PORTAL_EVENT_PAGE_SIZE);
 
-  return events.map(toSomaEvent).sort(byStartAt);
+  return {
+    ...pageResponse,
+    items: pageResponse.items.map(toSomaEvent).sort(byStartAt),
+  };
 }
 
 export async function getSomaEventById(sessionId: string, eventId: string) {
   let summary: SomaEvent | null = null;
 
   for (let page = 1; page <= MAX_EVENT_LOOKUP_PAGES; page += 1) {
-    const events = await getSomaEventsPage(sessionId, page);
-    summary = events.find((event) => event.id === eventId) ?? null;
+    const eventsPage = await getSomaEventsPage(sessionId, page);
+    summary = eventsPage.items.find((event) => event.id === eventId) ?? null;
 
     if (summary) {
       break;
     }
 
-    if (events.length < PORTAL_EVENT_PAGE_SIZE) {
+    if (!eventsPage.hasNextPage) {
       break;
     }
   }
@@ -207,6 +218,25 @@ export async function cancelMentoLecApplication(sessionId: string, qustnrSn: str
       })
       .json<ApiResponse<MentoLecApplicationResponse>>(),
   );
+}
+
+function normalizePortalPage<T>(
+  response: T[] | PortalPage<T>,
+  requestedPage: number,
+  pageSize: number,
+): PortalPage<T> {
+  if (Array.isArray(response)) {
+    const hasNextPage = response.length >= pageSize;
+
+    return {
+      items: response,
+      page: requestedPage,
+      totalPages: hasNextPage ? requestedPage + 1 : requestedPage,
+      hasNextPage,
+    };
+  }
+
+  return response;
 }
 
 export async function getDashboardEvents(sessionId: string) {

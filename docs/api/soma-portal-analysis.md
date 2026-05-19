@@ -27,7 +27,7 @@ password={portal-password}
 ```
 
 목록 페이지는 `pageIndex` query로 페이지를 넘깁니다.
-프론트 목록은 첫 페이지만 고정 조회하지 않고 사용자가 요청할 때마다 다음 `pageIndex`를 불러오는 방식으로 처리합니다.
+프론트 목록은 첫 페이지만 고정 조회하지 않고 사용자가 페이지 번호를 누를 때 해당 `pageIndex`를 불러오는 방식으로 처리합니다.
 
 ## SomaBiseo API
 
@@ -36,6 +36,17 @@ POST   /api/soma/login
 DELETE /api/soma/logout?sessionId={sessionId}
 GET    /api/soma/notices?sessionId={sessionId}&page=1
 GET    /api/soma/events?sessionId={sessionId}&page=1
+```
+
+목록 응답의 `data`는 페이지 메타데이터를 포함합니다.
+
+```json
+{
+  "items": [],
+  "page": 1,
+  "totalPages": 3,
+  "hasNextPage": true
+}
 ```
 
 ## Safety Boundary

@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import { getNoticesPage, PORTAL_NOTICE_PAGE_SIZE } from "@/entities/notice/api";
+import { getNoticesPage } from "@/entities/notice/api";
 import type { NoticeFilter } from "@/entities/notice/model";
 import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
 import { BookmarkNoticeButton } from "@/features/bookmark-notice/ui";
@@ -13,10 +13,10 @@ import { useNoticeReadStore } from "@/features/mark-notice-read/model";
 import { routes } from "@/shared/config/routes";
 import { getRelativePublishedAt } from "@/shared/lib/date";
 import { cn } from "@/shared/lib/utils";
-import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
 import { LoadingState } from "@/shared/ui/loading-state";
+import { PaginationControl } from "@/shared/ui/pagination-control";
 import { SegmentControl } from "@/shared/ui/segment-control";
 import { StatusBadge } from "@/shared/ui/status-badge";
 
@@ -29,27 +29,25 @@ const options = [
 
 export function NoticeList() {
   const [filter, setFilter] = useState<NoticeFilter>("ALL");
+  const [page, setPage] = useState(1);
   const session = usePortalAuthStore((state) => state.session);
   const bookmarkedNoticeIds = useNoticeBookmarkStore((state) => state.bookmarkedNoticeIds);
   const readNoticeIds = useNoticeReadStore((state) => state.readNoticeIds);
   const validSession = session && !isPortalSessionExpired(session) ? session : null;
-  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      queryKey: ["notices", validSession?.sessionId],
-      queryFn: ({ pageParam }) => getNoticesPage(validSession!.sessionId, pageParam),
-      initialPageParam: 1,
-      getNextPageParam: (lastPage, allPages) =>
-        lastPage.length >= PORTAL_NOTICE_PAGE_SIZE ? allPages.length + 1 : undefined,
-      enabled: Boolean(validSession),
-    });
-  const allNotices = useMemo(() => data?.pages.flat() ?? [], [data]);
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    queryKey: ["notices", validSession?.sessionId, page],
+    queryFn: () => getNoticesPage(validSession!.sessionId, page),
+    enabled: Boolean(validSession),
+    placeholderData: keepPreviousData,
+  });
+  const pageNotices = useMemo(() => data?.items ?? [], [data]);
 
   const notices = useMemo(() => {
-    if (allNotices.length === 0) {
+    if (pageNotices.length === 0) {
       return [];
     }
 
-    return allNotices.filter((notice) => {
+    return pageNotices.filter((notice) => {
       if (filter === "IMPORTANT") {
         return notice.isImportant;
       }
@@ -64,7 +62,13 @@ export function NoticeList() {
 
       return true;
     });
-  }, [allNotices, bookmarkedNoticeIds, filter, readNoticeIds]);
+  }, [bookmarkedNoticeIds, filter, pageNotices, readNoticeIds]);
+  const totalPages = data?.totalPages ?? page;
+
+  const handleFilterChange = (nextFilter: NoticeFilter) => {
+    setFilter(nextFilter);
+    setPage(1);
+  };
 
   return (
     <section className="sb-section">
@@ -84,11 +88,11 @@ export function NoticeList() {
       ) : null}
       {validSession ? (
         <>
-          <SegmentControl options={options} value={filter} onValueChange={setFilter} />
+          <SegmentControl options={options} value={filter} onValueChange={handleFilterChange} />
           {isLoading ? <LoadingState /> : null}
           {isError ? <ErrorState onRetry={() => void refetch()} /> : null}
           {data && notices.length === 0 ? (
-            <EmptyState title="공지 없음" description="선택한 조건에 맞는 공지가 없습니다." />
+            <EmptyState title="공지 없음" description="이 페이지에는 조건에 맞는 공지가 없습니다." />
           ) : null}
           {notices.length > 0 ? (
             <div className="sb-list-surface">
@@ -120,24 +124,12 @@ export function NoticeList() {
               })}
             </div>
           ) : null}
-          {hasNextPage ? (
-            <div className="mt-5 flex flex-col items-center gap-2">
-              <Button
-                className="w-full sm:w-auto"
-                disabled={isFetchingNextPage}
-                onClick={() => void fetchNextPage()}
-                type="button"
-                variant="outline"
-              >
-                {isFetchingNextPage ? "불러오는 중" : "다음 페이지 더 보기"}
-              </Button>
-              {data ? (
-                <p className="text-[13px] font-medium leading-[19.5px] text-muted-foreground">
-                  {data.pages.length}페이지까지 불러왔어요
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+          <PaginationControl
+            isDisabled={isFetching}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </>
       ) : null}
     </section>
