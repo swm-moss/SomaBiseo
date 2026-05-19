@@ -19,8 +19,6 @@ import java.util.UUID;
 
 @Service
 public class SomaPortalService {
-    private static final int DEFAULT_PAGE_SIZE = 10;
-
     private final SomaPortalClient portalClient;
     private final SomaPortalHtmlParser htmlParser;
     private final SomaPortalSessionStore sessionStore;

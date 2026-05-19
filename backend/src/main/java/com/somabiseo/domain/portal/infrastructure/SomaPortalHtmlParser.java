@@ -41,6 +41,8 @@ public class SomaPortalHtmlParser {
     private static final Pattern TIME_AFTER_RANGE_PATTERN = Pattern.compile("~\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
     private static final Pattern HREF_PAGE_INDEX_PATTERN = Pattern.compile("(?:[?&]|^)pageIndex=(\\d+)");
     private static final Pattern SCRIPT_PAGE_INDEX_PATTERN = Pattern.compile("(?:fnLinkPage|linkPage|fn_egov_link_page|goPage|movePage|goPaging)\\s*\\(\\s*'?(\\d+)'?\\s*\\)");
+    private static final Pattern TOTAL_PAGE_TEXT_PATTERN = Pattern.compile("(?:총|전체)\\s*(\\d+)\\s*페이지");
+    private static final Pattern TOTAL_COUNT_TEXT_PATTERN = Pattern.compile("(?:총|전체)\\s*(\\d+)\\s*(?:건|개)");
 
     public String parseCsrfToken(String html) {
         Document document = Jsoup.parse(html);
@@ -253,9 +255,14 @@ public class SomaPortalHtmlParser {
     public int parseTotalPages(String html, int fallbackPage) {
         Document document = Jsoup.parse(html);
         int totalPages = Math.max(fallbackPage, 1);
+        Optional<Integer> totalPageText = parseTotalPageText(document.text());
+
+        if (totalPageText.isPresent()) {
+            return Math.max(totalPages, totalPageText.get());
+        }
 
         for (Element element : document.select("a[href], a[onclick], button[onclick]")) {
-            if (!isPaginationElement(element)) {
+            if (!isLastPageElement(element)) {
                 continue;
             }
 
@@ -263,33 +270,19 @@ public class SomaPortalHtmlParser {
             totalPages = Math.max(totalPages, maxPageIndex(element.attr("onclick")));
         }
 
+        if (totalPages > fallbackPage) {
+            return totalPages;
+        }
+
         for (Element element : document.select(".pagination a, .paging a, .page a, .paginate a, .bbs-page a")) {
             String text = clean(element.text());
 
-            if (text.matches("\\d+")) {
+            if (text.matches("\\d+") && !hasPaginationDirectionLinks(document)) {
                 totalPages = Math.max(totalPages, Integer.parseInt(text));
             }
         }
 
         return totalPages;
-    }
-
-    public boolean hasPaginationLinks(String html) {
-        Document document = Jsoup.parse(html);
-
-        for (Element element : document.select("a[href], a[onclick], button[onclick]")) {
-            if (!isPaginationElement(element)) {
-                continue;
-            }
-
-            if (maxPageIndex(element.attr("href")) > 0 || maxPageIndex(element.attr("onclick")) > 0) {
-                return true;
-            }
-        }
-
-        return document.select(".pagination a, .paging a, .page a, .paginate a, .bbs-page a").stream()
-                .map(element -> clean(element.text()))
-                .anyMatch(text -> text.matches("\\d+"));
     }
 
     private Optional<PortalBoardItem> parseGalleryItem(Element element, String baseUrl) {
@@ -867,14 +860,46 @@ public class SomaPortalHtmlParser {
         return maxPage;
     }
 
-    private boolean isPaginationElement(Element element) {
-        return looksLikePaginationText(clean(element.text())) || hasPaginationContainer(element);
+    private Optional<Integer> parseTotalPageText(String text) {
+        String cleaned = clean(text);
+        Matcher pageMatcher = TOTAL_PAGE_TEXT_PATTERN.matcher(cleaned);
+
+        if (pageMatcher.find()) {
+            return Optional.of(Integer.parseInt(pageMatcher.group(1)));
+        }
+
+        Matcher countMatcher = TOTAL_COUNT_TEXT_PATTERN.matcher(cleaned);
+
+        if (countMatcher.find()) {
+            int totalCount = Integer.parseInt(countMatcher.group(1));
+
+            return Optional.of(Math.max((totalCount + 9) / 10, 1));
+        }
+
+        return Optional.empty();
     }
 
-    private boolean looksLikePaginationText(String text) {
-        return text.matches("\\d+")
-                || List.of("처음", "이전", "다음", "끝", "처음 목록", "이전 목록", "다음 목록", "끝 목록")
-                .contains(text);
+    private boolean isLastPageElement(Element element) {
+        String text = clean(element.text());
+        String marker = clean(String.join(" ",
+                element.className(),
+                element.id(),
+                element.attr("title"),
+                element.attr("aria-label")
+        )).toLowerCase();
+
+        return text.contains("끝")
+                || marker.contains("last")
+                || marker.contains("end")
+                || marker.contains("final");
+    }
+
+    private boolean hasPaginationDirectionLinks(Document document) {
+        return document.select("a[href], a[onclick], button[onclick]").stream()
+                .filter(this::hasPaginationContainer)
+                .map(element -> clean(element.text()))
+                .anyMatch(text -> List.of("처음", "이전", "다음", "끝", "처음 목록", "이전 목록", "다음 목록", "끝 목록")
+                        .contains(text));
     }
 
     private boolean hasPaginationContainer(Element element) {
