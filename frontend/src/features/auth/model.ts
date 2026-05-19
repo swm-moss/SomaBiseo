@@ -29,7 +29,7 @@ export const usePortalAuthStore = create<PortalAuthState>()(
       clearSession: () => set({ session: null }),
     }),
     {
-      name: "somabiseo-portal-session",
+      name: "somabiseo-app-session",
     },
   ),
 );

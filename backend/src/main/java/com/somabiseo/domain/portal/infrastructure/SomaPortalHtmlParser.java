@@ -237,7 +237,7 @@ public class SomaPortalHtmlParser {
                 sourceIdFromHref(resolvedSourceUrl),
                 inferEventType(title + " " + rawText),
                 title,
-                inferMentorName(rawText).orElse(null),
+                firstNonBlank(detailMap.get("작성자"), inferMentorName(rawText).orElse(null)),
                 inferTopic(title),
                 firstNonBlank(detailMap.get("장소"), inferLocation(rawText).orElse(null)),
                 lectureRange.startAt(),

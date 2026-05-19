@@ -13,6 +13,8 @@ public record SomaPortalProperties(
         String mentoLecViewPath,
         String mentoLecApplyPath,
         String mentoLecCancelPath,
+        String operatorUsername,
+        String operatorPassword,
         long sessionTtlMinutes
 ) {
 }

@@ -6,8 +6,10 @@
 
 - SomaBiseo는 소프트웨어마에스트로 연수생을 위한 비공식 일정, 공지, 멘토링 비서다.
 - 공식 소마 앱처럼 보이지 않게 표현한다.
-- SOMA 포털 비밀번호를 저장하지 않는다.
-- 사용자가 직접 요청한 읽기, 신청, 취소 흐름은 만들 수 있지만 매크로성 자동 반복 실행은 만들지 않는다.
+- 사용자에게 SOMA 포털 아이디/비밀번호를 입력받지 않는다.
+- 서버가 사용자별 SOMA 포털 세션 쿠키를 보관하는 구조로 만들지 않는다.
+- 읽기 전용 데이터 조회는 운영자 계정 환경변수로 서버에서 수행한다.
+- 신청/취소 기능 제거는 별도 팀원 작업으로 진행 중이므로 이 흐름을 수정하는 작업과 섞지 않는다.
 - 초기 핵심 가치는 공지, 멘토특강, 자유멘토링을 한곳에서 보기 좋게 정리하는 것이다.
 
 ## 프론트 상태 관리와 캐싱
@@ -16,15 +18,15 @@
 - TanStack Query 대상은 공지 목록, 공지 상세, 일정 목록, 일정 상세, 대시보드, 캘린더 충돌 조회처럼 API에서 가져오는 데이터다.
 - QueryClient 기본 정책은 `frontend/src/shared/api/query-client.ts`에 둔다.
 - 현재 서버 상태 캐싱 정책은 `staleTime: 60초`, `gcTime: 5분`, `refetchOnWindowFocus: false`, query retry 1회다.
-- query key에는 사용자 SOMA 세션 ID, 필터, 상세 ID처럼 응답을 바꾸는 값을 반드시 포함한다.
+- query key에는 페이지, 필터, 상세 ID처럼 응답을 바꾸는 값을 반드시 포함한다.
 - SOMA 포털 공지와 멘토링 목록은 `pageIndex` 기반 다중 페이지 목록이므로 React Query query key에 `page`를 포함해 페이지 단위 캐싱한다.
 - 목록 화면은 무한 스크롤보다 1, 2, 3 번호 페이지네이션을 우선 사용해서 현재 위치와 이동 가능한 페이지를 명확히 보여준다.
 - 멘토링/특강 AI 요약은 상세 본문을 기준으로 백엔드에서 `contentHash`를 계산하고, 같은 `sourceId + contentHash`가 있으면 DB 캐시를 반환한다.
 - AI 요약은 상세 조회와 분리된 `POST /api/soma/events/summary`에서 생성한다. 프론트는 TanStack Query의 `event-ai-summary` key로 읽고, 백엔드 캐시가 비용 중복을 막는다.
 - 서버에 쓰기 API가 붙는 기능은 mutation 성공 후 관련 query key를 invalidate한다.
-- Zustand는 임시 SOMA 세션, 북마크, 읽음, 관심 저장, Google Calendar 연결 mock 상태처럼 브라우저에 보관하는 클라이언트 상태에만 쓴다.
+- Zustand는 앱 로컬 로그인 세션, 북마크, 읽음, 관심 저장, Google Calendar 연결 mock 상태처럼 브라우저에 보관하는 클라이언트 상태에만 쓴다.
 - 관심사 설정은 `somabiseo-interest-preferences` 로컬 Zustand persist에 저장하고, 대시보드 추천 특강과 일정 목록 추천 강조에 사용한다.
-- 로그인 상태에서 관심사가 비어 있으면 AppShell에서 관심사 온보딩 모달을 보여준다. 사용자가 현재 브라우저 세션에서 나중에 하기를 누르면 `sessionStorage`로 재노출을 막는다.
+- 관심사가 비어 있으면 AppShell에서 관심사 온보딩 모달을 보여준다. 사용자가 현재 브라우저 세션에서 나중에 하기를 누르면 `sessionStorage`로 재노출을 막는다.
 - 관심사 기반 추천은 초기에는 AI 호출 없이 제목, 주제, 장소, 본문, rawText 키워드 매칭으로 점수화한다.
 - 백엔드 영속 저장이 붙으면 Zustand에만 있는 상태를 서버 mutation과 React Query 캐시 갱신 흐름으로 옮긴다.
 
@@ -47,6 +49,7 @@
 - Railway Postgres는 private network를 사용하며 JDBC 접속 문자열은 `DATABASE_JDBC_URL`로 제공한다.
 - 프론트는 `NEXT_PUBLIC_API_BASE_URL`로 Railway 백엔드 공개 도메인 + `/api`를 바라본다.
 - 백엔드는 `CORS_ALLOWED_ORIGINS`에 Vercel 프론트 도메인을 등록한다.
+- 백엔드의 SOMA 읽기 전용 어댑터는 `SOMA_PORTAL_OPERATOR_USERNAME`, `SOMA_PORTAL_OPERATOR_PASSWORD` 환경변수로 로그인한다. 이 값은 코드, 문서, PR 본문에 노출하지 않는다.
 - 백엔드 AI 요약 기능은 `OPENAI_API_KEY`가 있을 때만 동작한다. 키는 코드나 커밋에 저장하지 않고 Railway 환경변수로만 설정한다.
 - AI 요약 모델은 기본 `gpt-5.4-mini`이며, 필요하면 `OPENAI_SUMMARY_MODEL`로 교체한다.
 - GitHub Actions의 `CI`는 PR과 `main` push에서 실행한다.

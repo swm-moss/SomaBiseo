@@ -18,7 +18,7 @@ export function LoginPage() {
         />
         <h1 className="mt-3 text-[30px] font-black leading-[40px]">소마 생활을 정리해요.</h1>
         <p className="mt-3 text-[17px] leading-[25.5px] text-muted-foreground">
-          {PRODUCT_TAGLINE}
+          {PRODUCT_TAGLINE} 포털 비밀번호 없이 사용할 수 있어요.
         </p>
 
         <div className="mt-8 rounded-lg bg-white p-5">
