@@ -1,12 +1,23 @@
 import type {
   SomaEventApplicant,
   SomaEventDetailItem,
+  EventAiSummary,
   SomaEvent,
   SomaEventFilter,
   SomaEventStatus,
   SomaEventType,
 } from "@/entities/soma-event/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
+
+const MAX_EVENT_LOOKUP_PAGES = 10;
+const MAX_DASHBOARD_EVENT_PAGES = 3;
+
+type PortalPage<T> = {
+  items: T[];
+  page: number;
+  totalPages: number;
+  hasNextPage: boolean;
+};
 
 type PortalEventResponse = {
   sourceId: string;
@@ -128,7 +139,26 @@ function matchesFilter(event: SomaEvent, filter: SomaEventFilter) {
 }
 
 export async function getSomaEvents(sessionId: string, filter: SomaEventFilter = {}, page = 1) {
-  const events = await unwrapApiResponse(
+  const eventsPage = await getSomaEventsPage(sessionId, page);
+
+  return eventsPage.items.filter((event) => matchesFilter(event, filter));
+}
+
+async function getSomaEventsPages(sessionId: string, maxPages: number) {
+  const firstPage = await getSomaEventsPage(sessionId, 1);
+  const events = [...firstPage.items];
+  let currentPage = firstPage;
+
+  for (let page = 2; page <= maxPages && currentPage.hasNextPage; page += 1) {
+    currentPage = await getSomaEventsPage(sessionId, page);
+    events.push(...currentPage.items);
+  }
+
+  return events.sort(byStartAt);
+}
+
+export async function getSomaEventsPage(sessionId: string, page = 1) {
+  const response = await unwrapApiResponse(
     apiClient
       .get("soma/events", {
         searchParams: {
@@ -136,17 +166,33 @@ export async function getSomaEvents(sessionId: string, filter: SomaEventFilter =
           page,
         },
       })
-      .json<ApiResponse<PortalEventResponse[]>>(),
+      .json<ApiResponse<PortalEventResponse[] | PortalPage<PortalEventResponse>>>(),
   );
+  const pageResponse = normalizePortalPage(response, page);
 
-  return events.map(toSomaEvent).filter((event) => matchesFilter(event, filter)).sort(byStartAt);
+  return {
+    ...pageResponse,
+    items: pageResponse.items.map(toSomaEvent).sort(byStartAt),
+  };
 }
 
 export async function getSomaEventById(sessionId: string, eventId: string) {
-  const events = await getSomaEvents(sessionId);
-  const summary = events.find((event) => event.id === eventId);
+  let summary: SomaEvent | null = null;
 
-  if (!summary) {
+  for (let page = 1; page <= MAX_EVENT_LOOKUP_PAGES; page += 1) {
+    const eventsPage = await getSomaEventsPage(sessionId, page);
+    summary = eventsPage.items.find((event) => event.id === eventId) ?? null;
+
+    if (summary) {
+      break;
+    }
+
+    if (!eventsPage.hasNextPage) {
+      break;
+    }
+  }
+
+  if (summary == null) {
     return null;
   }
 
@@ -188,8 +234,39 @@ export async function cancelMentoLecApplication(sessionId: string, qustnrSn: str
   );
 }
 
+export async function summarizeSomaEvent(sessionId: string, sourceUrl: string) {
+  return unwrapApiResponse(
+    apiClient
+      .post("soma/events/summary", {
+        headers: {
+          Authorization: `Bearer ${sessionId}`,
+        },
+        json: {
+          sourceUrl,
+        },
+      })
+      .json<ApiResponse<EventAiSummary>>(),
+  );
+}
+
+function normalizePortalPage<T>(
+  response: T[] | PortalPage<T>,
+  requestedPage: number,
+): PortalPage<T> {
+  if (Array.isArray(response)) {
+    return {
+      items: response,
+      page: requestedPage,
+      totalPages: requestedPage,
+      hasNextPage: false,
+    };
+  }
+
+  return response;
+}
+
 export async function getDashboardEvents(sessionId: string) {
-  const events = await getSomaEvents(sessionId);
+  const events = await getSomaEventsPages(sessionId, MAX_DASHBOARD_EVENT_PAGES);
   const today = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Seoul",
     year: "numeric",
@@ -200,6 +277,7 @@ export async function getDashboardEvents(sessionId: string) {
   return {
     todayEvents: events.filter((event) => event.startAt?.startsWith(today)),
     upcomingEvents: events.slice(0, 3),
+    recommendationCandidates: events,
     deadlineSoonEvents: events.filter((event) => event.status === "OPEN").slice(0, 3),
     conflictedEvents: events.filter((event) => event.conflict.hasConflict),
   };

@@ -5,6 +5,7 @@ import com.somabiseo.domain.portal.domain.SomaPortalLoginResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationDetail;
 import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalNoticeResponse;
+import com.somabiseo.domain.portal.domain.SomaPortalPageResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalSession;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalClient;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalHtmlParser;
@@ -55,18 +56,22 @@ public class SomaPortalService {
         sessionStore.remove(sessionId);
     }
 
-    public List<SomaPortalNoticeResponse> getNotices(String sessionId, int page) {
+    public SomaPortalPageResponse<SomaPortalNoticeResponse> getNotices(String sessionId, int page) {
         SomaPortalSession session = sessionStore.get(sessionId);
-        String html = portalClient.getNoticesHtml(session, page);
+        int safePage = Math.max(page, 1);
+        String html = portalClient.getNoticesHtml(session, safePage);
+        List<SomaPortalNoticeResponse> notices = htmlParser.parseNotices(html, portalClient.baseUrl());
 
-        return htmlParser.parseNotices(html, portalClient.baseUrl());
+        return toPageResponse(notices, html, safePage);
     }
 
-    public List<SomaPortalEventResponse> getEvents(String sessionId, int page) {
+    public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(String sessionId, int page) {
         SomaPortalSession session = sessionStore.get(sessionId);
-        String html = portalClient.getEventsHtml(session, page);
+        int safePage = Math.max(page, 1);
+        String html = portalClient.getEventsHtml(session, safePage);
+        List<SomaPortalEventResponse> events = htmlParser.parseEvents(html, portalClient.baseUrl());
 
-        return htmlParser.parseEvents(html, portalClient.baseUrl());
+        return toPageResponse(events, html, safePage);
     }
 
     public SomaPortalEventResponse getEventDetail(String sessionId, String sourceUrl) {
@@ -115,5 +120,16 @@ public class SomaPortalService {
         }
 
         return qustnrSn;
+    }
+
+    private <T> SomaPortalPageResponse<T> toPageResponse(List<T> items, String html, int page) {
+        int totalPages = htmlParser.parseTotalPages(html, page);
+
+        return new SomaPortalPageResponse<>(
+                items,
+                page,
+                Math.max(totalPages, 1),
+                totalPages > page
+        );
     }
 }

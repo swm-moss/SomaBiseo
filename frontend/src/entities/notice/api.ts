@@ -1,6 +1,15 @@
 import type { Notice, NoticeCategory } from "@/entities/notice/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
 
+const MAX_NOTICE_LOOKUP_PAGES = 10;
+
+export type PortalPage<T> = {
+  items: T[];
+  page: number;
+  totalPages: number;
+  hasNextPage: boolean;
+};
+
 type PortalNoticeResponse = {
   sourceId: string;
   title: string;
@@ -41,7 +50,13 @@ function toNotice(notice: PortalNoticeResponse): Notice {
 }
 
 export async function getNotices(sessionId: string, page = 1) {
-  const notices = await unwrapApiResponse(
+  const noticesPage = await getNoticesPage(sessionId, page);
+
+  return noticesPage.items;
+}
+
+export async function getNoticesPage(sessionId: string, page = 1) {
+  const response = await unwrapApiResponse(
     apiClient
       .get("soma/notices", {
         searchParams: {
@@ -49,14 +64,45 @@ export async function getNotices(sessionId: string, page = 1) {
           page,
         },
       })
-      .json<ApiResponse<PortalNoticeResponse[]>>(),
+      .json<ApiResponse<PortalNoticeResponse[] | PortalPage<PortalNoticeResponse>>>(),
   );
+  const pageResponse = normalizePortalPage(response, page);
 
-  return notices.map(toNotice);
+  return {
+    ...pageResponse,
+    items: pageResponse.items.map(toNotice),
+  };
 }
 
 export async function getNoticeById(sessionId: string, noticeId: string) {
-  const notices = await getNotices(sessionId);
+  for (let page = 1; page <= MAX_NOTICE_LOOKUP_PAGES; page += 1) {
+    const noticesPage = await getNoticesPage(sessionId, page);
+    const notice = noticesPage.items.find((item) => item.id === noticeId);
 
-  return notices.find((notice) => notice.id === noticeId) ?? null;
+    if (notice) {
+      return notice;
+    }
+
+    if (!noticesPage.hasNextPage) {
+      break;
+    }
+  }
+
+  return null;
+}
+
+function normalizePortalPage<T>(
+  response: T[] | PortalPage<T>,
+  requestedPage: number,
+): PortalPage<T> {
+  if (Array.isArray(response)) {
+    return {
+      items: response,
+      page: requestedPage,
+      totalPages: requestedPage,
+      hasNextPage: false,
+    };
+  }
+
+  return response;
 }

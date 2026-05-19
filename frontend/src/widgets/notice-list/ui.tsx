@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import { getNotices } from "@/entities/notice/api";
+import { getNoticesPage } from "@/entities/notice/api";
 import type { NoticeFilter } from "@/entities/notice/model";
 import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
 import { BookmarkNoticeButton } from "@/features/bookmark-notice/ui";
@@ -16,6 +16,7 @@ import { cn } from "@/shared/lib/utils";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
 import { LoadingState } from "@/shared/ui/loading-state";
+import { PaginationControl } from "@/shared/ui/pagination-control";
 import { SegmentControl } from "@/shared/ui/segment-control";
 import { StatusBadge } from "@/shared/ui/status-badge";
 
@@ -28,22 +29,25 @@ const options = [
 
 export function NoticeList() {
   const [filter, setFilter] = useState<NoticeFilter>("ALL");
+  const [page, setPage] = useState(1);
   const session = usePortalAuthStore((state) => state.session);
   const bookmarkedNoticeIds = useNoticeBookmarkStore((state) => state.bookmarkedNoticeIds);
   const readNoticeIds = useNoticeReadStore((state) => state.readNoticeIds);
   const validSession = session && !isPortalSessionExpired(session) ? session : null;
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["notices", validSession?.sessionId],
-    queryFn: () => getNotices(validSession!.sessionId),
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    queryKey: ["notices", validSession?.sessionId, page],
+    queryFn: () => getNoticesPage(validSession!.sessionId, page),
     enabled: Boolean(validSession),
+    placeholderData: keepPreviousData,
   });
+  const pageNotices = useMemo(() => data?.items ?? [], [data]);
 
   const notices = useMemo(() => {
-    if (!data) {
+    if (pageNotices.length === 0) {
       return [];
     }
 
-    return data.filter((notice) => {
+    return pageNotices.filter((notice) => {
       if (filter === "IMPORTANT") {
         return notice.isImportant;
       }
@@ -58,7 +62,13 @@ export function NoticeList() {
 
       return true;
     });
-  }, [bookmarkedNoticeIds, data, filter, readNoticeIds]);
+  }, [bookmarkedNoticeIds, filter, pageNotices, readNoticeIds]);
+  const totalPages = data?.totalPages ?? page;
+
+  const handleFilterChange = (nextFilter: NoticeFilter) => {
+    setFilter(nextFilter);
+    setPage(1);
+  };
 
   return (
     <section className="sb-section">
@@ -78,11 +88,11 @@ export function NoticeList() {
       ) : null}
       {validSession ? (
         <>
-          <SegmentControl options={options} value={filter} onValueChange={setFilter} />
+          <SegmentControl options={options} value={filter} onValueChange={handleFilterChange} />
           {isLoading ? <LoadingState /> : null}
           {isError ? <ErrorState onRetry={() => void refetch()} /> : null}
           {data && notices.length === 0 ? (
-            <EmptyState title="공지 없음" description="선택한 조건에 맞는 공지가 없습니다." />
+            <EmptyState title="공지 없음" description="이 페이지에는 조건에 맞는 공지가 없습니다." />
           ) : null}
           {notices.length > 0 ? (
             <div className="sb-list-surface">
@@ -114,6 +124,12 @@ export function NoticeList() {
               })}
             </div>
           ) : null}
+          <PaginationControl
+            isDisabled={isFetching}
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </>
       ) : null}
     </section>

@@ -71,6 +71,76 @@ class SomaPortalHtmlParserTest {
     }
 
     @Test
+    void parsesMentoLecListMetadataFromTableColumns() {
+        String html = """
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>343</td>
+                      <td class="tit">
+                        <a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=9343">
+                          [멘토 특강] [오프라인] 지속 성장하는 AI 서비스 위한 CI/CD와 자동화 개선 루프
+                        </a>
+                      </td>
+                      <td>2026-05-16 ~ 2026-06-01</td>
+                      <td>2026-06-01(월) 20:00 ~ 22:00</td>
+                      <td>2 /8</td>
+                      <td>-</td>
+                      <td>[접수중]</td>
+                      <td>강민준</td>
+                      <td>2026-05-16</td>
+                    </tr>
+                  </tbody>
+                </table>
+                """;
+
+        List<SomaPortalEventResponse> events = parser.parseEvents(html, "https://www.swmaestro.ai");
+
+        SomaPortalEventResponse event = events.getFirst();
+
+        assertThat(event.mentorName()).isEqualTo("강민준");
+        assertThat(event.author()).isEqualTo("강민준");
+        assertThat(event.location()).isEqualTo("오프라인");
+        assertThat(event.operationType()).isEqualTo("오프라인");
+        assertThat(event.applicantCount()).isEqualTo(2);
+        assertThat(event.capacity()).isEqualTo(8);
+        assertThat(event.status()).isEqualTo("OPEN");
+        assertThat(event.approvalStatus()).isNull();
+        assertThat(event.registeredAt()).isNotNull();
+        assertThat(event.startAt()).isNotNull();
+        assertThat(event.endAt()).isNotNull();
+    }
+
+    @Test
+    void usesListAuthorInsteadOfTopicAsMentorName() {
+        String html = """
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>345</td>
+                      <td class="tit">
+                        <a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=9345">
+                          [자유 멘토링] 신홍재님 팀 멘토링 > 주제: 아이디어 멘토링
+                        </a>
+                      </td>
+                      <td>2026-05-19 ~ 2026-06-04</td>
+                      <td>2026-06-04(목) 09:00 ~ 10:00</td>
+                      <td>1 /3</td>
+                      <td>-</td>
+                      <td>[접수중]</td>
+                      <td>안재홍</td>
+                      <td>2026-05-19</td>
+                    </tr>
+                  </tbody>
+                </table>
+                """;
+
+        List<SomaPortalEventResponse> events = parser.parseEvents(html, "https://www.swmaestro.ai");
+
+        assertThat(events.getFirst().mentorName()).isEqualTo("안재홍");
+    }
+
+    @Test
     void infersEventStatusesFromPortalText() {
         String html = """
                 <table>
@@ -176,6 +246,36 @@ class SomaPortalHtmlParserTest {
         assertThat(detail.appCnt()).isEqualTo(1);
         assertThat(detail.applicationId()).isEqualTo("38784");
         assertThat(detail.applied()).isTrue();
+    }
+
+    @Test
+    void parsesTotalPagesFromPaginationLinks() {
+        String html = """
+                <div class="paging">
+                  <a href="?menuNo=200046&pageIndex=1">1</a>
+                  <a href="?menuNo=200046&pageIndex=2">2</a>
+                  <a href="javascript:fnLinkPage(3)">다음 목록</a>
+                  <a onclick="goPage('5')">끝 목록</a>
+                </div>
+                """;
+
+        int totalPages = parser.parseTotalPages(html, 1);
+
+        assertThat(totalPages).isEqualTo(5);
+    }
+
+    @Test
+    void doesNotUseNextPageLinkAsTotalPages() {
+        String html = """
+                <div class="paging">
+                  <a href="?menuNo=200046&pageIndex=1">1</a>
+                  <a href="javascript:fnLinkPage(2)">다음 목록</a>
+                </div>
+                """;
+
+        int totalPages = parser.parseTotalPages(html, 1);
+
+        assertThat(totalPages).isEqualTo(1);
     }
 
     @Test
@@ -335,6 +435,156 @@ class SomaPortalHtmlParserTest {
         assertThat(event.applicants().getFirst().traineeName()).isEqualTo("박보라");
         assertThat(event.applicants().getFirst().status()).isEqualTo("신청완료");
         assertThat(event.applicants().get(1).canceledAt()).isEqualTo("2026.05.12 21:58");
+    }
+
+    @Test
+    void trimsPortalChromeFromEventDetailContentFallback() {
+        String html = """
+                <html>
+                  <body>
+                    메뉴 건너띄기
+                    상단메뉴 바로가기
+                    본문 바로가기
+                    로딩 중입니다...
+                    자유 멘토링 멘토 특강
+                    HOME
+                    마이페이지
+                    멘토링 / 특강 게시판
+                    접수내역
+                    <table>
+                      <tbody>
+                        <tr>
+                          <th>모집 명</th>
+                          <td colspan="3">[멘토 특강] [오프라인] 지속 성정하는 AI 서비스 위한 CI/CD와 자동화 개선 루프</td>
+                        </tr>
+                        <tr>
+                          <th>상태</th>
+                          <td>[마감]</td>
+                          <th>개설 승인</th>
+                          <td>OK</td>
+                        </tr>
+                        <tr>
+                          <th>접수 기간</th>
+                          <td>2026.05.12 00시00분 ~ 2026.05.31 09시00분</td>
+                          <th>강의날짜</th>
+                          <td>2026.05.31 09:00시 ~ 11:30시</td>
+                        </tr>
+                        <tr>
+                          <th>진행방식</th>
+                          <td>오프라인</td>
+                          <th>장소</th>
+                          <td>하이텐 - 23호실(8인)</td>
+                        </tr>
+                        <tr>
+                          <th>모집인원</th>
+                          <td>8명</td>
+                          <th>작성자</th>
+                          <td>오승근</td>
+                        </tr>
+                        <tr>
+                          <th>등록일</th>
+                          <td colspan="3">2026.05.11</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    1. 멘토링 목표 : AI Agent 및 지능형 서비스를 지속 성장시키기 위한 필수 개념을 이해하는 것을 목표로 합니다.
+                    2. 멘토링 세부 내용
+                    - GitHub Actions 기반 다중 환경 CI/CD 파이프라인 설계 예시
+                    취소하기
+                    목록
+                    ※ 무단불참 시 경고가 부여될 수 있습니다.
+                    신청자 리스트 [8 명]
+                    <table>
+                      <tbody>
+                        <tr>
+                          <th>NO.</th>
+                          <th>연수생</th>
+                          <th>신청일</th>
+                          <th>취소일</th>
+                          <th>상태</th>
+                        </tr>
+                        <tr>
+                          <td>1</td>
+                          <td>심여준</td>
+                          <td>2026.05.11 23:11</td>
+                          <td>-</td>
+                          <td>[신청완료]</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    처음 목록
+                    이전 목록
+                    1
+                    다음 목록
+                    끝 목록
+                  </body>
+                </html>
+                """;
+
+        SomaPortalEventResponse event = parser.parseEventDetail(
+                html,
+                "https://www.swmaestro.ai",
+                "/busan/sw/mypage/mentoLec/view.do?qustnrSn=337"
+        );
+
+        assertThat(event.contentText()).contains("멘토링 목표", "GitHub Actions");
+        assertThat(event.contentText()).doesNotContain("메뉴 건너띄기", "마이페이지", "취소하기", "신청자 리스트", "처음 목록");
+    }
+
+    @Test
+    void parsesEventDetailFromPlainPortalTextLayout() {
+        String html = """
+                <html>
+                  <body>
+                    AI·SW 마에스트로 부산
+                    NO.
+                    팀명
+                    팀장
+                    자유 멘토링 / 멘토 특강
+                    모집 명
+                    [멘토 특강] [오프라인] 지속 성정하는 AI 서비스 위한 CI/CD와 자동화 개선 루프
+                    상태
+                    [마감]
+                    개설 승인
+                    OK
+                    접수 기간
+                    2026.05.12 00시00분
+                    ~
+                    2026.05.31 09시00분
+                    강의날짜
+                    2026.05.31
+                    09:00시 ~ 11:30시
+                    진행방식
+                    오프라인
+                    장소
+                    하이텐 - 23호실(8인)
+                    모집인원
+                    8명
+                    작성자
+                    오승근
+                    등록일
+                    2026.05.11
+                    1. 멘토링 목표 : AI Agent 및 지능형 서비스를 지속 성장시키기 위한 필수 개념을 이해하는 것을 목표로 합니다.
+                    2. 멘토링 세부 내용
+                    - GitHub Actions 기반 다중 환경 CI/CD 파이프라인 설계 예시
+                    취소하기
+                    목록
+                    ※ 무단불참 시 경고가 부여될 수 있습니다.
+                    신청자 리스트 [8 명]
+                  </body>
+                </html>
+                """;
+
+        SomaPortalEventResponse event = parser.parseEventDetail(
+                html,
+                "https://www.swmaestro.ai",
+                "/busan/sw/mypage/mentoLec/view.do?qustnrSn=9216"
+        );
+
+        assertThat(event.title()).contains("CI/CD와 자동화 개선 루프");
+        assertThat(event.location()).isEqualTo("하이텐 - 23호실(8인)");
+        assertThat(event.contentText()).contains("멘토링 목표", "GitHub Actions");
+        assertThat(event.contentText()).doesNotContain("AI·SW 마에스트로 부산", "NO.", "모집 명", "취소하기", "신청자 리스트");
     }
 
     @Test

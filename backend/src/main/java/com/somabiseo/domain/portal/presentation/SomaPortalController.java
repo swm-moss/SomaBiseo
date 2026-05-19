@@ -1,10 +1,14 @@
 package com.somabiseo.domain.portal.presentation;
 
+import com.somabiseo.domain.eventsummary.application.EventAiSummaryService;
+import com.somabiseo.domain.eventsummary.domain.EventAiSummaryResponse;
+import com.somabiseo.domain.eventsummary.presentation.EventAiSummaryRequest;
 import com.somabiseo.domain.portal.application.SomaPortalService;
 import com.somabiseo.domain.portal.domain.SomaPortalEventResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalLoginResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalNoticeResponse;
+import com.somabiseo.domain.portal.domain.SomaPortalPageResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalUnauthorizedException;
 import com.somabiseo.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -18,14 +22,14 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 public class SomaPortalController {
     private final SomaPortalService portalService;
+    private final EventAiSummaryService eventAiSummaryService;
 
-    public SomaPortalController(SomaPortalService portalService) {
+    public SomaPortalController(SomaPortalService portalService, EventAiSummaryService eventAiSummaryService) {
         this.portalService = portalService;
+        this.eventAiSummaryService = eventAiSummaryService;
     }
 
     @PostMapping("/api/soma/login")
@@ -41,7 +45,7 @@ public class SomaPortalController {
     }
 
     @GetMapping("/api/soma/notices")
-    ApiResponse<List<SomaPortalNoticeResponse>> getNotices(
+    ApiResponse<SomaPortalPageResponse<SomaPortalNoticeResponse>> getNotices(
             @RequestParam String sessionId,
             @RequestParam(defaultValue = "1") int page
     ) {
@@ -49,7 +53,7 @@ public class SomaPortalController {
     }
 
     @GetMapping("/api/soma/events")
-    ApiResponse<List<SomaPortalEventResponse>> getEvents(
+    ApiResponse<SomaPortalPageResponse<SomaPortalEventResponse>> getEvents(
             @RequestParam String sessionId,
             @RequestParam(defaultValue = "1") int page
     ) {
@@ -62,6 +66,17 @@ public class SomaPortalController {
             @RequestParam String sourceUrl
     ) {
         return ApiResponse.ok(portalService.getEventDetail(sessionId, sourceUrl));
+    }
+
+    @PostMapping("/api/soma/events/summary")
+    ApiResponse<EventAiSummaryResponse> summarizeEvent(
+            @Valid @RequestBody EventAiSummaryRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        String sessionId = bearerSessionId(authorization);
+        SomaPortalEventResponse event = portalService.getEventDetail(sessionId, request.sourceUrl());
+
+        return ApiResponse.ok(eventAiSummaryService.getOrCreate(event));
     }
 
     @PostMapping("/api/soma/mento-lecs/{qustnrSn}/apply")

@@ -30,6 +30,8 @@ POST   /api/soma/login
 DELETE /api/soma/logout?sessionId={sessionId}
 GET    /api/soma/notices?sessionId={sessionId}&page=1
 GET    /api/soma/events?sessionId={sessionId}&page=1
+GET    /api/soma/events/detail?sessionId={sessionId}&sourceUrl={encodedSourceUrl}
+POST   /api/soma/events/summary
 ```
 
 ```json
@@ -38,6 +40,16 @@ GET    /api/soma/events?sessionId={sessionId}&page=1
   "password": "portal-password"
 }
 ```
+
+`POST /api/soma/events/summary`는 `Authorization: Bearer {sessionId}` 헤더를 사용한다.
+
+```json
+{
+  "sourceUrl": "https://www.swmaestro.ai/busan/sw/mypage/mentoLec/view.do?..."
+}
+```
+
+요약은 서버에서 상세 본문을 다시 읽어 `sourceId + contentHash`로 캐싱한다. 같은 본문은 OpenAI API를 다시 호출하지 않는다.
 
 ## Dashboard
 

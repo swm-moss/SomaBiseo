@@ -35,10 +35,49 @@ import java.util.regex.Pattern;
 public class SomaPortalHtmlParser {
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final Pattern DATE_PATTERN = Pattern.compile("(20\\d{2})[.\\-/년 ]\\s*(\\d{1,2})[.\\-/월 ]\\s*(\\d{1,2})");
-    private static final Pattern DATE_TIME_PATTERN = Pattern.compile("(20\\d{2})[.\\-/년 ]\\s*(\\d{1,2})[.\\-/월 ]\\s*(\\d{1,2})\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
+    private static final Pattern DATE_TIME_PATTERN = Pattern.compile("(20\\d{2})[.\\-/년 ]\\s*(\\d{1,2})[.\\-/월 ]\\s*(\\d{1,2})(?:\\([^)]*\\))?\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
     private static final Pattern CAPACITY_PATTERN = Pattern.compile("(\\d+)\\s*명");
     private static final Pattern APPLICANT_COUNT_PATTERN = Pattern.compile("신청자\\s*리스트\\s*\\[\\s*(\\d+)\\s*명\\s*]");
+    private static final Pattern ROW_APPLICANT_CAPACITY_PATTERN = Pattern.compile("(\\d+)\\s*/\\s*(\\d+)");
     private static final Pattern TIME_AFTER_RANGE_PATTERN = Pattern.compile("~\\s*(\\d{1,2})[:시]\\s*(\\d{1,2})?");
+    private static final Pattern HREF_PAGE_INDEX_PATTERN = Pattern.compile("(?:[?&]|^)pageIndex=(\\d+)");
+    private static final Pattern SCRIPT_PAGE_INDEX_PATTERN = Pattern.compile("(?:fnLinkPage|linkPage|fn_egov_link_page|goPage|movePage|goPaging)\\s*\\(\\s*'?(\\d+)'?\\s*\\)");
+    private static final Pattern TOTAL_PAGE_TEXT_PATTERN = Pattern.compile("(?:총|전체)\\s*(\\d+)\\s*페이지");
+    private static final Pattern TOTAL_COUNT_TEXT_PATTERN = Pattern.compile("(?:총|전체)\\s*(\\d+)\\s*(?:건|개)");
+    private static final List<String> CONTENT_STOP_MARKERS = List.of(
+            "취소하기",
+            "목록",
+            "※ 무단불참",
+            "신청자 리스트",
+            "처음 목록",
+            "이전 목록",
+            "다음 목록",
+            "끝 목록",
+            "개인정보처리방침"
+    );
+    private static final List<String> PORTAL_CHROME_LINES = List.of(
+            "메뉴 건너띄기",
+            "상단메뉴 바로가기",
+            "본문 바로가기",
+            "로딩 중입니다...",
+            "자유 멘토링 멘토 특강",
+            "HOME",
+            "마이페이지",
+            "사업소개",
+            "모집안내",
+            "도전과 성장",
+            "알림마당",
+            "멘토링 / 특강 게시판",
+            "공지사항",
+            "팀매칭",
+            "월간일정",
+            "보고 게시판",
+            "활동보고서 작성",
+            "회의실 예약",
+            "창업기업",
+            "회원정보",
+            "접수내역"
+    );
 
     public String parseCsrfToken(String html) {
         Document document = Jsoup.parse(html);
@@ -129,25 +168,35 @@ public class SomaPortalHtmlParser {
         return parseBoardItems(html, baseUrl).stream()
                 .map(item -> {
                     EventType type = inferEventType(item.title() + " " + item.rawText());
+                    String operationType = inferOperationType(item.title() + " " + item.rawText()).orElse(null);
+                    DateTimeRange lectureRange = parseEventLectureRange(item)
+                            .orElseGet(() -> new DateTimeRange(inferDateTime(item.rawText()).orElse(item.date()), null));
+                    DateTimeRange applicationRange = parseEventApplicationRange(item)
+                            .orElseGet(() -> new DateTimeRange(null, null));
+                    ApplicantCapacity applicantCapacity = parseEventApplicantCapacity(item)
+                            .orElse(new ApplicantCapacity(null, null));
+                    String author = parseEventAuthor(item).orElse(null);
+                    String mentorName = firstNonBlank(author, inferMentorName(item.rawText()).orElse(null));
+                    String location = inferLocation(item.rawText()).orElse(operationType);
 
                     return new SomaPortalEventResponse(
                             item.sourceId(),
                             type,
                             item.title(),
-                            inferMentorName(item.rawText()).orElse(null),
+                            mentorName.isBlank() ? null : mentorName,
                             inferTopic(item.title()),
-                            inferLocation(item.rawText()).orElse(null),
-                            inferDateTime(item.rawText()).orElse(item.date()),
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            inferStatus(item.rawText()),
-                            null,
-                            null,
-                            null,
-                            null,
+                            location,
+                            lectureRange.startAt(),
+                            lectureRange.endAt(),
+                            applicationRange.startAt(),
+                            applicationRange.endAt(),
+                            applicantCapacity.capacity(),
+                            applicantCapacity.applicantCount(),
+                            parseEventStatusText(item).map(this::inferStatus).orElseGet(() -> inferStatus(item.rawText())),
+                            parseEventApprovalStatus(item).orElse(null),
+                            operationType,
+                            author,
+                            parseEventRegisteredAt(item).orElse(null),
                             item.sourceUrl(),
                             List.of(),
                             null,
@@ -162,7 +211,9 @@ public class SomaPortalHtmlParser {
         Document document = Jsoup.parse(html, baseUrl);
         String resolvedSourceUrl = absoluteUrl(sourceUrl, baseUrl);
         Element detailElement = findDetailElement(document).orElse(null);
-        Map<String, String> detailMap = detailElement == null ? Map.of() : parseDetailMap(detailElement);
+        Map<String, String> detailMap = detailElement == null
+                ? parseDetailMapFromText(document)
+                : parseDetailMap(detailElement);
         Element applicantTable = findApplicantTable(document).orElse(null);
         List<SomaPortalEventApplicantResponse> applicants = applicantTable == null
                 ? List.of()
@@ -204,7 +255,7 @@ public class SomaPortalHtmlParser {
                 detailMap.entrySet().stream()
                         .map(entry -> new SomaPortalEventDetailItem(entry.getKey(), entry.getValue()))
                         .toList(),
-                parseContentText(document, detailElement, applicantTable).orElse(null),
+                parseContentText(document, detailElement, applicantTable, detailMap).orElse(null),
                 applicants,
                 rawText
         );
@@ -249,6 +300,39 @@ public class SomaPortalHtmlParser {
         return new ArrayList<>(items.values());
     }
 
+    public int parseTotalPages(String html, int fallbackPage) {
+        Document document = Jsoup.parse(html);
+        int totalPages = Math.max(fallbackPage, 1);
+        Optional<Integer> totalPageText = parseTotalPageText(document.text());
+
+        if (totalPageText.isPresent()) {
+            return Math.max(totalPages, totalPageText.get());
+        }
+
+        for (Element element : document.select("a[href], a[onclick], button[onclick]")) {
+            if (!isLastPageElement(element)) {
+                continue;
+            }
+
+            totalPages = Math.max(totalPages, maxPageIndex(element.attr("href")));
+            totalPages = Math.max(totalPages, maxPageIndex(element.attr("onclick")));
+        }
+
+        if (totalPages > fallbackPage) {
+            return totalPages;
+        }
+
+        for (Element element : document.select(".pagination a, .paging a, .page a, .paginate a, .bbs-page a")) {
+            String text = clean(element.text());
+
+            if (text.matches("\\d+") && !hasPaginationDirectionLinks(document)) {
+                totalPages = Math.max(totalPages, Integer.parseInt(text));
+            }
+        }
+
+        return totalPages;
+    }
+
     private Optional<PortalBoardItem> parseGalleryItem(Element element, String baseUrl) {
         Element link = element.selectFirst("strong.t a[href]");
 
@@ -283,8 +367,12 @@ public class SomaPortalHtmlParser {
         String href = absoluteUrl(link.attr("href"), baseUrl);
         String rawText = clean(row.text());
         OffsetDateTime date = inferDate(rawText).orElse(null);
+        List<String> cells = row.select("th, td").stream()
+                .map(cell -> clean(cell.text()))
+                .filter(cell -> !cell.isBlank())
+                .toList();
 
-        return Optional.of(new PortalBoardItem(sourceIdFromHref(href), title, href, date, rawText));
+        return Optional.of(new PortalBoardItem(sourceIdFromHref(href), title, href, date, rawText, cells));
     }
 
     private Optional<PortalBoardItem> parseLink(Element link, String baseUrl) {
@@ -382,6 +470,50 @@ public class SomaPortalHtmlParser {
         return details;
     }
 
+    private Map<String, String> parseDetailMapFromText(Document document) {
+        Map<String, String> details = new LinkedHashMap<>();
+        List<String> lines = cleanLines(cleanMultilineText(document.body()));
+
+        for (int index = 0; index < lines.size(); index += 1) {
+            String label = normalizeDetailLabel(lines.get(index));
+
+            if (!isDetailLabel(label) || details.containsKey(label)) {
+                continue;
+            }
+
+            String value = collectDetailValue(lines, index + 1, label);
+
+            if (!value.isBlank()) {
+                details.put(label, value);
+            }
+        }
+
+        return details;
+    }
+
+    private String collectDetailValue(List<String> lines, int startIndex, String label) {
+        int maxLines = switch (label) {
+            case "접수기간" -> 3;
+            case "강의날짜" -> 2;
+            default -> 1;
+        };
+        List<String> values = new ArrayList<>();
+
+        for (int index = startIndex; index < lines.size() && values.size() < maxLines; index += 1) {
+            String line = lines.get(index);
+
+            if (isDetailLabel(normalizeDetailLabel(line)) || isContentStopText(line)) {
+                break;
+            }
+
+            if (!line.isBlank()) {
+                values.add(line);
+            }
+        }
+
+        return clean(String.join(" ", values));
+    }
+
     private Optional<Element> findApplicantTable(Document document) {
         return document.select("table").stream()
                 .filter(table -> {
@@ -451,7 +583,12 @@ public class SomaPortalHtmlParser {
         return clean(cells.get(index).text());
     }
 
-    private Optional<String> parseContentText(Document document, Element detailElement, Element applicantTable) {
+    private Optional<String> parseContentText(
+            Document document,
+            Element detailElement,
+            Element applicantTable,
+            Map<String, String> detailMap
+    ) {
         Optional<String> content = document.select(".bbs-view-new .cont, .bbs-view .cont, .board-view .cont, .view-content").stream()
                 .map(this::cleanContentBlock)
                 .filter(text -> !text.isBlank())
@@ -471,7 +608,11 @@ public class SomaPortalHtmlParser {
 
             String text = cleanMultilineText(start);
 
-            if (!text.isBlank() && !text.contains("신청자 리스트")) {
+            if (isContentStopText(text)) {
+                break;
+            }
+
+            if (!text.isBlank()) {
                 if (!builder.isEmpty()) {
                     builder.append("\n\n");
                 }
@@ -483,14 +624,10 @@ public class SomaPortalHtmlParser {
         }
 
         if (!builder.isEmpty()) {
-            return Optional.of(builder.toString());
+            return cleanContentText(builder.toString());
         }
 
-        Document clone = document.clone();
-        clone.select("script, style, header, nav, footer, table, .top, .pagination, .btn, .btns").remove();
-        String fallback = cleanMultilineText(findDetailRoot(clone, null, null));
-
-        return fallback.isBlank() ? Optional.empty() : Optional.of(fallback);
+        return parseContentTextFromBody(document, detailElement, detailMap);
     }
 
     private String cleanContentBlock(Element element) {
@@ -539,12 +676,281 @@ public class SomaPortalHtmlParser {
         return cleanMultiline(clone.wholeText());
     }
 
+    private Optional<String> parseContentTextFromBody(
+            Document document,
+            Element detailElement,
+            Map<String, String> detailMap
+    ) {
+        Element body = document.body();
+
+        if (body == null) {
+            return Optional.empty();
+        }
+
+        Document clone = document.clone();
+        clone.select("script, style, header, nav, footer").remove();
+        String bodyText = cleanMultilineText(clone.body());
+        String content = bodyText;
+
+        if (detailElement != null) {
+            String detailText = cleanMultilineText(detailElement);
+            int detailIndex = content.indexOf(detailText);
+
+            if (detailIndex >= 0) {
+                content = content.substring(detailIndex + detailText.length());
+            }
+        } else {
+            content = trimBeforeContentStart(content, detailMap);
+        }
+
+        content = trimAfterContentStop(content);
+
+        return cleanContentText(content);
+    }
+
+    private String trimBeforeContentStart(String text, Map<String, String> detailMap) {
+        List<String> lines = cleanLines(text);
+        int contentStartIndex = findContentStartLine(lines, detailMap);
+
+        if (contentStartIndex <= 0 || contentStartIndex >= lines.size()) {
+            return text;
+        }
+
+        return String.join("\n", lines.subList(contentStartIndex, lines.size()));
+    }
+
+    private int findContentStartLine(List<String> lines, Map<String, String> detailMap) {
+        for (String label : List.of("등록일", "작성자", "모집인원", "장소", "진행방식", "강의날짜", "접수기간", "상태", "모집명")) {
+            if (!detailMap.containsKey(label)) {
+                continue;
+            }
+
+            for (int index = 0; index < lines.size(); index += 1) {
+                if (normalizeDetailLabel(lines.get(index)).equals(label)) {
+                    int valueEndIndex = index + 1 + countDetailValueLines(lines, index + 1, label);
+
+                    if (valueEndIndex > index + 1) {
+                        return valueEndIndex;
+                    }
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    private int countDetailValueLines(List<String> lines, int startIndex, String label) {
+        int maxLines = switch (label) {
+            case "접수기간" -> 3;
+            case "강의날짜" -> 2;
+            default -> 1;
+        };
+        int count = 0;
+
+        for (int index = startIndex; index < lines.size() && count < maxLines; index += 1) {
+            String line = lines.get(index);
+
+            if (isDetailLabel(normalizeDetailLabel(line)) || isContentStopText(line)) {
+                break;
+            }
+
+            if (!line.isBlank()) {
+                count += 1;
+            }
+        }
+
+        return count;
+    }
+
+    private Optional<String> cleanContentText(String text) {
+        StringBuilder builder = new StringBuilder();
+
+        for (String line : cleanMultiline(text).split("\\n+")) {
+            String cleaned = clean(line);
+
+            if (cleaned.isBlank() || PORTAL_CHROME_LINES.contains(cleaned)) {
+                continue;
+            }
+
+            if (isContentStopText(cleaned)) {
+                break;
+            }
+
+            if (!builder.isEmpty()) {
+                builder.append('\n');
+            }
+
+            builder.append(cleaned);
+        }
+
+        String result = builder.toString().trim();
+
+        return result.isBlank() ? Optional.empty() : Optional.of(result);
+    }
+
+    private String trimAfterContentStop(String text) {
+        int endIndex = text.length();
+
+        for (String marker : CONTENT_STOP_MARKERS) {
+            int markerIndex = text.indexOf(marker);
+
+            if (markerIndex >= 0) {
+                endIndex = Math.min(endIndex, markerIndex);
+            }
+        }
+
+        return text.substring(0, endIndex);
+    }
+
+    private boolean isContentStopText(String text) {
+        String cleaned = clean(text);
+
+        return CONTENT_STOP_MARKERS.stream().anyMatch(cleaned::contains);
+    }
+
+    private List<String> cleanLines(String text) {
+        List<String> lines = new ArrayList<>();
+
+        for (String line : cleanMultiline(text).split("\\n+")) {
+            String cleaned = clean(line);
+
+            if (!cleaned.isBlank()) {
+                lines.add(cleaned);
+            }
+        }
+
+        return lines;
+    }
+
+    private String normalizeDetailLabel(String label) {
+        return clean(label).replace(" ", "");
+    }
+
+    private boolean isDetailLabel(String label) {
+        return List.of(
+                "모집명",
+                "상태",
+                "개설승인",
+                "접수기간",
+                "강의날짜",
+                "진행방식",
+                "장소",
+                "모집인원",
+                "작성자",
+                "등록일"
+        ).contains(label);
+    }
+
     private EventType inferEventType(String text) {
         if (text.contains("특강")) {
             return EventType.LECTURE;
         }
 
         return EventType.MENTORING;
+    }
+
+    private Optional<String> parseEventAuthor(PortalBoardItem item) {
+        List<String> cells = item.cells();
+
+        if (cells.size() < 3 || !hasDateLikeText(cells.getLast())) {
+            return Optional.empty();
+        }
+
+        String author = clean(cells.get(cells.size() - 2));
+
+        if (!isEventAuthorCandidate(author)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(author);
+    }
+
+    private Optional<String> parseEventApprovalStatus(PortalBoardItem item) {
+        List<String> cells = item.cells();
+
+        if (cells.size() < 5 || !hasDateLikeText(cells.getLast())) {
+            return Optional.empty();
+        }
+
+        String approvalStatus = clean(cells.get(cells.size() - 4));
+
+        return approvalStatus.isBlank() || "-".equals(approvalStatus)
+                ? Optional.empty()
+                : Optional.of(approvalStatus);
+    }
+
+    private Optional<String> parseEventStatusText(PortalBoardItem item) {
+        List<String> cells = item.cells();
+
+        if (cells.size() < 4 || !hasDateLikeText(cells.getLast())) {
+            return Optional.empty();
+        }
+
+        String status = clean(cells.get(cells.size() - 3));
+
+        return status.isBlank() ? Optional.empty() : Optional.of(status);
+    }
+
+    private Optional<OffsetDateTime> parseEventRegisteredAt(PortalBoardItem item) {
+        if (item.cells().isEmpty()) {
+            return Optional.ofNullable(item.date());
+        }
+
+        return parseDate(item.cells().getLast()).or(() -> Optional.ofNullable(item.date()));
+    }
+
+    private Optional<DateTimeRange> parseEventApplicationRange(PortalBoardItem item) {
+        return item.cells().stream()
+                .map(this::parseDateRange)
+                .flatMap(Optional::stream)
+                .findFirst();
+    }
+
+    private Optional<DateTimeRange> parseEventLectureRange(PortalBoardItem item) {
+        return item.cells().stream()
+                .map(this::parseDateTimeRange)
+                .flatMap(Optional::stream)
+                .findFirst()
+                .or(() -> parseDateTimeRange(item.rawText()));
+    }
+
+    private Optional<ApplicantCapacity> parseEventApplicantCapacity(PortalBoardItem item) {
+        return item.cells().stream()
+                .map(ROW_APPLICANT_CAPACITY_PATTERN::matcher)
+                .filter(Matcher::find)
+                .map(matcher -> new ApplicantCapacity(
+                        Integer.parseInt(matcher.group(1)),
+                        Integer.parseInt(matcher.group(2))
+                ))
+                .findFirst();
+    }
+
+    private Optional<String> inferOperationType(String text) {
+        if (text.contains("온라인")) {
+            return Optional.of("온라인");
+        }
+
+        if (text.contains("오프라인")) {
+            return Optional.of("오프라인");
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean hasDateLikeText(String text) {
+        return inferDate(text).isPresent() || parseDateTimeRange(text).isPresent();
+    }
+
+    private boolean isEventAuthorCandidate(String value) {
+        String cleaned = clean(value);
+
+        return !cleaned.isBlank()
+                && !cleaned.contains("[")
+                && !cleaned.contains("]")
+                && !cleaned.contains(">")
+                && !cleaned.contains(":")
+                && !cleaned.contains("/")
+                && isNameToken(cleaned);
     }
 
     private Optional<String> inferMentorName(String text) {
@@ -684,6 +1090,33 @@ public class SomaPortalHtmlParser {
         }
 
         return Optional.of(new DateTimeRange(startAt, endAt));
+    }
+
+    private Optional<DateTimeRange> parseDateRange(String text) {
+        String cleaned = clean(text);
+
+        if (cleaned.isBlank()) {
+            return Optional.empty();
+        }
+
+        Matcher matcher = DATE_PATTERN.matcher(cleaned);
+
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+
+        OffsetDateTime startAt = toDateOffsetDateTime(matcher);
+        OffsetDateTime endAt = matcher.find() ? toDateOffsetDateTime(matcher) : null;
+
+        return Optional.of(new DateTimeRange(startAt, endAt));
+    }
+
+    private OffsetDateTime toDateOffsetDateTime(Matcher matcher) {
+        return LocalDate.of(
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2)),
+                Integer.parseInt(matcher.group(3))
+        ).atStartOfDay(SEOUL).toOffsetDateTime();
     }
 
     private OffsetDateTime toOffsetDateTime(Matcher matcher) {
@@ -898,6 +1331,90 @@ public class SomaPortalHtmlParser {
         return params;
     }
 
+    private int maxPageIndex(String value) {
+        String cleaned = clean(value);
+
+        if (cleaned.isBlank()) {
+            return 0;
+        }
+
+        int maxPage = 0;
+        Matcher hrefMatcher = HREF_PAGE_INDEX_PATTERN.matcher(cleaned);
+
+        while (hrefMatcher.find()) {
+            maxPage = Math.max(maxPage, Integer.parseInt(hrefMatcher.group(1)));
+        }
+
+        Matcher scriptMatcher = SCRIPT_PAGE_INDEX_PATTERN.matcher(cleaned);
+
+        while (scriptMatcher.find()) {
+            maxPage = Math.max(maxPage, Integer.parseInt(scriptMatcher.group(1)));
+        }
+
+        return maxPage;
+    }
+
+    private Optional<Integer> parseTotalPageText(String text) {
+        String cleaned = clean(text);
+        Matcher pageMatcher = TOTAL_PAGE_TEXT_PATTERN.matcher(cleaned);
+
+        if (pageMatcher.find()) {
+            return Optional.of(Integer.parseInt(pageMatcher.group(1)));
+        }
+
+        Matcher countMatcher = TOTAL_COUNT_TEXT_PATTERN.matcher(cleaned);
+
+        if (countMatcher.find()) {
+            int totalCount = Integer.parseInt(countMatcher.group(1));
+
+            return Optional.of(Math.max((totalCount + 9) / 10, 1));
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean isLastPageElement(Element element) {
+        String text = clean(element.text());
+        String marker = clean(String.join(" ",
+                element.className(),
+                element.id(),
+                element.attr("title"),
+                element.attr("aria-label")
+        )).toLowerCase();
+
+        return text.contains("끝")
+                || marker.contains("last")
+                || marker.contains("end")
+                || marker.contains("final");
+    }
+
+    private boolean hasPaginationDirectionLinks(Document document) {
+        return document.select("a[href], a[onclick], button[onclick]").stream()
+                .filter(this::hasPaginationContainer)
+                .map(element -> clean(element.text()))
+                .anyMatch(text -> List.of("처음", "이전", "다음", "끝", "처음 목록", "이전 목록", "다음 목록", "끝 목록")
+                        .contains(text));
+    }
+
+    private boolean hasPaginationContainer(Element element) {
+        Element current = element;
+
+        while (current != null) {
+            String marker = (current.className() + " " + current.id()).toLowerCase();
+
+            if (marker.contains("pagination")
+                    || marker.contains("paging")
+                    || marker.contains("paginate")
+                    || marker.contains("bbs-page")) {
+                return true;
+            }
+
+            current = current.parent();
+        }
+
+        return false;
+    }
+
     private String inferTitle(Document document) {
         return document.select("h1, h2, h3, h4, .tit, .title").stream()
                 .map(element -> clean(element.text()))
@@ -947,6 +1464,12 @@ public class SomaPortalHtmlParser {
     private record DateTimeRange(
             OffsetDateTime startAt,
             OffsetDateTime endAt
+    ) {
+    }
+
+    private record ApplicantCapacity(
+            Integer applicantCount,
+            Integer capacity
     ) {
     }
 }
