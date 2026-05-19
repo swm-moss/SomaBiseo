@@ -14,9 +14,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-20 border-b border-border/70 bg-white/95 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-[1120px] items-center gap-5 px-5 sm:px-6 lg:px-8">
           <Link
-            aria-label={`${PRODUCT_NAME} 대시보드로 이동`}
+            aria-label={`${PRODUCT_NAME} 랜딩페이지로 이동`}
             className="flex min-w-0 shrink-0 items-center gap-2"
-            href={routes.dashboard}
+            href={routes.home}
           >
             <Image
               alt=""
