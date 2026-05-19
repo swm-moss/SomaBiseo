@@ -37,6 +37,8 @@ somabiseo:
     operator-username: ${SOMA_PORTAL_OPERATOR_USERNAME:}
     operator-password: ${SOMA_PORTAL_OPERATOR_PASSWORD:}
     session-ttl-minutes: ${SOMA_PORTAL_SESSION_TTL_MINUTES:30}
+    cache-ttl-minutes: ${SOMA_PORTAL_CACHE_TTL_MINUTES:30}
+    sync-page-limit: ${SOMA_PORTAL_SYNC_PAGE_LIMIT:60}
   openai:
     api-key: ${OPENAI_API_KEY:}
     base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}

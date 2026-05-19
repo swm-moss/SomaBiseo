@@ -7,6 +7,7 @@
 현재 구현된 범위:
 
 - 운영자 계정 기반 읽기 전용 포털 세션
+- 공지/멘토링 목록 DB 저장과 TTL 기반 재동기화
 - 공지사항 목록 조회
 - 공지 상세 화면
 - 공지 읽음, 북마크 로컬 상태
@@ -40,8 +41,9 @@ sequenceDiagram
   BE->>SOMA: 자동 submit bridge 처리
   BE->>SOMA: 마이페이지 접근으로 로그인 검증
   BE->>BE: 운영자 세션 TTL 동안 메모리 재사용
-  BE->>SOMA: 운영자 세션 쿠키로 HTML 요청
-  BE-->>FE: 파싱된 JSON 응답
+  BE->>SOMA: 캐시 만료 시 운영자 세션 쿠키로 HTML 요청
+  BE->>BE: notices, soma_events에 upsert
+  BE-->>FE: DB 캐시 기반 JSON 응답
 ```
 
 ## 백엔드 API
@@ -103,6 +105,14 @@ frontend/src/features/auth/ui.tsx
 6. 마이페이지 접근 결과로 로그인 성공 여부를 검증한다.
 7. 운영자 포털 쿠키와 HttpClient는 서버 메모리에 TTL로만 보관한다.
 8. 세션이 만료됐거나 무효화되면 한 번 재로그인 후 요청을 재시도한다.
+
+DB 캐시 동작:
+
+1. 목록 API는 먼저 `notices`, `soma_events` 최신 `updated_at`을 확인한다.
+2. DB가 비어 있거나 `SOMA_PORTAL_CACHE_TTL_MINUTES`가 지나면 포털 목록을 페이지 단위로 동기화한다.
+3. 동기화 페이지 수는 `SOMA_PORTAL_SYNC_PAGE_LIMIT`로 제한한다.
+4. 동기화 후 API 응답은 포털 HTML이 아니라 DB 페이징 결과에서 만든다.
+5. 이벤트 상세는 최초 조회 시 상세 정보, 본문, 신청자 리스트를 `soma_events`에 저장하고 다음 조회부터 캐시를 우선 사용한다.
 
 보안 기준:
 
@@ -271,6 +281,7 @@ npm --prefix frontend run dev
 4. `/events`에서 실제 멘토특강/자유멘토링 목록이 보이는지 확인한다.
 5. 이벤트 상세에서 상세 정보와 신청자 리스트가 보이는지 확인한다.
 6. `/login`은 SOMA 포털 계정이 아니라 SomaBiseo 앱 로컬 세션만 만드는지 확인한다.
+7. 같은 API를 다시 호출했을 때 포털 동기화 없이 DB 캐시에서 응답하는지 확인한다.
 
 API만 확인할 때:
 
