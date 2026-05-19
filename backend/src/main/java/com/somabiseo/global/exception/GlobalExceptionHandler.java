@@ -4,6 +4,9 @@ import com.somabiseo.global.response.ApiResponse;
 import com.somabiseo.domain.eventsummary.domain.EventAiSummaryException;
 import com.somabiseo.domain.portal.domain.SomaPortalException;
 import com.somabiseo.domain.portal.domain.SomaPortalUnauthorizedException;
+import com.somabiseo.domain.review.domain.ReviewConflictException;
+import com.somabiseo.domain.review.domain.ReviewException;
+import com.somabiseo.domain.review.domain.ReviewForbiddenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -43,6 +46,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EventAiSummaryException.class)
     ResponseEntity<ApiResponse<Void>> handleEventAiSummaryException(EventAiSummaryException exception) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(exception.getMessage()));
+    }
+
+    @ExceptionHandler(ReviewException.class)
+    ResponseEntity<ApiResponse<Void>> handleReviewException(ReviewException exception) {
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error(exception.getMessage()));
+    }
+
+    @ExceptionHandler(ReviewForbiddenException.class)
+    ResponseEntity<ApiResponse<Void>> handleReviewForbiddenException(ReviewForbiddenException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(exception.getMessage()));
+    }
+
+    @ExceptionHandler(ReviewConflictException.class)
+    ResponseEntity<ApiResponse<Void>> handleReviewConflictException(ReviewConflictException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(exception.getMessage()));
     }
 
