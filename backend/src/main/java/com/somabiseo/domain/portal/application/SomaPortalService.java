@@ -2,6 +2,8 @@ package com.somabiseo.domain.portal.application;
 
 import com.somabiseo.domain.portal.domain.SomaPortalEventResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalLoginResponse;
+import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationDetail;
+import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalNoticeResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalSession;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalClient;
@@ -72,5 +74,46 @@ public class SomaPortalService {
         String html = portalClient.getEventDetailHtml(session, sourceUrl);
 
         return htmlParser.parseEventDetail(html, portalClient.baseUrl(), sourceUrl);
+    }
+
+    public SomaPortalMentoLecApplicationResponse applyMentoLec(String sessionId, String qustnrSn) {
+        SomaPortalSession session = sessionStore.get(sessionId);
+        SomaPortalMentoLecApplicationDetail detail = getMentoLecApplicationDetail(session, qustnrSn);
+
+        if (detail.applied()) {
+            return new SomaPortalMentoLecApplicationResponse(detail.qustnrSn(), true, "이미 신청된 상태입니다.");
+        }
+
+        SomaPortalClient.PortalCommandResult result = portalClient.applyMentoLec(session, detail);
+
+        return new SomaPortalMentoLecApplicationResponse(detail.qustnrSn(), true, result.message());
+    }
+
+    public SomaPortalMentoLecApplicationResponse cancelMentoLec(String sessionId, String qustnrSn) {
+        SomaPortalSession session = sessionStore.get(sessionId);
+        SomaPortalMentoLecApplicationDetail detail = getMentoLecApplicationDetail(session, qustnrSn);
+
+        if (!detail.applied()) {
+            return new SomaPortalMentoLecApplicationResponse(detail.qustnrSn(), false, "신청 내역이 없습니다.");
+        }
+
+        SomaPortalClient.PortalCommandResult result = portalClient.cancelMentoLec(session, detail);
+
+        return new SomaPortalMentoLecApplicationResponse(detail.qustnrSn(), false, result.message());
+    }
+
+    private SomaPortalMentoLecApplicationDetail getMentoLecApplicationDetail(SomaPortalSession session, String qustnrSn) {
+        String normalizedQustnrSn = normalizeQustnrSn(qustnrSn);
+        String html = portalClient.getEventDetailHtml(session, portalClient.mentoLecViewPath(normalizedQustnrSn));
+
+        return htmlParser.parseMentoLecApplicationDetail(html, normalizedQustnrSn);
+    }
+
+    private String normalizeQustnrSn(String qustnrSn) {
+        if (qustnrSn != null && qustnrSn.startsWith("qustnrSn-")) {
+            return qustnrSn.substring("qustnrSn-".length());
+        }
+
+        return qustnrSn;
     }
 }

@@ -71,6 +71,37 @@ class SomaPortalHtmlParserTest {
     }
 
     @Test
+    void infersEventStatusesFromPortalText() {
+        String html = """
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>1</td>
+                      <td class="tit"><a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=1">신청 접수중인 특강</a></td>
+                    </tr>
+                    <tr>
+                      <td>2</td>
+                      <td class="tit"><a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=2">정원 마감 특강</a></td>
+                    </tr>
+                    <tr>
+                      <td>3</td>
+                      <td class="tit"><a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=3">신청 예정 특강</a></td>
+                    </tr>
+                    <tr>
+                      <td>4</td>
+                      <td class="tit"><a href="/busan/sw/mypage/mentoLec/view.do?qustnrSn=4">행사 취소 특강</a></td>
+                    </tr>
+                  </tbody>
+                </table>
+                """;
+
+        List<SomaPortalEventResponse> events = parser.parseEvents(html, "https://www.swmaestro.ai");
+
+        assertThat(events).extracting(SomaPortalEventResponse::status)
+                .containsExactly("OPEN", "FULL", "SCHEDULED", "CANCELED");
+    }
+
+    @Test
     void doesNotTreatEventTypeLabelAsMentorName() {
         String html = """
                 <table>
@@ -107,6 +138,44 @@ class SomaPortalHtmlParserTest {
         assertThat(form.get().values())
                 .containsEntry("username", "user@example.com")
                 .containsEntry("password", "hashed-password");
+    }
+
+    @Test
+    void parsesMentoLecApplicationDetailForApply() {
+        String html = """
+                <html>
+                  <body>
+                    <button onclick="apply('9310', '7', '0')">신청하기</button>
+                  </body>
+                </html>
+                """;
+
+        var detail = parser.parseMentoLecApplicationDetail(html, "9310");
+
+        assertThat(detail.qustnrSn()).isEqualTo("9310");
+        assertThat(detail.applyCnt()).isEqualTo(7);
+        assertThat(detail.appCnt()).isEqualTo(0);
+        assertThat(detail.applied()).isFalse();
+    }
+
+    @Test
+    void parsesMentoLecApplicationDetailForCancel() {
+        String html = """
+                <html>
+                  <body>
+                    <button onclick="apply('9310', 7, 1)">신청하기</button>
+                    <a href="javascript:void(0)" onclick="applyCancel('9310', '38784')">[신청취소]</a>
+                  </body>
+                </html>
+                """;
+
+        var detail = parser.parseMentoLecApplicationDetail(html, "qustnrSn-9310");
+
+        assertThat(detail.qustnrSn()).isEqualTo("9310");
+        assertThat(detail.applyCnt()).isEqualTo(7);
+        assertThat(detail.appCnt()).isEqualTo(1);
+        assertThat(detail.applicationId()).isEqualTo("38784");
+        assertThat(detail.applied()).isTrue();
     }
 
     @Test

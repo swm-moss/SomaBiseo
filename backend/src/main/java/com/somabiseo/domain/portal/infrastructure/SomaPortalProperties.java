@@ -10,6 +10,9 @@ public record SomaPortalProperties(
         String loginSubmitPath,
         String noticeListPath,
         String eventListPath,
+        String mentoLecViewPath,
+        String mentoLecApplyPath,
+        String mentoLecCancelPath,
         long sessionTtlMinutes
 ) {
 }
