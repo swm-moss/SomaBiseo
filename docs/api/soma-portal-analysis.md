@@ -4,6 +4,10 @@
 
 ## Login Flow
 
+현재 제품 플로우에서는 사용자가 이 로그인 값을 입력하지 않습니다. 아래 흐름은 백엔드가
+`SOMA_PORTAL_OPERATOR_USERNAME`, `SOMA_PORTAL_OPERATOR_PASSWORD` 환경변수의 운영자 계정으로
+읽기 전용 데이터를 동기화할 때만 사용합니다.
+
 1. 로그인 페이지를 `GET`으로 열어 `JSESSIONID` 쿠키와 `csrfToken` hidden input을 받습니다.
 2. 다음 form 값을 `application/x-www-form-urlencoded`로 구성합니다.
 
@@ -17,7 +21,7 @@ password={portal-password}
 
 3. `/busan/sw/member/user/checkStat.json`에 먼저 `POST`합니다.
 4. 응답의 `resultCode`가 `success`이면 `/busan/sw/member/user/toLogin.do`에 같은 form body로 `POST`합니다.
-5. 로그인 성공 후 받은 포털 쿠키는 `sessionId`에 매핑해서 서버 메모리에만 보관합니다.
+5. 로그인 성공 후 받은 포털 쿠키는 운영자 읽기 세션으로 서버 메모리에만 보관합니다.
 
 ## Read Targets
 
@@ -32,10 +36,8 @@ password={portal-password}
 ## SomaBiseo API
 
 ```txt
-POST   /api/soma/login
-DELETE /api/soma/logout?sessionId={sessionId}
-GET    /api/soma/notices?sessionId={sessionId}&page=1
-GET    /api/soma/events?sessionId={sessionId}&page=1
+GET /api/soma/notices?page=1
+GET /api/soma/events?page=1
 ```
 
 목록 응답의 `data`는 페이지 메타데이터를 포함합니다.
@@ -51,8 +53,8 @@ GET    /api/soma/events?sessionId={sessionId}&page=1
 
 ## Safety Boundary
 
-- 포털 비밀번호는 저장하지 않습니다.
+- 사용자에게 포털 아이디/비밀번호를 입력받지 않습니다.
+- 운영자 포털 계정은 환경변수로만 주입합니다.
 - 포털 쿠키는 메모리에서만 TTL로 보관합니다.
 - 현재 어댑터는 읽기 전용입니다.
-- 이후 신청, 취소를 구현하더라도 사용자가 직접 요청한 단건 액션만 허용합니다.
-- 사용자 명시 요청 없는 자동 반복 실행이나 매크로성 신청, 취소는 구현하지 않습니다.
+- 신청/취소 기능은 읽기 전용 조회 흐름과 분리해서 다룹니다.

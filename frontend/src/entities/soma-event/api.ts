@@ -138,31 +138,30 @@ function matchesFilter(event: SomaEvent, filter: SomaEventFilter) {
   return start >= from && start <= to;
 }
 
-export async function getSomaEvents(sessionId: string, filter: SomaEventFilter = {}, page = 1) {
-  const eventsPage = await getSomaEventsPage(sessionId, page);
+export async function getSomaEvents(filter: SomaEventFilter = {}, page = 1) {
+  const eventsPage = await getSomaEventsPage(page);
 
   return eventsPage.items.filter((event) => matchesFilter(event, filter));
 }
 
-async function getSomaEventsPages(sessionId: string, maxPages: number) {
-  const firstPage = await getSomaEventsPage(sessionId, 1);
+async function getSomaEventsPages(maxPages: number) {
+  const firstPage = await getSomaEventsPage(1);
   const events = [...firstPage.items];
   let currentPage = firstPage;
 
   for (let page = 2; page <= maxPages && currentPage.hasNextPage; page += 1) {
-    currentPage = await getSomaEventsPage(sessionId, page);
+    currentPage = await getSomaEventsPage(page);
     events.push(...currentPage.items);
   }
 
   return events.sort(byStartAt);
 }
 
-export async function getSomaEventsPage(sessionId: string, page = 1) {
+export async function getSomaEventsPage(page = 1) {
   const response = await unwrapApiResponse(
     apiClient
       .get("soma/events", {
         searchParams: {
-          sessionId,
           page,
         },
       })
@@ -176,11 +175,11 @@ export async function getSomaEventsPage(sessionId: string, page = 1) {
   };
 }
 
-export async function getSomaEventById(sessionId: string, eventId: string) {
+export async function getSomaEventById(eventId: string) {
   let summary: SomaEvent | null = null;
 
   for (let page = 1; page <= MAX_EVENT_LOOKUP_PAGES; page += 1) {
-    const eventsPage = await getSomaEventsPage(sessionId, page);
+    const eventsPage = await getSomaEventsPage(page);
     summary = eventsPage.items.find((event) => event.id === eventId) ?? null;
 
     if (summary) {
@@ -200,7 +199,6 @@ export async function getSomaEventById(sessionId: string, eventId: string) {
     apiClient
       .get("soma/events/detail", {
         searchParams: {
-          sessionId,
           sourceUrl: summary.sourceUrl,
         },
       })
@@ -234,13 +232,10 @@ export async function cancelMentoLecApplication(sessionId: string, qustnrSn: str
   );
 }
 
-export async function summarizeSomaEvent(sessionId: string, sourceUrl: string) {
+export async function summarizeSomaEvent(sourceUrl: string) {
   return unwrapApiResponse(
     apiClient
       .post("soma/events/summary", {
-        headers: {
-          Authorization: `Bearer ${sessionId}`,
-        },
         json: {
           sourceUrl,
         },
@@ -265,8 +260,8 @@ function normalizePortalPage<T>(
   return response;
 }
 
-export async function getDashboardEvents(sessionId: string) {
-  const events = await getSomaEventsPages(sessionId, MAX_DASHBOARD_EVENT_PAGES);
+export async function getDashboardEvents() {
+  const events = await getSomaEventsPages(MAX_DASHBOARD_EVENT_PAGES);
   const today = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Seoul",
     year: "numeric",

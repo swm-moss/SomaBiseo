@@ -9,7 +9,6 @@ import {
   type InterestTopicId,
   useInterestPreferenceStore,
 } from "@/features/user-interests/model";
-import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/ui/button";
 
@@ -55,7 +54,6 @@ export function InterestPreferencePanel() {
 }
 
 export function InterestOnboardingDialog() {
-  const session = usePortalAuthStore((state) => state.session);
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
   const toggleTopic = useInterestPreferenceStore((state) => state.toggleTopic);
   const clearTopics = useInterestPreferenceStore((state) => state.clearTopics);
@@ -65,8 +63,7 @@ export function InterestOnboardingDialog() {
       window.sessionStorage.getItem("somabiseo-interest-onboarding-dismissed") === "true",
   );
   const [typedText, setTypedText] = useState("");
-  const validSession = session && !isPortalSessionExpired(session);
-  const shouldOpen = validSession && !dismissed && (selectedTopicIds.length === 0 || typedText.length > 0);
+  const shouldOpen = !dismissed && (selectedTopicIds.length === 0 || typedText.length > 0);
   const typingText = "요즘 끌리는 분야를 알려주면, 맞는 멘토링을 먼저 보여드릴게요.";
 
   useEffect(() => {

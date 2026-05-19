@@ -1,23 +1,24 @@
 # SOMA Portal Features
 
-이 문서는 현재 구현된 SOMA 포털 기반 기능인 로그인, 공지사항 조회, 멘토특강/자유멘토링 조회를 정리한다.
+이 문서는 현재 구현된 SOMA 포털 읽기 전용 어댑터와 공지사항, 멘토특강/자유멘토링 조회 기능을 정리한다.
 
 ## 구현 범위
 
 현재 구현된 범위:
 
-- SOMA 포털 로그인
-- 임시 세션 발급과 로그아웃
+- 운영자 계정 기반 읽기 전용 포털 세션
 - 공지사항 목록 조회
 - 공지 상세 화면
 - 공지 읽음, 북마크 로컬 상태
 - 멘토특강/자유멘토링 목록 조회
 - 멘토링 상세 조회
 - 멘토링 상세 정보, 본문, 신청자 리스트 표시
+- 프론트 앱 로컬 로그인
 
 현재 구현하지 않은 범위:
 
-- SOMA 포털 비밀번호 저장
+- 사용자 SOMA 포털 계정 입력
+- 사용자별 SOMA 포털 세션 쿠키 보관
 - 백그라운드 자동 신청/취소
 - 공지 상세 전용 백엔드 API
 - 공지/관심/읽음 상태의 백엔드 영속 저장
@@ -31,17 +32,15 @@ sequenceDiagram
   participant BE as Spring Backend
   participant SOMA as SOMA Portal
 
-  User->>FE: SOMA 포털 아이디/비밀번호 입력
-  FE->>BE: POST /api/soma/login
+  User->>FE: 공지/일정 화면 접근
+  FE->>BE: GET /api/soma/notices or /api/soma/events
   BE->>SOMA: 로그인 페이지 요청, csrfToken 파싱
   BE->>SOMA: checkStat.json 계정 상태 확인
   BE->>SOMA: toLogin.do 로그인 제출
   BE->>SOMA: 자동 submit bridge 처리
   BE->>SOMA: 마이페이지 접근으로 로그인 검증
-  BE-->>FE: sessionId, username, expiresAt
-  FE->>FE: Zustand persist에 임시 session 저장
-  FE->>BE: sessionId로 공지/멘토링 API 호출
-  BE->>SOMA: 세션 쿠키로 마이페이지 HTML 요청
+  BE->>BE: 운영자 세션 TTL 동안 메모리 재사용
+  BE->>SOMA: 운영자 세션 쿠키로 HTML 요청
   BE-->>FE: 파싱된 JSON 응답
 ```
 
@@ -49,11 +48,13 @@ sequenceDiagram
 
 | Method | Path | 설명 |
 | --- | --- | --- |
-| `POST` | `/api/soma/login` | SOMA 포털 로그인 후 SomaBiseo 임시 sessionId 발급 |
-| `DELETE` | `/api/soma/logout` | 서버 메모리의 임시 세션 제거 |
 | `GET` | `/api/soma/notices` | 공지사항 목록 조회 |
 | `GET` | `/api/soma/events` | 멘토특강/자유멘토링 목록 조회 |
 | `GET` | `/api/soma/events/detail` | 특정 멘토링 상세 조회 |
+| `POST` | `/api/soma/events/summary` | 멘토링 상세 본문 AI 요약 생성 또는 캐시 조회 |
+
+과거 `POST /api/soma/login`, `DELETE /api/soma/logout`, `sessionId` 기반 조회는 레거시 호환용으로 남아 있지만,
+신규 프론트 흐름에서는 사용하지 않는다.
 
 주요 백엔드 파일:
 
@@ -72,7 +73,7 @@ backend/src/main/java/com/somabiseo/domain/portal
    └─ SomaPortalEventApplicantResponse.java
 ```
 
-## 로그인 구현
+## 앱 로그인 구현
 
 프론트 파일:
 
@@ -86,27 +87,29 @@ frontend/src/features/auth/ui.tsx
 
 프론트 동작:
 
-1. `PortalLoginForm`이 React Hook Form과 Zod로 빈 값 검증을 한다.
-2. `loginSomaPortal`이 `POST /api/soma/login`을 호출한다.
+1. `PortalLoginForm`이 React Hook Form과 Zod로 이메일과 이름을 검증한다.
+2. `loginSomaPortal`은 백엔드에 SOMA 계정을 보내지 않고 브라우저 로컬 앱 세션을 만든다.
 3. 성공하면 `usePortalAuthStore`에 `sessionId`, `username`, `expiresAt`을 저장한다.
 4. 로그인 성공 toast를 띄우고 `/dashboard`로 이동한다.
-5. 실패하면 백엔드의 실패 메시지를 form root error로 표시한다.
+5. 이 앱 세션은 사용자 표시, 관심사 등 SomaBiseo 개인화 UI를 위한 로컬 상태다.
 
-백엔드 동작:
+백엔드 읽기 전용 세션 동작:
 
-1. 로그인 페이지에서 `csrfToken`을 파싱한다.
-2. `/busan/sw/member/user/checkStat.json`으로 계정 상태를 확인한다.
-3. `/busan/sw/member/user/toLogin.do`로 로그인 form을 제출한다.
-4. 포털이 반환하는 자동 submit form이 있으면 한 번 더 제출한다.
-5. 마이페이지 접근 결과로 로그인 성공 여부를 검증한다.
-6. 포털 쿠키와 HttpClient는 서버 메모리 세션에만 저장한다.
-7. 프론트에는 SomaBiseo 전용 `sessionId`만 내려준다.
+1. `SomaPortalService`가 운영자 계정 환경변수 존재 여부를 확인한다.
+2. 로그인 페이지에서 `csrfToken`을 파싱한다.
+3. `/busan/sw/member/user/checkStat.json`으로 계정 상태를 확인한다.
+4. `/busan/sw/member/user/toLogin.do`로 로그인 form을 제출한다.
+5. 포털이 반환하는 자동 submit form이 있으면 한 번 더 제출한다.
+6. 마이페이지 접근 결과로 로그인 성공 여부를 검증한다.
+7. 운영자 포털 쿠키와 HttpClient는 서버 메모리에 TTL로만 보관한다.
+8. 세션이 만료됐거나 무효화되면 한 번 재로그인 후 요청을 재시도한다.
 
 보안 기준:
 
-- SOMA 포털 비밀번호는 저장하지 않는다.
-- 포털 쿠키는 `SomaPortalSessionStore` 메모리에만 TTL로 보관한다.
-- 세션이 없거나 만료되면 다시 로그인을 요구한다.
+- 사용자 SOMA 포털 비밀번호는 입력받지 않는다.
+- 운영자 포털 계정은 환경변수로만 주입한다.
+- 운영자 포털 쿠키는 `SomaPortalService` 메모리에만 TTL로 보관한다.
+- `SOMA_PORTAL_OPERATOR_USERNAME`, `SOMA_PORTAL_OPERATOR_PASSWORD`를 코드나 문서에 기록하지 않는다.
 
 로그인 상태 판별 주의점:
 
@@ -132,14 +135,14 @@ frontend/src/features/mark-notice-read
 백엔드 endpoint:
 
 ```txt
-GET /api/soma/notices?sessionId={sessionId}&page=1
+GET /api/soma/notices?page=1
 ```
 
 프론트 동작:
 
 - `NoticeList`가 `useQuery`로 공지 목록을 조회한다.
-- query key는 `["notices", sessionId]`다.
-- 세션이 없으면 로그인 유도 EmptyState를 보여준다.
+- query key는 `["notices", page]`다.
+- 사용자 SOMA 로그인 없이 목록을 보여준다.
 - 목록은 전체, 중요, 읽지 않음, 북마크 필터를 지원한다.
 - 중요 여부는 제목의 `필수`, `중요` 키워드로 추론한다.
 - 읽음과 북마크는 현재 Zustand persist 로컬 상태다.
@@ -176,14 +179,14 @@ frontend/src/features/add-event-to-calendar
 백엔드 endpoint:
 
 ```txt
-GET /api/soma/events?sessionId={sessionId}&page=1
-GET /api/soma/events/detail?sessionId={sessionId}&sourceUrl={sourceUrl}
+GET /api/soma/events?page=1
+GET /api/soma/events/detail?sourceUrl={sourceUrl}
 ```
 
 프론트 목록 동작:
 
 - `EventList`가 `useQuery`로 멘토링 목록을 조회한다.
-- query key는 `["events", sessionId, tab]`다.
+- query key는 `["events", page]`다.
 - 탭은 전체, 멘토특강, 자유멘토링을 지원한다.
 - `entities/soma-event/api.ts`에서 백엔드 응답을 프론트 `SomaEvent` 모델로 정규화한다.
 - 시작 시간 기준으로 정렬한다.
@@ -242,8 +245,8 @@ frontend/src/widgets/dashboard-summary/ui.tsx
 
 `DashboardSummary`는 다음 query를 사용한다.
 
-- `["dashboard-events", sessionId]`
-- `["dashboard-notices", sessionId]`
+- `["dashboard-events"]`
+- `["dashboard-notices"]`
 
 표시 정보:
 
@@ -262,26 +265,18 @@ npm --prefix frontend run dev
 
 확인 순서:
 
-1. `http://localhost:3000/login` 또는 Next가 출력한 포트의 `/login`으로 이동한다.
-2. SOMA 포털 계정으로 로그인한다.
-3. `/dashboard`로 이동하는지 확인한다.
-4. `/notices`에서 실제 공지 목록이 보이는지 확인한다.
-5. `/events`에서 실제 멘토특강/자유멘토링 목록이 보이는지 확인한다.
-6. 이벤트 상세에서 상세 정보와 신청자 리스트가 보이는지 확인한다.
+1. 백엔드에 `SOMA_PORTAL_OPERATOR_USERNAME`, `SOMA_PORTAL_OPERATOR_PASSWORD` 환경변수를 설정한다.
+2. `http://localhost:3000/dashboard` 또는 Next가 출력한 포트의 `/dashboard`로 이동한다.
+3. `/notices`에서 실제 공지 목록이 보이는지 확인한다.
+4. `/events`에서 실제 멘토특강/자유멘토링 목록이 보이는지 확인한다.
+5. 이벤트 상세에서 상세 정보와 신청자 리스트가 보이는지 확인한다.
+6. `/login`은 SOMA 포털 계정이 아니라 SomaBiseo 앱 로컬 세션만 만드는지 확인한다.
 
 API만 확인할 때:
 
 ```bash
-curl -X POST http://localhost:8080/api/soma/login \
-  -H "Content-Type: application/json" \
-  --data '{"username":"<SOMA_ID>","password":"<SOMA_PASSWORD>"}'
-```
-
-응답의 `sessionId`로 다음 API를 확인한다.
-
-```bash
-curl "http://localhost:8080/api/soma/notices?sessionId=<SESSION_ID>&page=1"
-curl "http://localhost:8080/api/soma/events?sessionId=<SESSION_ID>&page=1"
+curl "http://localhost:8080/api/soma/notices?page=1"
+curl "http://localhost:8080/api/soma/events?page=1"
 ```
 
 ## 테스트

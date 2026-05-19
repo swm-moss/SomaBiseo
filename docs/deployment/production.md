@@ -82,11 +82,14 @@ railway up backend --path-as-root
 | `DATABASE_PASSWORD` | `********` | DB 비밀번호 |
 | `CORS_ALLOWED_ORIGINS` | `https://somabiseo.vercel.app` | Vercel 프론트 도메인 |
 | `SOMA_PORTAL_BASE_URL` | `https://www.swmaestro.ai` | SOMA 포털 기준 URL |
+| `SOMA_PORTAL_OPERATOR_USERNAME` | `********` | 읽기 전용 포털 조회용 운영자 SOMA 계정 |
+| `SOMA_PORTAL_OPERATOR_PASSWORD` | `********` | 읽기 전용 포털 조회용 운영자 SOMA 비밀번호 |
 | `OPENAI_API_KEY` | `sk-...` | 멘토링/특강 AI 요약 생성용 OpenAI API 키 |
 | `OPENAI_SUMMARY_MODEL` | `gpt-5.4-mini` | AI 요약 모델. 비우면 기본값 사용 |
 
 Railway Postgres의 기본 `DATABASE_URL`은 JDBC 형식이 아닐 수 있다. 그 경우 Railway 변수 참조로 `DATABASE_JDBC_URL`을 `jdbc:postgresql://...` 형태로 따로 만든다.
 백엔드와 Postgres가 같은 Railway 프로젝트에 있으면 공개 DB 도메인 대신 `postgres-db.railway.internal` private DNS를 사용한다.
+운영자 SOMA 계정은 사용자별 신청/취소가 아니라 공지와 멘토링 조회용으로만 사용한다.
 OpenAI 키는 운영 환경변수에만 등록하고 `.env`, 문서, PR 본문에 원문을 남기지 않는다.
 
 ## 최초 구축 체크리스트

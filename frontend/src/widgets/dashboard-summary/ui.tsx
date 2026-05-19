@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Bell, CalendarDays, Star } from "lucide-react";
 
-import { getDashboardEvents } from "@/entities/soma-event/api";
 import { getNotices } from "@/entities/notice/api";
-import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
+import { getDashboardEvents } from "@/entities/soma-event/api";
 import {
   getRecommendedEvents,
   useInterestPreferenceStore,
@@ -17,36 +16,15 @@ import { EmptyState } from "@/shared/ui/empty-state";
 import { LoadingState } from "@/shared/ui/loading-state";
 
 export function DashboardSummary() {
-  const session = usePortalAuthStore((state) => state.session);
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
-  const validSession = session && !isPortalSessionExpired(session) ? session : null;
   const eventsQuery = useQuery({
-    queryKey: ["dashboard-events", validSession?.sessionId],
-    queryFn: () => getDashboardEvents(validSession!.sessionId),
-    enabled: Boolean(validSession),
+    queryKey: ["dashboard-events"],
+    queryFn: () => getDashboardEvents(),
   });
   const noticesQuery = useQuery({
-    queryKey: ["dashboard-notices", validSession?.sessionId],
-    queryFn: () => getNotices(validSession!.sessionId),
-    enabled: Boolean(validSession),
+    queryKey: ["dashboard-notices"],
+    queryFn: () => getNotices(),
   });
-
-  if (!validSession) {
-    return (
-      <EmptyState
-        title="SOMA 포털 로그인이 필요해요"
-        description="로그인하면 실제 공지와 멘토링 일정이 이 화면에 표시됩니다."
-        action={
-          <Link
-            className="inline-flex h-12 items-center rounded-lg bg-primary px-5 text-[16px] font-bold text-primary-foreground"
-            href={routes.login}
-          >
-            로그인
-          </Link>
-        }
-      />
-    );
-  }
 
   if (eventsQuery.isLoading || noticesQuery.isLoading) {
     return <LoadingState />;

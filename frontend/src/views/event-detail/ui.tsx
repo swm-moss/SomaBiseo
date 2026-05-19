@@ -17,7 +17,6 @@ import {
 import { getSomaEventById, summarizeSomaEvent } from "@/entities/soma-event/api";
 import type { EventAiSummary, SomaEvent, SomaEventApplicant } from "@/entities/soma-event/model";
 import { AddEventToCalendarButton } from "@/features/add-event-to-calendar/ui";
-import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
 import { CalendarConflictResult } from "@/features/check-calendar-conflict/ui";
 import { FavoriteEventButton } from "@/features/favorite-event/ui";
 import { AppShell } from "@/widgets/app-shell/ui";
@@ -178,12 +177,9 @@ function SummaryList({ items, title }: { items: string[]; title: string }) {
 }
 
 export function EventDetailPage({ eventId }: { eventId: string }) {
-  const session = usePortalAuthStore((state) => state.session);
-  const validSession = session && !isPortalSessionExpired(session) ? session : null;
   const { data: event, isLoading, isError, refetch } = useQuery({
-    queryKey: ["event", validSession?.sessionId, eventId],
-    queryFn: () => getSomaEventById(validSession!.sessionId, eventId),
-    enabled: Boolean(validSession),
+    queryKey: ["event", eventId],
+    queryFn: () => getSomaEventById(eventId),
   });
   const {
     data: aiSummary,
@@ -191,9 +187,9 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
     isLoading: isAiSummaryLoading,
     refetch: refetchAiSummary,
   } = useQuery({
-    queryKey: ["event-ai-summary", validSession?.sessionId, event?.sourceId, event?.sourceUrl],
-    queryFn: () => summarizeSomaEvent(validSession!.sessionId, event!.sourceUrl),
-    enabled: Boolean(validSession && event?.sourceUrl),
+    queryKey: ["event-ai-summary", event?.sourceId, event?.sourceUrl],
+    queryFn: () => summarizeSomaEvent(event!.sourceUrl),
+    enabled: Boolean(event?.sourceUrl),
     staleTime: 10 * 60_000,
   });
   const eventContentLines = event ? contentLines(event) : [];
@@ -208,20 +204,9 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
           </Link>
         </Button>
 
-        {!validSession ? (
-          <EmptyState
-            title="SOMA 포털 로그인이 필요해요"
-            action={
-              <Button asChild>
-                <Link href={routes.login}>로그인</Link>
-              </Button>
-            }
-          />
-        ) : null}
-
-        {validSession && isLoading ? <LoadingState /> : null}
-        {validSession && isError ? <ErrorState onRetry={() => void refetch()} /> : null}
-        {validSession && !isLoading && !isError && !event ? (
+        {isLoading ? <LoadingState /> : null}
+        {isError ? <ErrorState onRetry={() => void refetch()} /> : null}
+        {!isLoading && !isError && !event ? (
           <EmptyState title="일정 없음" description="목록에서 다시 선택해 주세요." />
         ) : null}
 
