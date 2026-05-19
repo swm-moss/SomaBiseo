@@ -168,8 +168,8 @@ export async function applyMentoLec(sessionId: string, qustnrSn: string) {
   return unwrapApiResponse(
     apiClient
       .post(`soma/mento-lecs/${qustnrSn}/apply`, {
-        searchParams: {
-          sessionId,
+        headers: {
+          Authorization: `Bearer ${sessionId}`,
         },
       })
       .json<ApiResponse<MentoLecApplicationResponse>>(),
@@ -180,8 +180,8 @@ export async function cancelMentoLecApplication(sessionId: string, qustnrSn: str
   return unwrapApiResponse(
     apiClient
       .delete(`soma/mento-lecs/${qustnrSn}/application`, {
-        searchParams: {
-          sessionId,
+        headers: {
+          Authorization: `Bearer ${sessionId}`,
         },
       })
       .json<ApiResponse<MentoLecApplicationResponse>>(),

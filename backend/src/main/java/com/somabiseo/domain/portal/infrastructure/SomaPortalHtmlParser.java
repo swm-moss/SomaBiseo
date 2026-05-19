@@ -5,6 +5,7 @@ import com.somabiseo.domain.portal.domain.SomaPortalEventApplicantResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalEventDetailItem;
 import com.somabiseo.domain.portal.domain.SomaPortalEventResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalException;
+import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationDetail;
 import com.somabiseo.domain.portal.domain.SomaPortalNoticeResponse;
 import com.somabiseo.domain.somaevent.domain.EventType;
 import org.jsoup.Jsoup;
@@ -205,6 +206,21 @@ public class SomaPortalHtmlParser {
                 parseContentText(document, infoTable, applicantTable).orElse(null),
                 applicants,
                 rawText
+        );
+    }
+
+    public SomaPortalMentoLecApplicationDetail parseMentoLecApplicationDetail(String html, String qustnrSn) {
+        Document document = Jsoup.parse(html);
+        String normalizedQustnrSn = normalizeId(qustnrSn);
+        String source = document.html();
+        int[] applyValues = parseApplyValues(document, source, normalizedQustnrSn);
+        String applicationId = parseApplicationId(document, source, normalizedQustnrSn).orElse(null);
+
+        return new SomaPortalMentoLecApplicationDetail(
+                normalizedQustnrSn,
+                applyValues[0],
+                applyValues[1],
+                applicationId
         );
     }
 
@@ -632,8 +648,22 @@ public class SomaPortalHtmlParser {
     }
 
     private String inferStatus(String text) {
+        if (text.contains("취소됨") || text.contains("행사취소") || text.contains("행사 취소")
+                || text.contains("특강취소") || text.contains("특강 취소")) {
+            return "CANCELED";
+        }
+
+        if (text.contains("정원마감") || text.contains("정원 마감") || text.contains("인원마감")
+                || text.contains("인원 마감") || text.contains("모집마감") || text.contains("모집 마감")) {
+            return "FULL";
+        }
+
         if (text.contains("마감") || text.contains("종료")) {
             return "CLOSED";
+        }
+
+        if (text.contains("예정")) {
+            return "SCHEDULED";
         }
 
         if (text.contains("신청") || text.contains("접수")) {
@@ -668,6 +698,88 @@ public class SomaPortalHtmlParser {
         }
 
         return Integer.toHexString(href.hashCode());
+    }
+
+    private int[] parseApplyValues(Document document, String source, String qustnrSn) {
+        Optional<int[]> fromApplyCall = parseApplyValuesFromScript(source, qustnrSn);
+
+        if (fromApplyCall.isPresent()) {
+            return fromApplyCall.get();
+        }
+
+        Optional<Integer> applyCnt = parseIntegerValue(document, "applyCnt")
+                .or(() -> parseIntegerAssignment(source, "applyCnt"));
+        Optional<Integer> appCnt = parseIntegerValue(document, "appCnt")
+                .or(() -> parseIntegerAssignment(source, "appCnt"));
+
+        if (applyCnt.isPresent() && appCnt.isPresent()) {
+            return new int[]{applyCnt.get(), appCnt.get()};
+        }
+
+        throw new SomaPortalException("SOMA 포털 상세 페이지에서 신청 파라미터를 찾지 못했습니다.");
+    }
+
+    private Optional<int[]> parseApplyValuesFromScript(String source, String qustnrSn) {
+        Pattern pattern = Pattern.compile(
+                "apply\\s*\\(\\s*['\"]?" + Pattern.quote(qustnrSn) + "['\"]?\\s*,\\s*['\"]?(\\d+)['\"]?\\s*,\\s*['\"]?(\\d+)['\"]?",
+                Pattern.CASE_INSENSITIVE
+        );
+        Matcher matcher = pattern.matcher(source);
+
+        if (!matcher.find()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new int[]{
+                Integer.parseInt(matcher.group(1)),
+                Integer.parseInt(matcher.group(2))
+        });
+    }
+
+    private Optional<String> parseApplicationId(Document document, String source, String qustnrSn) {
+        Optional<String> fromCancelCall = parseApplicationIdFromScript(source, qustnrSn);
+
+        if (fromCancelCall.isPresent()) {
+            return fromCancelCall;
+        }
+
+        return document.select("input[name=id], input[name=applicationId], input[name=aplySn]").stream()
+                .map(input -> clean(input.attr("value")))
+                .filter(value -> !value.isBlank())
+                .findFirst();
+    }
+
+    private Optional<String> parseApplicationIdFromScript(String source, String qustnrSn) {
+        Pattern pattern = Pattern.compile(
+                "applyCancel\\s*\\(\\s*['\"]?" + Pattern.quote(qustnrSn) + "['\"]?\\s*,\\s*['\"]?([^'\"),\\s]+)",
+                Pattern.CASE_INSENSITIVE
+        );
+        Matcher matcher = pattern.matcher(source);
+
+        return matcher.find() ? Optional.of(matcher.group(1)) : Optional.empty();
+    }
+
+    private Optional<Integer> parseIntegerValue(Document document, String name) {
+        return document.select("input[name=" + name + "], input[id=" + name + "]").stream()
+                .map(input -> clean(input.attr("value")))
+                .filter(value -> value.matches("\\d+"))
+                .map(Integer::parseInt)
+                .findFirst();
+    }
+
+    private Optional<Integer> parseIntegerAssignment(String source, String name) {
+        Pattern pattern = Pattern.compile(Pattern.quote(name) + "\\s*[=:]\\s*['\"]?(\\d+)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(source);
+
+        return matcher.find() ? Optional.of(Integer.parseInt(matcher.group(1))) : Optional.empty();
+    }
+
+    private String normalizeId(String id) {
+        if (id != null && id.startsWith("qustnrSn-")) {
+            return id.substring("qustnrSn-".length());
+        }
+
+        return id;
     }
 
     private Map<String, String> parseQuery(String query) {

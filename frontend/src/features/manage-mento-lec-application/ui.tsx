@@ -8,7 +8,7 @@ import {
   applyMentoLec,
   cancelMentoLecApplication,
 } from "@/entities/soma-event/api";
-import type { SomaEvent } from "@/entities/soma-event/model";
+import type { SomaEvent, SomaEventStatus } from "@/entities/soma-event/model";
 import { Button } from "@/shared/ui/button";
 
 type ManageMentoLecApplicationActionsProps = {
@@ -38,6 +38,23 @@ function getQustnrSn(event: SomaEvent) {
   }
 
   return null;
+}
+
+function applyButtonLabel(status: SomaEventStatus) {
+  switch (status) {
+    case "OPEN":
+      return "신청";
+    case "FULL":
+      return "정원 마감";
+    case "CLOSED":
+      return "신청 마감";
+    case "CANCELED":
+      return "취소됨";
+    case "SCHEDULED":
+      return "신청 예정";
+    case "UNKNOWN":
+      return "원본에서 확인";
+  }
 }
 
 export function ManageMentoLecApplicationActions({
@@ -80,7 +97,7 @@ export function ManageMentoLecApplicationActions({
   });
 
   const pending = applyMutation.isPending || cancelMutation.isPending;
-  const applyClosed = event.status === "CLOSED";
+  const canApply = event.status === "OPEN";
 
   if (!qustnrSn) {
     return null;
@@ -90,7 +107,7 @@ export function ManageMentoLecApplicationActions({
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       <Button
         className="h-11 w-full"
-        disabled={pending || applyClosed}
+        disabled={pending || !canApply}
         onClick={() => {
           if (!window.confirm("이 멘토특강/자유멘토링을 신청할까요?")) {
             return;
@@ -100,7 +117,7 @@ export function ManageMentoLecApplicationActions({
         }}
       >
         <CheckCircle2 aria-hidden="true" />
-        {applyMutation.isPending ? "신청 중" : applyClosed ? "신청 마감" : "신청"}
+        {applyMutation.isPending ? "신청 중" : applyButtonLabel(event.status)}
       </Button>
       <Button
         className="h-11 w-full"
