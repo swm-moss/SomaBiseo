@@ -212,6 +212,25 @@
     @apply mt-2 h-[52px] w-full rounded-lg border-0 bg-muted px-4 text-[17px] font-semibold text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:bg-white focus:ring-2 focus:ring-primary/20;
   }
 
+  .sb-landing-stage {
+    background:
+      radial-gradient(circle at 50% 54%, rgb(255 255 255 / 30%) 0 14%, transparent 34%),
+      linear-gradient(112deg, #0f6ff7 0%, #2a8bff 46%, #bea0ff 100%);
+    box-shadow: 0 38px 90px rgb(25 31 40 / 16%);
+  }
+
+  .sb-landing-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgb(255 255 255 / 12%) 1px, transparent 1px),
+      linear-gradient(0deg, rgb(255 255 255 / 10%) 1px, transparent 1px);
+    background-size: 88px 88px;
+    mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+    opacity: 0.35;
+  }
+
   .sb-landing-rise {
     animation: sb-landing-rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
@@ -232,20 +251,9 @@
     animation-delay: 320ms;
   }
 
-  .sb-landing-pin {
-    animation: sb-landing-pin-float 7s ease-in-out infinite;
-  }
-
-  .sb-landing-pin-b {
-    animation-delay: -1.6s;
-  }
-
-  .sb-landing-pin-c {
-    animation-delay: -3s;
-  }
-
-  .sb-landing-pin-d {
-    animation-delay: -4.4s;
+  .sb-landing-machine {
+    transform: translateX(-50%);
+    animation: sb-landing-machine-float 6s ease-in-out infinite;
   }
 }
 
@@ -297,14 +305,14 @@
   }
 }
 
-@keyframes sb-landing-pin-float {
+@keyframes sb-landing-machine-float {
   0%,
   100% {
-    transform: translateY(0) rotate(var(--tw-rotate-z, 0deg));
+    transform: translateX(-50%) translateY(0);
   }
 
   50% {
-    transform: translateY(-12px) rotate(var(--tw-rotate-z, 0deg));
+    transform: translateX(-50%) translateY(-12px);
   }
 }
 
@@ -317,13 +325,7 @@
   .sb-interest-chip-in,
   .sb-type-caret,
   .sb-landing-rise,
-  .sb-landing-pin {
+  .sb-landing-machine {
     animation: none;
-  }
-}
-
-@media (max-height: 700px) {
-  .sb-landing-mobile-pins {
-    display: none;
   }
 }

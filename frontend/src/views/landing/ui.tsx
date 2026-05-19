@@ -13,32 +13,7 @@ import {
 import { NON_OFFICIAL_NOTICE, PRODUCT_NAME } from "@/shared/constants/product";
 import { routes } from "@/shared/config/routes";
 
-const heroPins = [
-  {
-    eyebrow: "새 공지",
-    title: "마감 전 확인할 공지가 있어요",
-    detail: "오늘 09:12",
-    tone: "text-blue-700 bg-blue-50",
-  },
-  {
-    eyebrow: "추천 AI",
-    title: "CI/CD와 자동화 개선 루프",
-    detail: "오승근 · 오프라인",
-    tone: "text-indigo-700 bg-indigo-50",
-  },
-  {
-    eyebrow: "캘린더",
-    title: "팀 회의와 겹치지 않아요",
-    detail: "충돌 없음",
-    tone: "text-emerald-700 bg-emerald-50",
-  },
-  {
-    eyebrow: "요약",
-    title: "이 특강에서 얻는 것 3줄",
-    detail: "캐시됨",
-    tone: "text-orange-700 bg-orange-50",
-  },
-] as const;
+const stageLinks = ["Notice", "Mentoring", "Calendar", "Summary"] as const;
 
 const features = [
   {
@@ -72,106 +47,119 @@ const timelineItems = [
 
 export function LandingPage() {
   return (
-    <main className="min-h-screen bg-[#f7f8fa] text-foreground">
-      <section className="relative isolate min-h-[88svh] overflow-hidden bg-[#f7f8fa]">
-        <div aria-hidden="true" className="absolute inset-0">
-          <Image
-            alt=""
-            aria-hidden="true"
-            className="absolute left-1/2 top-20 h-auto w-[880px] max-w-none -translate-x-1/2 opacity-[0.035]"
-            height={240}
-            priority
-            src="/brand/somabiseo-logo.png"
-            unoptimized
-            width={720}
-          />
-          <div className="absolute inset-x-0 bottom-[-12%] top-20 mx-auto hidden max-w-[1180px] lg:block">
-            <div className="sb-landing-pin sb-landing-pin-a absolute right-8 top-0 w-[330px] rotate-[-5deg]">
-              <LandingPin pin={heroPins[0]} />
-            </div>
-            <div className="sb-landing-pin sb-landing-pin-b absolute right-[310px] top-32 w-[360px] rotate-[4deg]">
-              <LandingPin pin={heroPins[1]} />
-            </div>
-            <div className="sb-landing-pin sb-landing-pin-c absolute right-0 top-[310px] w-[300px] rotate-[3deg]">
-              <LandingPin pin={heroPins[2]} />
-            </div>
-            <div className="sb-landing-pin sb-landing-pin-d absolute right-[360px] top-[430px] w-[320px] rotate-[-3deg]">
-              <LandingPin pin={heroPins[3]} />
-            </div>
-          </div>
-          <div className="sb-landing-mobile-pins absolute inset-x-5 bottom-5 grid grid-cols-2 gap-3 lg:hidden">
-            <LandingMiniPin pin={heroPins[0]} />
-            <LandingMiniPin pin={heroPins[1]} />
-          </div>
-        </div>
-
-        <header className="relative z-10 mx-auto flex h-[72px] w-full max-w-[1120px] items-center justify-between px-5 sm:px-6 lg:px-8">
-          <Link aria-label={`${PRODUCT_NAME} 홈`} className="flex items-center gap-2" href={routes.home}>
+    <main className="min-h-screen bg-[#f3f4f8] text-foreground">
+      <section className="px-3 py-3 sm:px-4 sm:py-4">
+        <div className="sb-landing-stage relative isolate mx-auto min-h-[calc(92svh-24px)] max-w-[1440px] overflow-hidden rounded-lg">
+          <div className="absolute left-5 top-5 z-20 flex items-center gap-2 sm:left-7 sm:top-7">
             <Image
               alt=""
               aria-hidden="true"
-              className="size-9 rounded-lg"
+              className="size-9 rounded-lg shadow-[0_10px_24px_rgb(25_31_40/14%)]"
               height={64}
+              priority
               src="/brand/somabiseo-icon-64.png"
               unoptimized
               width={64}
             />
             <Image
               alt={PRODUCT_NAME}
-              className="h-auto w-[108px] object-contain"
+              className="hidden h-auto w-[112px] object-contain invert sm:block"
               height={240}
               priority
               src="/brand/somabiseo-logo.png"
               unoptimized
               width={720}
             />
-          </Link>
-          <div className="flex items-center gap-2">
+          </div>
+
+          <nav className="absolute left-7 top-1/2 z-20 hidden -translate-y-1/2 flex-col gap-2 text-[12px] font-semibold uppercase tracking-normal text-white/70 lg:flex">
+            {stageLinks.map((item) => (
+              <Link key={item} className="transition-colors hover:text-white" href="#features">
+                {item}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="absolute right-5 top-5 z-20 flex items-center gap-2 sm:right-7 sm:top-7">
             <Link
-              className="hidden h-11 items-center px-3 text-[15px] font-semibold text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+              className="hidden h-11 items-center rounded-lg bg-white/14 px-4 text-[14px] font-bold text-white backdrop-blur transition-colors hover:bg-white/20 sm:inline-flex"
               href="#features"
             >
-              기능
+              기능 보기
             </Link>
             <Link
-              className="inline-flex h-11 items-center rounded-lg bg-foreground px-4 text-[15px] font-bold text-white transition-transform hover:translate-y-[-1px]"
+              className="inline-flex h-11 items-center rounded-lg bg-white px-4 text-[14px] font-bold text-primary shadow-[0_12px_30px_rgb(25_31_40/18%)] transition-transform hover:translate-y-[-1px]"
               href={routes.login}
             >
               시작하기
             </Link>
           </div>
-        </header>
 
-        <div className="relative z-10 mx-auto flex min-h-[calc(88svh-72px)] w-full max-w-[1120px] items-center px-5 pb-14 pt-12 sm:px-6 lg:px-8">
-          <div className="max-w-[720px]">
-            <p className="sb-landing-rise text-[15px] font-bold leading-[22px] text-primary">
-              소프트웨어마에스트로 비공식 일정 비서
+          <div className="pointer-events-none absolute inset-x-[-28vw] top-[42%] z-0 -translate-y-1/2 whitespace-nowrap text-center text-[68px] font-black leading-none text-white/20 sm:text-[130px] lg:text-[190px]">
+            NOTICES·MENTORING·CALENDAR
+          </div>
+
+          <div className="absolute inset-x-5 top-24 z-10 text-center text-white sm:top-10">
+            <p className="sb-landing-rise text-[13px] font-semibold uppercase leading-[20px] text-white/80">
+              Hi, I&apos;m
             </p>
-            <h1 className="sb-landing-rise mt-4 text-[56px] font-black leading-[0.95] tracking-normal text-foreground sm:text-[76px] lg:text-[104px]">
+            <h1 className="sb-landing-rise text-[38px] font-black leading-[44px] sm:text-[64px] sm:leading-[70px]">
               SomaBiseo
             </h1>
-            <p className="sb-landing-rise mt-6 max-w-[560px] text-[20px] font-semibold leading-[30px] text-[#4e5968] sm:text-[24px] sm:leading-[36px]">
-              소마 웹을 매번 뒤지지 않아도 오늘 봐야 할 공지, 특강, 멘토링을 먼저 정리합니다.
-            </p>
-            <div className="sb-landing-rise mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link
-                className="inline-flex h-14 items-center justify-center rounded-lg bg-primary px-6 text-[17px] font-bold text-white shadow-[0_12px_30px_rgb(49_130_246/22%)] transition-transform hover:translate-y-[-1px]"
-                href={routes.login}
-              >
-                SOMA 로그인으로 시작
-                <ArrowRight aria-hidden="true" className="ml-2 size-5" />
-              </Link>
-              <Link
-                className="inline-flex h-14 items-center justify-center rounded-lg bg-white px-6 text-[17px] font-bold text-foreground shadow-[0_8px_24px_rgb(25_31_40/8%)] transition-transform hover:translate-y-[-1px]"
-                href="#features"
-              >
-                기능 보기
-              </Link>
-            </div>
-            <p className="sb-landing-rise mt-5 max-w-[520px] text-[13px] font-medium leading-[20px] text-muted-foreground">
-              {NON_OFFICIAL_NOTICE}
+            <p className="sb-landing-rise mx-auto mt-2 max-w-[520px] text-[13px] font-medium leading-[20px] text-white/75 sm:text-[15px] sm:leading-[23px]">
+              소마 공지, 특강, 멘토링, 캘린더 충돌을 한 화면에서 정리합니다.
             </p>
           </div>
+
+          <div aria-hidden="true" className="sb-landing-machine absolute left-1/2 top-[47%] z-10 w-[270px] sm:top-[50%] sm:w-[390px] lg:w-[470px]">
+            <div className="absolute -left-7 top-[54%] hidden size-12 rounded-lg bg-[#ff5d61] shadow-[0_14px_30px_rgb(25_31_40/22%)] sm:block">
+              <span className="absolute left-3 top-3 size-2 rounded-full bg-white" />
+              <span className="absolute right-3 top-3 size-2 rounded-full bg-white" />
+            </div>
+            <div className="absolute -right-8 top-[30%] hidden size-11 rounded-lg bg-[#27c46a] shadow-[0_14px_30px_rgb(25_31_40/16%)] sm:block" />
+            <div className="absolute right-5 top-[-30px] h-14 w-11 rotate-[9deg] rounded-md bg-[#e8ff73] shadow-[0_12px_24px_rgb(25_31_40/14%)]" />
+            <div className="rounded-lg bg-[#9fd7ff] p-4 shadow-[0_26px_70px_rgb(25_31_40/28%)]">
+              <div className="rounded-lg border-[6px] border-[#5c93c9] bg-[#ecfbff] p-4 shadow-inner">
+                <div className="flex items-center gap-2 border-b border-[#c7e5ef] pb-3">
+                  <span className="size-2 rounded-full bg-[#ff5d61]" />
+                  <span className="size-2 rounded-full bg-[#ffd166]" />
+                  <span className="size-2 rounded-full bg-[#27c46a]" />
+                  <span className="ml-auto text-[11px] font-bold text-[#4e5968]">today.soma</span>
+                </div>
+                <div className="mt-4 grid gap-3">
+                  <div className="rounded-lg bg-white px-4 py-3 shadow-[0_8px_20px_rgb(25_31_40/8%)]">
+                    <p className="text-[12px] font-bold text-primary">추천 AI</p>
+                    <p className="mt-1 text-[17px] font-black leading-[24px] text-foreground">
+                      CI/CD와 자동화 개선 루프
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg bg-[#f2f4f6] px-3 py-3">
+                      <p className="text-[11px] font-bold text-muted-foreground">멘토</p>
+                      <p className="mt-1 text-[15px] font-black">오승근</p>
+                    </div>
+                    <div className="rounded-lg bg-[#e9fbf0] px-3 py-3">
+                      <p className="text-[11px] font-bold text-emerald-700">충돌</p>
+                      <p className="mt-1 text-[15px] font-black text-emerald-800">없음</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mx-auto h-8 w-[64%] rounded-b-lg bg-[#58a6f7] shadow-[0_14px_28px_rgb(25_31_40/20%)]" />
+            <div className="mx-auto h-5 w-[42%] rounded-b-lg bg-[#2f80ed]" />
+          </div>
+
+          <p className="absolute bottom-6 left-5 z-20 max-w-[260px] text-[11px] font-medium leading-[17px] text-white/65 sm:left-7 sm:max-w-[360px] sm:text-[12px]">
+            {NON_OFFICIAL_NOTICE}
+          </p>
+          <Link
+            className="absolute bottom-6 right-5 z-20 hidden h-12 items-center rounded-lg bg-white px-5 text-[15px] font-black text-primary shadow-[0_16px_34px_rgb(25_31_40/18%)] transition-transform hover:translate-y-[-1px] sm:inline-flex"
+            href={routes.login}
+          >
+            SOMA 로그인
+            <ArrowRight aria-hidden="true" className="ml-2 size-4" />
+          </Link>
         </div>
       </section>
 
@@ -252,29 +240,6 @@ export function LandingPage() {
         </div>
       </section>
     </main>
-  );
-}
-
-function LandingPin({ pin }: { pin: (typeof heroPins)[number] }) {
-  return (
-    <div className="rounded-lg border border-border/80 bg-white p-5 shadow-[0_18px_50px_rgb(25_31_40/10%)]">
-      <span className={`inline-flex rounded-md px-2.5 py-1 text-[13px] font-bold ${pin.tone}`}>
-        {pin.eyebrow}
-      </span>
-      <p className="mt-4 text-[20px] font-bold leading-[29px] text-foreground">{pin.title}</p>
-      <p className="mt-2 text-[15px] font-semibold leading-[22px] text-muted-foreground">{pin.detail}</p>
-    </div>
-  );
-}
-
-function LandingMiniPin({ pin }: { pin: (typeof heroPins)[number] }) {
-  return (
-    <div className="rounded-lg border border-border/80 bg-white/95 p-3 shadow-[0_12px_34px_rgb(25_31_40/10%)] backdrop-blur">
-      <span className={`inline-flex rounded-md px-2 py-0.5 text-[12px] font-bold ${pin.tone}`}>
-        {pin.eyebrow}
-      </span>
-      <p className="mt-2 line-clamp-2 text-[14px] font-bold leading-[20px] text-foreground">{pin.title}</p>
-    </div>
   );
 }
 
