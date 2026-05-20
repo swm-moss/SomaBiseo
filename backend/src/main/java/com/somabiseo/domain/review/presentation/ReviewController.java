@@ -1,6 +1,7 @@
 package com.somabiseo.domain.review.presentation;
 
 import com.somabiseo.domain.review.application.RecentEndedEventQueryService;
+import com.somabiseo.domain.review.application.ReviewFeedQueryService;
 import com.somabiseo.domain.review.application.ReviewService;
 import com.somabiseo.domain.review.application.ReviewSummaryQueryService;
 import com.somabiseo.domain.review.application.WritableEventQueryService;
@@ -27,17 +28,30 @@ public class ReviewController {
     private final WritableEventQueryService writableEventQueryService;
     private final RecentEndedEventQueryService recentEndedEventQueryService;
     private final ReviewSummaryQueryService reviewSummaryQueryService;
+    private final ReviewFeedQueryService reviewFeedQueryService;
 
     public ReviewController(
             ReviewService reviewService,
             WritableEventQueryService writableEventQueryService,
             RecentEndedEventQueryService recentEndedEventQueryService,
-            ReviewSummaryQueryService reviewSummaryQueryService
+            ReviewSummaryQueryService reviewSummaryQueryService,
+            ReviewFeedQueryService reviewFeedQueryService
     ) {
         this.reviewService = reviewService;
         this.writableEventQueryService = writableEventQueryService;
         this.recentEndedEventQueryService = recentEndedEventQueryService;
         this.reviewSummaryQueryService = reviewSummaryQueryService;
+        this.reviewFeedQueryService = reviewFeedQueryService;
+    }
+
+    @GetMapping("/api/reviews")
+    ApiResponse<ReviewFeedPageResponse> getFeed(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String eventId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.ok(reviewFeedQueryService.findFeed(q, eventId, page, size));
     }
 
     @GetMapping("/api/reviews/writable")
