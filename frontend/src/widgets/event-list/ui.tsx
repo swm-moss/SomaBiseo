@@ -205,8 +205,8 @@ export function EventList() {
           onValueChange={handleTabChange}
         />
         <FilterChips
-          ariaLabel="진행 방식"
-          label="방식"
+          ariaLabel="진행 장소"
+          label="장소"
           options={modeOptions}
           value={mode}
           onValueChange={handleModeChange}
