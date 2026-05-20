@@ -1,10 +1,15 @@
 package com.somabiseo.domain.auth.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.somabiseo.domain.auth.domain.AuthUser;
 import com.somabiseo.domain.auth.domain.GoogleAuthException;
 import com.somabiseo.domain.auth.domain.GoogleAuthSessionResponse;
 import com.somabiseo.domain.auth.domain.GoogleAuthUnauthorizedException;
+import com.somabiseo.domain.auth.domain.InviteVerificationException;
+import com.somabiseo.domain.auth.domain.InviteVerificationLockedException;
+import com.somabiseo.domain.auth.infrastructure.AuthUserRepository;
 import com.somabiseo.domain.auth.infrastructure.GoogleOAuthProperties;
+import com.somabiseo.domain.auth.infrastructure.InviteCodeProperties;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -13,6 +18,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,13 +45,25 @@ public class GoogleAuthService {
     private static final String GOOGLE_AUTH_PROMPT = "consent select_account";
 
     private final GoogleOAuthProperties properties;
+    private final InviteCodeProperties inviteCodeProperties;
+    private final AuthUserRepository authUserRepository;
     private final GoogleAuthSessionStore sessionStore;
+    private final Clock clock;
     private final RestClient restClient;
     private final ConcurrentMap<String, PendingGoogleAuthState> pendingStates = new ConcurrentHashMap<>();
 
-    public GoogleAuthService(GoogleOAuthProperties properties, GoogleAuthSessionStore sessionStore) {
+    public GoogleAuthService(
+            GoogleOAuthProperties properties,
+            InviteCodeProperties inviteCodeProperties,
+            AuthUserRepository authUserRepository,
+            GoogleAuthSessionStore sessionStore,
+            Clock clock
+    ) {
         this.properties = properties;
+        this.inviteCodeProperties = inviteCodeProperties;
+        this.authUserRepository = authUserRepository;
         this.sessionStore = sessionStore;
+        this.clock = clock;
         this.restClient = RestClient.create();
     }
 
@@ -78,16 +97,20 @@ public class GoogleAuthService {
 
         GoogleToken token = exchangeAuthorizationCode(code);
         GoogleUserInfo userInfo = fetchUserInfo(token.accessToken());
-        Instant sessionExpiresAt = Instant.now().plusSeconds(properties.sessionTtlMinutesOrDefault() * 60);
+        AuthUser user = upsertGoogleUser(userInfo);
+        Instant now = clock.instant();
+        Instant sessionExpiresAt = now.plusSeconds(properties.sessionTtlMinutesOrDefault() * 60);
         GoogleAuthSessionResponse session = sessionStore.save(
+                user.getId(),
                 userInfo.subject(),
                 userInfo.email(),
                 userInfo.name(),
                 userInfo.profileImageUrl(),
                 token.accessToken(),
                 token.refreshToken(),
-                Instant.now().plusSeconds(token.expiresInSeconds()),
-                sessionExpiresAt
+                now.plusSeconds(token.expiresInSeconds()),
+                sessionExpiresAt,
+                user.isInviteVerified()
         );
 
         return redirectWithSession(pendingState.returnTo(), session, pendingState.flow() == GoogleAuthFlow.CALENDAR);
@@ -95,8 +118,56 @@ public class GoogleAuthService {
 
     public GoogleAuthSessionResponse getCurrentSession(String authorization) {
         return sessionStore.find(bearerSessionId(authorization))
-                .map(GoogleAuthSessionStore.GoogleAuthSession::toResponse)
+                .map(this::toFreshResponse)
                 .orElseThrow(() -> new GoogleAuthUnauthorizedException("로그인이 필요합니다."));
+    }
+
+    public GoogleAuthSessionResponse verifyInviteCode(String authorization, String code) {
+        GoogleAuthSessionStore.GoogleAuthSession session = requireSession(authorization);
+        AuthUser user = requireUser(session);
+
+        if (user.isInviteVerified()) {
+            return toResponse(session, user);
+        }
+
+        Instant now = clock.instant();
+
+        if (user.isInviteLocked(now)) {
+            throw new InviteVerificationLockedException("잠시 후 다시 시도해 주세요. 초대 코드 입력이 일시 제한됐습니다.");
+        }
+
+        if (inviteCodeProperties.requiredCode().equals(code == null ? "" : code.trim())) {
+            user.verifyInvite(now);
+            AuthUser saved = authUserRepository.save(user);
+
+            return toResponse(session, saved);
+        }
+
+        int remainingAttempts = user.recordInviteFailure(
+                now,
+                inviteCodeProperties.maxFailedAttemptsOrDefault(),
+                inviteCodeProperties.lockDurationOrDefault()
+        );
+        authUserRepository.save(user);
+
+        if (remainingAttempts <= 0) {
+            Duration lockDuration = inviteCodeProperties.lockDurationOrDefault();
+            throw new InviteVerificationLockedException(
+                    lockDuration.toMinutes() + "분 뒤 다시 시도해 주세요. 초대 코드 입력이 일시 제한됐습니다."
+            );
+        }
+
+        throw new InviteVerificationException("초대 코드가 맞지 않아요. 남은 시도 " + remainingAttempts + "회");
+    }
+
+    public GoogleAuthSessionResponse requireVerifiedSession(String authorization) {
+        GoogleAuthSessionResponse session = getCurrentSession(authorization);
+
+        if (!session.inviteVerified()) {
+            throw new InviteVerificationException("초대 코드 인증이 필요합니다.");
+        }
+
+        return session;
     }
 
     public void logout(String authorization) {
@@ -190,6 +261,25 @@ public class GoogleAuthService {
         );
     }
 
+    private AuthUser upsertGoogleUser(GoogleUserInfo userInfo) {
+        AuthUser user = authUserRepository.findByEmail(userInfo.email().trim().toLowerCase())
+                .orElseGet(() -> AuthUser.google(
+                        userInfo.email(),
+                        userInfo.name(),
+                        userInfo.profileImageUrl(),
+                        userInfo.subject()
+                ));
+
+        user.updateGoogleProfile(
+                userInfo.email(),
+                userInfo.name(),
+                userInfo.profileImageUrl(),
+                userInfo.subject()
+        );
+
+        return authUserRepository.save(user);
+    }
+
     private String redirectWithSession(String returnTo, GoogleAuthSessionResponse session, boolean calendarConnected) {
         String fragment = toFragment(
                 "sessionId", session.sessionId(),
@@ -197,7 +287,8 @@ public class GoogleAuthService {
                 "email", session.email(),
                 "profileImageUrl", session.profileImageUrl(),
                 "expiresAt", session.expiresAt().toString(),
-                "calendarConnected", "true"
+                "inviteVerified", Boolean.toString(session.inviteVerified()),
+                "calendarConnected", Boolean.toString(calendarConnected)
         );
 
         return appendFragment(returnTo, fragment);
@@ -246,6 +337,32 @@ public class GoogleAuthService {
         if (!properties.isConfigured()) {
             throw new GoogleAuthException("Google OAuth 환경변수가 설정되지 않았습니다.");
         }
+    }
+
+    private GoogleAuthSessionStore.GoogleAuthSession requireSession(String authorization) {
+        return sessionStore.find(bearerSessionId(authorization))
+                .orElseThrow(() -> new GoogleAuthUnauthorizedException("로그인이 필요합니다."));
+    }
+
+    private GoogleAuthSessionResponse toFreshResponse(GoogleAuthSessionStore.GoogleAuthSession session) {
+        return toResponse(session, requireUser(session));
+    }
+
+    private GoogleAuthSessionResponse toResponse(GoogleAuthSessionStore.GoogleAuthSession session, AuthUser user) {
+        return new GoogleAuthSessionResponse(
+                session.sessionId(),
+                user.getName(),
+                user.getEmail(),
+                user.getProfileImageUrl(),
+                "GOOGLE",
+                session.sessionExpiresAt(),
+                user.isInviteVerified()
+        );
+    }
+
+    private AuthUser requireUser(GoogleAuthSessionStore.GoogleAuthSession session) {
+        return authUserRepository.findById(session.userId())
+                .orElseThrow(() -> new GoogleAuthUnauthorizedException("로그인 사용자를 찾지 못했습니다."));
     }
 
     private String bearerSessionId(String authorization) {

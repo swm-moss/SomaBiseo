@@ -59,3 +59,7 @@ somabiseo:
     frontend-redirect-uri: ${GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI:http://localhost:3000/settings}
     mock-enabled: ${GOOGLE_CALENDAR_MOCK_ENABLED:false}
     calendar-id: ${GOOGLE_CALENDAR_ID:primary}
+  invite:
+    code: ${SOMABISEO_INVITE_CODE:}
+    max-failed-attempts: ${SOMABISEO_INVITE_MAX_FAILED_ATTEMPTS:5}
+    lock-minutes: ${SOMABISEO_INVITE_LOCK_MINUTES:10}

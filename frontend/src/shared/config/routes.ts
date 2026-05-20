@@ -1,6 +1,7 @@
 export const routes = {
   home: "/",
   login: "/login",
+  inviteVerify: "/verify-invite",
   googleLoginCallback: "/login/google/callback",
   dashboard: "/dashboard",
   notices: "/notices",

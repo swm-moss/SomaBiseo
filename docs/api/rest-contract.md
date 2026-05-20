@@ -18,11 +18,13 @@ GET /api/health
 GET /api/auth/google/connect-url?returnTo={frontendCallbackUrl}
 GET /api/auth/me
 GET /api/me
+POST /api/auth/invite/verify
 DELETE /api/auth/logout
 ```
 
-응답의 `url`로 이동하면 Google OAuth 동의 화면으로 진입한다. 백엔드는 승인 코드 콜백에서 Google 토큰을 교환하고 앱 세션을 만든 뒤 프론트 콜백 URL fragment로 `sessionId`, `username`, `email`, `profileImageUrl`, `expiresAt`을 전달한다.
+응답의 `url`로 이동하면 Google OAuth 동의 화면으로 진입한다. 백엔드는 승인 코드 콜백에서 Google 토큰을 교환하고 앱 세션을 만든 뒤 프론트 콜백 URL fragment로 `sessionId`, `username`, `email`, `profileImageUrl`, `expiresAt`, `inviteVerified`를 전달한다.
 프론트는 `sessionId`만 Zustand persist에 보관하고, 실제 사용자 정보는 `Authorization: Bearer {sessionId}`로 `/api/me`를 호출해 TanStack Query 캐시에 저장한다.
+첫 로그인 사용자는 `POST /api/auth/invite/verify`에서 초대 코드 6자리를 인증해야 주요 화면과 SOMA 데이터 API에 접근할 수 있다. 코드는 `SOMABISEO_INVITE_CODE` 환경변수로만 주입한다.
 
 ## SOMA Portal Read Adapter
 
