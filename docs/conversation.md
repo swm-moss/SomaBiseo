@@ -9,6 +9,8 @@
 - 사용자에게 SOMA 포털 아이디/비밀번호를 입력받지 않는다.
 - 서버가 사용자별 SOMA 포털 세션 쿠키를 보관하는 구조로 만들지 않는다.
 - 앱 로그인은 Google OAuth로 처리한다. 로그인은 `openid email profile`만 요청하고, Google Calendar 연결은 같은 OAuth client/callback을 쓰되 Calendar 권한을 별도 승인 플로우에서 추가 요청한다.
+- Google OAuth 첫 로그인 이후에는 SOMA 부산센터 구성원 확인용 초대 코드 인증을 한 번 통과해야 주요 화면과 API를 사용할 수 있다.
+- 초대 코드는 코드나 문서에 원문을 남기지 않고 `SOMABISEO_INVITE_CODE` 환경변수로만 주입한다.
 - 읽기 전용 데이터 조회는 운영자 계정 환경변수로 서버에서 수행한다.
 - 신청/취소 기능 제거는 별도 팀원 작업으로 진행 중이므로 이 흐름을 수정하는 작업과 섞지 않는다.
 - 초기 핵심 가치는 공지, 멘토특강, 자유멘토링을 한곳에서 보기 좋게 정리하는 것이다.
@@ -58,6 +60,7 @@
 - 포털 동기화 범위는 `SOMA_PORTAL_SYNC_PAGE_LIMIT`로 제한한다. 기본값은 60페이지이며, 현재 부산센터 멘토링 목록 전체 페이지를 담을 수 있게 둔다.
 - 멘토링 상세, 본문, 신청자 리스트는 상세 첫 조회 때 `soma_events`에 저장하고 이후에는 DB 캐시를 우선 사용한다.
 - 백엔드의 Google OAuth는 `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET`, `GOOGLE_CALENDAR_REDIRECT_URI`를 사용한다. client secret은 코드, 문서, PR 본문에 노출하지 않는다.
+- 백엔드의 첫 로그인 구성원 인증은 `SOMABISEO_INVITE_CODE`를 사용한다. 이 값은 저장소에 커밋하지 않고 Railway 환경변수로만 설정한다.
 - 백엔드 AI 요약 기능은 `OPENAI_API_KEY`가 있을 때만 동작한다. 키는 코드나 커밋에 저장하지 않고 Railway 환경변수로만 설정한다.
 - AI 요약 모델은 기본 `gpt-5.4-mini`이며, 필요하면 `OPENAI_SUMMARY_MODEL`로 교체한다.
 - GitHub Actions의 `CI`는 PR과 `main` push에서 실행한다.

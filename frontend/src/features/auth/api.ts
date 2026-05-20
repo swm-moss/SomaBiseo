@@ -12,6 +12,7 @@ export type AuthSession = {
   profileImageUrl?: string | null;
   provider: "GOOGLE";
   expiresAt: string;
+  inviteVerified: boolean;
 };
 
 type GoogleConnectUrlResponse = {
@@ -59,4 +60,22 @@ export async function logoutGoogleSession(sessionId: string): Promise<void> {
   if (!response.ok || !payload.success) {
     throw new ApiResponseError(payload.message ?? "로그아웃하지 못했어요.", response.status);
   }
+}
+
+export async function verifyInviteCode(sessionId: string, code: string) {
+  const response = await apiClient.post("auth/invite/verify", {
+    headers: {
+      Authorization: `Bearer ${sessionId}`,
+    },
+    json: {
+      code,
+    },
+  });
+  const payload = await response.json<ApiResponse<AuthSession>>();
+
+  if (!response.ok || !payload.success) {
+    throw new ApiResponseError(payload.message ?? "초대 코드를 확인하지 못했어요.", response.status);
+  }
+
+  return payload.data;
 }

@@ -67,5 +67,8 @@ export function useAuthSessionQuery() {
     sessionId,
     session: query.data ?? null,
     isAuthenticated: Boolean(sessionId && query.data && !isAuthSessionExpired(query.data)),
+    isInviteVerified: Boolean(
+      sessionId && query.data && !isAuthSessionExpired(query.data) && query.data.inviteVerified,
+    ),
   };
 }

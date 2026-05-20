@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import { toast } from "sonner";
@@ -24,7 +25,8 @@ export function PortalLoginForm() {
         onClick={async () => {
           try {
             setLoading(true);
-            const returnTo = `${window.location.origin}${routes.googleLoginCallback}?next=${encodeURIComponent(routes.dashboard)}`;
+            const next = safeNext(new URL(window.location.href).searchParams.get("next"));
+            const returnTo = `${window.location.origin}${routes.googleLoginCallback}?next=${encodeURIComponent(next)}`;
             const { url } = await getGoogleLoginUrl(returnTo);
 
             window.location.href = url;
@@ -45,10 +47,47 @@ export function PortalLoginForm() {
       </Button>
       <p className="text-[13px] font-medium leading-[20px] text-muted-foreground">
         SOMA 포털 아이디와 비밀번호는 받지 않습니다. Google 계정으로 로그인하고
-        캘린더 권한은 사용자가 승인한 범위에서만 사용합니다.
+        첫 로그인에는 문자로 공유된 초대 코드만 한 번 확인합니다.
       </p>
     </div>
   );
+}
+
+export function InviteVerificationGate({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { sessionId, session, isLoading, isAuthenticated } = useAuthSessionQuery();
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    const next = encodeURIComponent(pathname || routes.dashboard);
+
+    if (!sessionId || !isAuthenticated) {
+      router.replace(`${routes.login}?next=${next}`);
+      return;
+    }
+
+    if (session && !session.inviteVerified) {
+      router.replace(`${routes.inviteVerify}?next=${next}`);
+    }
+  }, [isAuthenticated, isLoading, pathname, router, session, sessionId]);
+
+  if (isLoading || !sessionId || !isAuthenticated || !session?.inviteVerified) {
+    return (
+      <main className="flex min-h-screen items-center bg-background px-5 py-10">
+        <div className="mx-auto w-full max-w-sm">
+          <p className="text-center text-[15px] font-semibold text-muted-foreground">
+            접근 권한 확인 중
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  return <>{children}</>;
 }
 
 export function PortalSessionStatus() {
@@ -121,4 +160,12 @@ export function DashboardGreeting() {
   const { session } = useAuthSessionQuery();
 
   return <>안녕하세요{session?.username ? `, ${session.username}님` : ""}</>;
+}
+
+function safeNext(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return routes.dashboard;
+  }
+
+  return value;
 }

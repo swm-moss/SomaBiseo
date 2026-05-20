@@ -3,8 +3,11 @@ package com.somabiseo.domain.auth.presentation;
 import com.somabiseo.domain.auth.application.GoogleAuthService;
 import com.somabiseo.domain.auth.domain.GoogleAuthSessionResponse;
 import com.somabiseo.global.response.ApiResponse;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,6 +40,14 @@ public class GoogleAuthController {
         googleAuthService.logout(authorization);
 
         return ApiResponse.ok(null);
+    }
+
+    @PostMapping("/api/auth/invite/verify")
+    ApiResponse<GoogleAuthSessionResponse> verifyInviteCode(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @Valid @RequestBody InviteVerificationRequest request
+    ) {
+        return ApiResponse.ok(googleAuthService.verifyInviteCode(authorization, request.code()));
     }
 
     @GetMapping("/api/calendar/google/connect-url")
