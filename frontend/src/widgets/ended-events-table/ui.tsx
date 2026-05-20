@@ -27,14 +27,6 @@ const TYPE_LABEL: Record<SomaEventType, string> = {
   MENTORING: "자유멘토링",
 };
 
-type TypeFilter = "ALL" | SomaEventType;
-
-const TYPE_OPTIONS: { label: string; value: TypeFilter }[] = [
-  { label: "전체", value: "ALL" },
-  { label: "멘토특강", value: "LECTURE" },
-  { label: "자유멘토링", value: "MENTORING" },
-];
-
 const dayFormatter = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
   year: "numeric",
@@ -58,21 +50,12 @@ function formatTime(value: string) {
   return timeFormatter.format(new Date(value));
 }
 
-function parseTypeFilter(value: string | null): TypeFilter {
-  if (value === "LECTURE" || value === "MENTORING") {
-    return value;
-  }
-
-  return "ALL";
-}
-
 export function EndedEventsTable() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const urlQ = searchParams.get("q") ?? "";
-  const typeFilter = parseTypeFilter(searchParams.get("type"));
   const dateFilter = searchParams.get("date") ?? "";
   const pageParam = Number(searchParams.get("page") ?? "1");
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
@@ -102,16 +85,12 @@ export function EndedEventsTable() {
     });
   }, [debouncedSearch, urlQ, searchParams, router, pathname]);
 
-  const apiType: SomaEventType | undefined =
-    typeFilter === "ALL" ? undefined : typeFilter;
-
   const apiDate = dateFilter || undefined;
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: reviewKeys.endedEvents(apiType ?? null, debouncedSearch, dateFilter || null, page),
+    queryKey: reviewKeys.endedEvents(null, debouncedSearch, dateFilter || null, page),
     queryFn: () =>
       getEndedEvents({
-        type: apiType,
         q: debouncedSearch,
         date: apiDate,
         page,
@@ -129,18 +108,6 @@ export function EndedEventsTable() {
 
     router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
       scroll: false,
-    });
-  };
-
-  const changeTypeFilter = (next: TypeFilter) => {
-    updateSearchParams((params) => {
-      if (next === "ALL") {
-        params.delete("type");
-      } else {
-        params.set("type", next);
-      }
-
-      params.delete("page");
     });
   };
 
@@ -167,8 +134,7 @@ export function EndedEventsTable() {
   };
 
   const totalElements = data?.totalElements ?? 0;
-  const hasFilter =
-    debouncedSearch.length > 0 || typeFilter !== "ALL" || dateFilter !== "";
+  const hasFilter = debouncedSearch.length > 0 || dateFilter !== "";
 
   return (
     <section className="mt-6 lg:mt-8">
@@ -187,50 +153,28 @@ export function EndedEventsTable() {
             onChange={(event) => setSearchInput(event.target.value)}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2 lg:gap-3">
-          <div className="relative">
-            <input
-              aria-label="진행 날짜로 필터"
-              className={cn(
-                "h-12 rounded-xl border-0 bg-muted px-4 text-[15px] font-semibold outline-none transition-colors focus:bg-white focus:ring-2 focus:ring-primary/25",
-                dateFilter ? "text-foreground" : "text-muted-foreground",
-                dateFilter ? "pr-10" : "pr-4",
-              )}
-              type="date"
-              value={dateFilter}
-              onChange={(event) => changeDateFilter(event.target.value)}
-            />
-            {dateFilter ? (
-              <button
-                aria-label="날짜 필터 해제"
-                className="absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-white text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                type="button"
-                onClick={() => changeDateFilter("")}
-              >
-                <X aria-hidden="true" className="size-3.5" />
-              </button>
-            ) : null}
-          </div>
-          {TYPE_OPTIONS.map((option) => {
-            const isSelected = option.value === typeFilter;
-
-            return (
-              <button
-                key={option.value}
-                aria-pressed={isSelected}
-                className={cn(
-                  "h-10 shrink-0 rounded-full px-4 text-[14px] font-bold transition-colors",
-                  isSelected
-                    ? "bg-foreground text-white"
-                    : "bg-muted text-muted-foreground hover:bg-secondary hover:text-foreground",
-                )}
-                type="button"
-                onClick={() => changeTypeFilter(option.value)}
-              >
-                {option.label}
-              </button>
-            );
-          })}
+        <div className="relative">
+          <input
+            aria-label="진행 날짜로 필터"
+            className={cn(
+              "h-12 rounded-xl border-0 bg-muted px-4 text-[15px] font-semibold outline-none transition-colors focus:bg-white focus:ring-2 focus:ring-primary/25",
+              dateFilter ? "text-foreground" : "text-muted-foreground",
+              dateFilter ? "pr-10" : "pr-4",
+            )}
+            type="date"
+            value={dateFilter}
+            onChange={(event) => changeDateFilter(event.target.value)}
+          />
+          {dateFilter ? (
+            <button
+              aria-label="날짜 필터 해제"
+              className="absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-white text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              type="button"
+              onClick={() => changeDateFilter("")}
+            >
+              <X aria-hidden="true" className="size-3.5" />
+            </button>
+          ) : null}
         </div>
       </div>
 
