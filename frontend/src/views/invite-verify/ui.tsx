@@ -30,7 +30,7 @@ export function InviteVerifyPage() {
       return;
     }
 
-    if (!sessionId || !isAuthenticated) {
+    if (!isAuthenticated) {
       router.replace(`${routes.login}?next=${encodeURIComponent(next)}`);
       return;
     }

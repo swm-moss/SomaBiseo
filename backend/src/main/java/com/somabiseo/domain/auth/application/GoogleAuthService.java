@@ -75,7 +75,7 @@ public class GoogleAuthService {
         return buildAuthorizationUrl(GoogleAuthFlow.CALENDAR, returnTo);
     }
 
-    public String handleCallback(String code, String state, String error) {
+    public GoogleAuthRedirectResult handleCallback(String code, String state, String error) {
         Optional<PendingGoogleAuthState> consumedState = consumeState(state);
 
         if (consumedState.isEmpty()) {
@@ -117,13 +117,21 @@ public class GoogleAuthService {
     }
 
     public GoogleAuthSessionResponse getCurrentSession(String authorization) {
-        return sessionStore.find(bearerSessionId(authorization))
+        return getCurrentSession(authorization, null);
+    }
+
+    public GoogleAuthSessionResponse getCurrentSession(String authorization, String sessionCookie) {
+        return findSession(authorization, sessionCookie)
                 .map(this::toFreshResponse)
                 .orElseThrow(() -> new GoogleAuthUnauthorizedException("로그인이 필요합니다."));
     }
 
     public GoogleAuthSessionResponse verifyInviteCode(String authorization, String code) {
-        GoogleAuthSessionStore.GoogleAuthSession session = requireSession(authorization);
+        return verifyInviteCode(authorization, null, code);
+    }
+
+    public GoogleAuthSessionResponse verifyInviteCode(String authorization, String sessionCookie, String code) {
+        GoogleAuthSessionStore.GoogleAuthSession session = requireSession(authorization, sessionCookie);
         AuthUser user = requireUser(session);
 
         if (user.isInviteVerified()) {
@@ -161,7 +169,11 @@ public class GoogleAuthService {
     }
 
     public GoogleAuthSessionResponse requireVerifiedSession(String authorization) {
-        GoogleAuthSessionResponse session = getCurrentSession(authorization);
+        return requireVerifiedSession(authorization, null);
+    }
+
+    public GoogleAuthSessionResponse requireVerifiedSession(String authorization, String sessionCookie) {
+        GoogleAuthSessionResponse session = getCurrentSession(authorization, sessionCookie);
 
         if (!session.inviteVerified()) {
             throw new InviteVerificationException("초대 코드 인증이 필요합니다.");
@@ -171,7 +183,21 @@ public class GoogleAuthService {
     }
 
     public void logout(String authorization) {
-        sessionStore.remove(bearerSessionId(authorization));
+        logout(authorization, null);
+    }
+
+    public void logout(String authorization, String sessionCookie) {
+        Optional<String> bearerSessionId = bearerSessionId(authorization);
+        Optional<String> cookieSessionId = cookieSessionId(sessionCookie);
+
+        if (bearerSessionId.isEmpty() && cookieSessionId.isEmpty()) {
+            throw new GoogleAuthUnauthorizedException("로그인이 필요합니다.");
+        }
+
+        bearerSessionId.ifPresent(sessionStore::remove);
+        cookieSessionId
+                .filter((sessionId) -> bearerSessionId.map((bearer) -> !bearer.equals(sessionId)).orElse(true))
+                .ifPresent(sessionStore::remove);
     }
 
     private String buildAuthorizationUrl(GoogleAuthFlow flow, String returnTo) {
@@ -280,7 +306,11 @@ public class GoogleAuthService {
         return authUserRepository.save(user);
     }
 
-    private String redirectWithSession(String returnTo, GoogleAuthSessionResponse session, boolean calendarConnected) {
+    private GoogleAuthRedirectResult redirectWithSession(
+            String returnTo,
+            GoogleAuthSessionResponse session,
+            boolean calendarConnected
+    ) {
         String fragment = toFragment(
                 "sessionId", session.sessionId(),
                 "username", session.username(),
@@ -291,11 +321,11 @@ public class GoogleAuthService {
                 "calendarConnected", Boolean.toString(calendarConnected)
         );
 
-        return appendFragment(returnTo, fragment);
+        return new GoogleAuthRedirectResult(appendFragment(returnTo, fragment), session.sessionId(), session.expiresAt());
     }
 
-    private String redirectWithError(String returnTo, String message) {
-        return appendFragment(returnTo, toFragment("error", message));
+    private GoogleAuthRedirectResult redirectWithError(String returnTo, String message) {
+        return new GoogleAuthRedirectResult(appendFragment(returnTo, toFragment("error", message)), null, null);
     }
 
     private String appendFragment(String returnTo, String fragment) {
@@ -339,9 +369,23 @@ public class GoogleAuthService {
         }
     }
 
-    private GoogleAuthSessionStore.GoogleAuthSession requireSession(String authorization) {
-        return sessionStore.find(bearerSessionId(authorization))
+    private GoogleAuthSessionStore.GoogleAuthSession requireSession(String authorization, String sessionCookie) {
+        return findSession(authorization, sessionCookie)
                 .orElseThrow(() -> new GoogleAuthUnauthorizedException("로그인이 필요합니다."));
+    }
+
+    private Optional<GoogleAuthSessionStore.GoogleAuthSession> findSession(
+            String authorization,
+            String sessionCookie
+    ) {
+        Optional<GoogleAuthSessionStore.GoogleAuthSession> bearerSession = bearerSessionId(authorization)
+                .flatMap(sessionStore::find);
+
+        if (bearerSession.isPresent()) {
+            return bearerSession;
+        }
+
+        return cookieSessionId(sessionCookie).flatMap(sessionStore::find);
     }
 
     private GoogleAuthSessionResponse toFreshResponse(GoogleAuthSessionStore.GoogleAuthSession session) {
@@ -365,18 +409,26 @@ public class GoogleAuthService {
                 .orElseThrow(() -> new GoogleAuthUnauthorizedException("로그인 사용자를 찾지 못했습니다."));
     }
 
-    private String bearerSessionId(String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            throw new GoogleAuthUnauthorizedException("로그인이 필요합니다.");
+    private Optional<String> bearerSessionId(String authorization) {
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String sessionId = authorization.substring("Bearer ".length()).trim();
+
+            if (!sessionId.isBlank()) {
+                return Optional.of(sessionId);
+            }
         }
 
-        String sessionId = authorization.substring("Bearer ".length()).trim();
+        return Optional.empty();
+    }
 
-        if (sessionId.isBlank()) {
-            throw new GoogleAuthUnauthorizedException("로그인이 필요합니다.");
+    private Optional<String> cookieSessionId(String sessionCookie) {
+        String cookieSessionId = sessionCookie == null ? "" : sessionCookie.trim();
+
+        if (!cookieSessionId.isBlank()) {
+            return Optional.of(cookieSessionId);
         }
 
-        return sessionId;
+        return Optional.empty();
     }
 
     private enum GoogleAuthFlow {
@@ -387,6 +439,13 @@ public class GoogleAuthService {
     private record PendingGoogleAuthState(
             GoogleAuthFlow flow,
             String returnTo,
+            Instant expiresAt
+    ) {
+    }
+
+    public record GoogleAuthRedirectResult(
+            String redirectUrl,
+            String sessionId,
             Instant expiresAt
     ) {
     }

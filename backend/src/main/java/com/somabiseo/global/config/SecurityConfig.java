@@ -1,5 +1,7 @@
 package com.somabiseo.global.config;
 
+import com.somabiseo.domain.auth.presentation.GoogleAuthController;
+import jakarta.servlet.http.Cookie;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 @Configuration
@@ -34,9 +37,15 @@ public class SecurityConfig {
             RequestAuthorizationContext context
     ) {
         String authorization = context.getRequest().getHeader("Authorization");
-
-        return new AuthorizationDecision(authorization != null
+        boolean hasBearer = authorization != null
                 && authorization.startsWith("Bearer ")
-                && !authorization.substring("Bearer ".length()).isBlank());
+                && !authorization.substring("Bearer ".length()).isBlank();
+        boolean hasCookie = context.getRequest().getCookies() != null
+                && Arrays.stream(context.getRequest().getCookies())
+                .filter((cookie) -> GoogleAuthController.AUTH_SESSION_COOKIE.equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .anyMatch((value) -> value != null && !value.isBlank());
+
+        return new AuthorizationDecision(hasBearer || hasCookie);
     }
 }

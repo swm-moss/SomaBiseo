@@ -31,11 +31,13 @@ export async function getGoogleLoginUrl(returnTo: string) {
   );
 }
 
-export async function getCurrentSession(sessionId: string) {
+export async function getCurrentSession(sessionId?: string | null) {
   const response = await apiClient.get("auth/me", {
-    headers: {
-      Authorization: `Bearer ${sessionId}`,
-    },
+    headers: sessionId
+      ? {
+          Authorization: `Bearer ${sessionId}`,
+        }
+      : undefined,
   });
   const payload = await response.json<ApiResponse<AuthSession>>();
 
