@@ -8,6 +8,7 @@ export type ReviewFeedItem = {
   mentorName: string | null;
   content: string;
   authorName: string;
+  isAuthor: boolean;
   createdAt: string;
 };
 

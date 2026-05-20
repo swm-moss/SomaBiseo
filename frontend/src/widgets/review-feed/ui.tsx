@@ -8,6 +8,7 @@ import { ArrowLeft, CalendarClock, Search, UserRound } from "lucide-react";
 
 import { getReviewFeed } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
+import { ManageReviewActions } from "@/features/manage-review/ui";
 import { WriteReviewDialog } from "@/features/write-review/ui";
 import { routes } from "@/shared/config/routes";
 import { getRelativePublishedAt } from "@/shared/lib/date";
@@ -172,10 +173,18 @@ export function ReviewFeed() {
                     <UserRound aria-hidden="true" className="size-4 text-muted-foreground" />
                     {item.authorName}
                   </p>
-                  <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted-foreground">
-                    <CalendarClock aria-hidden="true" className="size-3.5" />
-                    {getRelativePublishedAt(item.createdAt)}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted-foreground">
+                      <CalendarClock aria-hidden="true" className="size-3.5" />
+                      {getRelativePublishedAt(item.createdAt)}
+                    </span>
+                    {item.isAuthor ? (
+                      <ManageReviewActions
+                        reviewId={item.id}
+                        initialContent={item.content}
+                      />
+                    ) : null}
+                  </div>
                 </div>
               </li>
             ))}
