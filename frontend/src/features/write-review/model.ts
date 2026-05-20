@@ -36,7 +36,7 @@ export function useCreateReview() {
             return false;
           }
 
-          return key[1] === "feed" || key[1] === "recent-events";
+          return key[1] === "feed" || key[1] === "ended-events";
         },
       });
     },

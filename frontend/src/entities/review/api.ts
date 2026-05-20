@@ -1,19 +1,10 @@
 import type {
   EndedEventPage,
-  RecentEndedEvent,
   Review,
   ReviewFeedPage,
 } from "@/entities/review/model";
 import type { SomaEventType } from "@/entities/soma-event/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
-
-export async function getRecentEndedEvents(limit = 3) {
-  return unwrapApiResponse(
-    apiClient
-      .get("reviews/recent-events", { searchParams: { limit } })
-      .json<ApiResponse<RecentEndedEvent[]>>(),
-  );
-}
 
 export type GetEndedEventsParams = {
   type?: SomaEventType;

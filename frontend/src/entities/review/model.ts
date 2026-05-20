@@ -27,15 +27,6 @@ export type Review = {
   createdAt: string;
 };
 
-export type RecentEndedEvent = {
-  eventId: string;
-  type: SomaEventType;
-  title: string;
-  mentorName: string | null;
-  endAt: string;
-  reviewCount: number;
-};
-
 export type EndedEvent = {
   eventId: string;
   type: SomaEventType;

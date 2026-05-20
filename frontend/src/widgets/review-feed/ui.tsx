@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CalendarClock, Search, UserRound, X } from "lucide-react";
+import { ArrowLeft, CalendarClock, Search, UserRound } from "lucide-react";
 
 import { getReviewFeed } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
@@ -84,13 +84,6 @@ export function ReviewFeed() {
     router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
   };
 
-  const clearEventFilter = () => {
-    updateSearchParams((params) => {
-      params.delete("eventId");
-      params.delete("page");
-    });
-  };
-
   const changePage = (nextPage: number) => {
     updateSearchParams((params) => {
       if (nextPage <= 1) {
@@ -105,6 +98,16 @@ export function ReviewFeed() {
 
   return (
     <section className="sb-section">
+      {eventId ? (
+        <Link
+          href={routes.reviews}
+          className="mb-3 inline-flex items-center gap-1 text-[13px] font-bold text-primary hover:underline"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          전체 강의로 돌아가기
+        </Link>
+      ) : null}
+
       <div className="relative">
         <Search
           aria-hidden="true"
@@ -119,17 +122,6 @@ export function ReviewFeed() {
           onChange={(event) => setSearchInput(event.target.value)}
         />
       </div>
-
-      {eventId ? (
-        <button
-          className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-[13px] font-bold text-blue-700 transition-colors hover:bg-blue-100"
-          type="button"
-          onClick={clearEventFilter}
-        >
-          이 강의 후기만 보는 중
-          <X aria-hidden="true" className="size-3.5" />
-        </button>
-      ) : null}
 
       <div className="mt-4">
         {isLoading ? <LoadingState /> : null}

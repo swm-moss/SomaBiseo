@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarCheck, MessageSquare } from "lucide-react";
 
-import { getRecentEndedEvents } from "@/entities/review/api";
+import { getEndedEvents } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
 import { WriteReviewDialog } from "@/features/write-review/ui";
 import { routes } from "@/shared/config/routes";
@@ -17,27 +17,16 @@ const TYPE_LABEL = {
 } as const;
 
 const DASHBOARD_LIMIT = 3;
-const WRITE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
-
-function isWithinWriteWindow(endAt: string) {
-  const ended = new Date(endAt).getTime();
-
-  if (Number.isNaN(ended)) {
-    return false;
-  }
-
-  const now = Date.now();
-
-  return now >= ended && now - ended <= WRITE_WINDOW_MS;
-}
 
 export function DashboardReviewPrompt() {
-  const { data: events } = useQuery({
-    queryKey: reviewKeys.recentEvents(DASHBOARD_LIMIT),
-    queryFn: () => getRecentEndedEvents(DASHBOARD_LIMIT),
+  const { data } = useQuery({
+    queryKey: reviewKeys.endedEvents(null, "", 1),
+    queryFn: () => getEndedEvents({ size: DASHBOARD_LIMIT }),
   });
 
-  if (!events || events.length === 0) {
+  const events = data?.items ?? [];
+
+  if (events.length === 0) {
     return null;
   }
 
@@ -83,15 +72,13 @@ export function DashboardReviewPrompt() {
               {event.mentorName ?? "멘토 미정"} · 후기 {event.reviewCount}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {isWithinWriteWindow(event.endAt) ? (
-                <WriteReviewDialog
-                  eventId={event.eventId}
-                  eventTitle={event.title}
-                  triggerClassName="w-full sm:w-auto"
-                />
-              ) : null}
+              <WriteReviewDialog
+                eventId={event.eventId}
+                eventTitle={event.title}
+                triggerClassName="w-full sm:w-auto"
+              />
               <Link
-                href={`${routes.reviews}?eventId=${encodeURIComponent(event.eventId)}`}
+                href={routes.reviewsForEvent(event.eventId)}
                 className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-white px-4 text-[14px] font-bold text-foreground hover:bg-muted"
               >
                 후기 보기
