@@ -66,7 +66,7 @@ export function PaginationControl({
       <div className="flex items-center justify-center gap-1 sm:gap-2">
         <button
           aria-label="처음 페이지"
-          className="sb-tap hidden size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35 sm:grid"
+          className="sb-tap grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page <= 1 || isDisabled}
           type="button"
           onClick={() => goToPage(1)}
@@ -110,7 +110,7 @@ export function PaginationControl({
         </button>
         <button
           aria-label="마지막 페이지"
-          className="sb-tap hidden size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35 sm:grid"
+          className="sb-tap grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page >= safeTotalPages || isDisabled}
           type="button"
           onClick={() => goToPage(safeTotalPages)}
