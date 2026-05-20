@@ -1,5 +1,24 @@
 import type { SomaEventType } from "@/entities/soma-event/model";
 
+export type ReviewFeedItem = {
+  id: number;
+  eventId: string;
+  eventTitle: string;
+  eventType: SomaEventType;
+  mentorName: string | null;
+  content: string;
+  authorName: string;
+  createdAt: string;
+};
+
+export type ReviewFeedPage = {
+  items: ReviewFeedItem[];
+  page: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
+};
+
 export type Review = {
   id: number;
   eventId: string;

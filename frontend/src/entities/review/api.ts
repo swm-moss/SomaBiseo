@@ -1,6 +1,8 @@
 import type {
   RecentEndedEvent,
   Review,
+  ReviewFeedItem,
+  ReviewFeedPage,
   ReviewPage,
   ReviewSummary,
   WritableEvent,
@@ -43,9 +45,38 @@ export async function getReviewsPage(eventId: string, page = 1, size = 10) {
   );
 }
 
+export type GetReviewFeedParams = {
+  q?: string;
+  eventId?: string;
+  page?: number;
+  size?: number;
+};
+
+export async function getReviewFeed({
+  q,
+  eventId,
+  page = 1,
+  size = 10,
+}: GetReviewFeedParams = {}) {
+  const searchParams: Record<string, string | number> = { page, size };
+
+  if (q && q.trim() !== "") {
+    searchParams.q = q.trim();
+  }
+
+  if (eventId && eventId.trim() !== "") {
+    searchParams.eventId = eventId.trim();
+  }
+
+  return unwrapApiResponse(
+    apiClient.get("reviews", { searchParams }).json<ApiResponse<ReviewFeedPage>>(),
+  );
+}
+
 export type CreateReviewInput = {
   authorName: string;
   content: string;
+  attended?: boolean;
 };
 
 export async function createReview(eventId: string, input: CreateReviewInput) {
