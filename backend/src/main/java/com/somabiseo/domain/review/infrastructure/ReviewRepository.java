@@ -39,6 +39,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                            or (e.mentorName is not null and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%')))
                            or lower(r.content) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
+                      and (cast(:mentorName as string) is null
+                           or (e.mentorName is not null and e.mentorName = cast(:mentorName as string)))
                     order by r.createdAt desc, r.id desc
                     """,
             countQuery = """
@@ -51,11 +53,14 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                            or (e.mentorName is not null and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%')))
                            or lower(r.content) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
+                      and (cast(:mentorName as string) is null
+                           or (e.mentorName is not null and e.mentorName = cast(:mentorName as string)))
                     """
     )
     Page<ReviewFeedItem> findFeed(
             @Param("q") String q,
             @Param("eventId") String eventId,
+            @Param("mentorName") String mentorName,
             @Param("viewerUserId") Long viewerUserId,
             Pageable pageable
     );
