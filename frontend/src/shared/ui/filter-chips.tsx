@@ -44,7 +44,7 @@ export function FilterChips<T extends string>({
               key={option.value}
               aria-checked={isSelected}
               className={cn(
-                "sb-tap h-9 shrink-0 rounded-full border px-4 text-[14px] font-semibold transition-colors",
+                "shrink-0 rounded-full border px-3.5 py-1 text-[13px] font-medium transition-colors",
                 isSelected
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "border-border bg-white text-foreground hover:bg-muted",
