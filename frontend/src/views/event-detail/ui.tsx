@@ -212,7 +212,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
         ) : null}
 
         {event ? (
-          <article className="space-y-8">
+          <article className="space-y-14">
             <section className="border-b border-border/80 pb-7">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
