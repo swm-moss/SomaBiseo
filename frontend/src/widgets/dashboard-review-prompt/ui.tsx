@@ -75,7 +75,7 @@ export function DashboardReviewPrompt() {
                 triggerClassName="w-full sm:w-auto"
               />
               <Link
-                href={routes.reviewDetail(event.eventId)}
+                href={`${routes.reviews}?eventId=${encodeURIComponent(event.eventId)}`}
                 className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-white px-4 text-[14px] font-bold text-foreground hover:bg-muted"
               >
                 후기 보기
