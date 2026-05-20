@@ -23,6 +23,7 @@ import java.util.List;
 
 @Service
 public class CalendarService {
+    private static final String EVENT_ID_MARKER_PREFIX = "SomaBiseo Event ID: ";
     private static final CalendarConnectionResponse DISCONNECTED =
             new CalendarConnectionResponse(false, null, null, null);
 
@@ -83,7 +84,6 @@ public class CalendarService {
 
     public CalendarConnectionResponse disconnect(String calendarSessionId) {
         googleCalendarClient.disconnect(calendarSessionId);
-        googleCalendarEventLinkRepository.deleteByCalendarSessionId(calendarSessionId);
 
         return DISCONNECTED;
     }
@@ -134,10 +134,20 @@ public class CalendarService {
             return new CalendarEventLinkResponse(eventId, null, calendarId, false);
         }
 
+        CalendarEvent event = findCalendarEvent(eventId);
+        GoogleCalendarEventResponse recoveredEvent = findRecoverableGoogleEvent(calendarSessionId, eventId, event);
+        if (recoveredEvent == null) {
+            return new CalendarEventLinkResponse(eventId, null, calendarId, false);
+        }
+
+        GoogleCalendarEventLink recoveredLink = reserveLink(calendarSessionId, eventId, calendarId);
+        recoveredLink.markCreated(recoveredEvent.id());
+        googleCalendarEventLinkRepository.save(recoveredLink);
+
         return new CalendarEventLinkResponse(
                 eventId,
-                link.getGoogleEventId(),
-                link.getCalendarId(),
+                recoveredEvent.id(),
+                recoveredEvent.calendarId(),
                 true
         );
     }
@@ -183,7 +193,7 @@ public class CalendarService {
             googleEvent = googleCalendarClient.insertEvent(
                     calendarSessionId,
                     event.title(),
-                    event.description(),
+                    withEventIdMarker(event.description(), eventId),
                     event.location(),
                     event.startAt(),
                     event.endAt()
@@ -222,6 +232,39 @@ public class CalendarService {
         }
 
         return findExistingLink(calendarSessionId, eventId, calendarId);
+    }
+
+    private GoogleCalendarEventResponse findRecoverableGoogleEvent(
+            String calendarSessionId,
+            String eventId,
+            CalendarEvent event
+    ) {
+        if (event.startAt() == null || event.endAt() == null || !event.startAt().isBefore(event.endAt())) {
+            return null;
+        }
+
+        return googleCalendarClient.findEvents(calendarSessionId, event.startAt(), event.endAt()).stream()
+                .filter((googleEvent) -> hasEventIdMarker(googleEvent.description(), eventId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String withEventIdMarker(String description, String eventId) {
+        String marker = eventIdMarker(eventId);
+
+        if (description == null || description.isBlank()) {
+            return marker;
+        }
+
+        return description + "\n\n" + marker;
+    }
+
+    private String eventIdMarker(String eventId) {
+        return EVENT_ID_MARKER_PREFIX + eventId;
+    }
+
+    private boolean hasEventIdMarker(String description, String eventId) {
+        return description != null && description.contains(eventIdMarker(eventId));
     }
 
     private boolean overlaps(

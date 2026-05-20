@@ -24,7 +24,8 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
                     OffsetDateTime.parse("2026-05-20T15:00:00+09:00"),
                     OffsetDateTime.parse("2026-05-20T16:00:00+09:00"),
                     "primary",
-                    "Google Meet"
+                    "Google Meet",
+                    null
             ),
             new GoogleCalendarEventResponse(
                     "google-event-project-review",
@@ -32,7 +33,8 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
                     OffsetDateTime.parse("2026-05-21T19:00:00+09:00"),
                     OffsetDateTime.parse("2026-05-21T20:00:00+09:00"),
                     "primary",
-                    "온라인"
+                    "온라인",
+                    null
             ),
             new GoogleCalendarEventResponse(
                     "google-event-study",
@@ -40,7 +42,8 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
                     OffsetDateTime.parse("2026-05-22T20:00:00+09:00"),
                     OffsetDateTime.parse("2026-05-22T22:00:00+09:00"),
                     "primary",
-                    "부산센터"
+                    "부산센터",
+                    null
             )
     );
     private final Set<String> connectedSessionIds = ConcurrentHashMap.newKeySet();
@@ -121,7 +124,8 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
                 startAt,
                 endAt,
                 calendarId(),
-                location
+                location,
+                description
         );
         insertedEvents.put(sessionId + ":" + event.id(), event);
 

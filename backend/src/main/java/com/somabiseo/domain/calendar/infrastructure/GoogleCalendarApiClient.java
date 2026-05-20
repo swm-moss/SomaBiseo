@@ -204,7 +204,8 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                 insertedStartAt == null ? startAt : insertedStartAt,
                 insertedEndAt == null ? endAt : insertedEndAt,
                 calendarId,
-                response == null ? location : response.path("location").asText(location)
+                response == null ? location : response.path("location").asText(location),
+                response == null ? description : response.path("description").asText(description)
         );
     }
 
@@ -281,7 +282,8 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                     startAt,
                     endAt,
                     calendarId,
-                    item.path("location").asText(null)
+                    item.path("location").asText(null),
+                    item.path("description").asText(null)
             ));
         }
 
@@ -306,7 +308,8 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                 startAt,
                 endAt,
                 calendarId,
-                item.path("location").asText(null)
+                item.path("location").asText(null),
+                item.path("description").asText(null)
         ));
     }
 
