@@ -23,7 +23,6 @@ import { ErrorState } from "@/shared/ui/error-state";
 import { FilterChips } from "@/shared/ui/filter-chips";
 import { LoadingState } from "@/shared/ui/loading-state";
 import { PaginationControl } from "@/shared/ui/pagination-control";
-import { SegmentControl } from "@/shared/ui/segment-control";
 
 type EventTab = "ALL" | SomaEventType;
 type ModeFilter = "ALL" | SomaEventMode;
@@ -180,19 +179,22 @@ export function EventList() {
 
   return (
     <section className="sb-section">
-      <SegmentControl
-        className="mx-0 mb-2 min-w-0 px-0"
-        options={options}
-        value={tab}
-        onValueChange={handleTabChange}
-      />
-      <FilterChips
-        ariaLabel="진행 방식"
-        className="mx-0 mb-4 min-w-0 px-0"
-        options={modeOptions}
-        value={mode}
-        onValueChange={handleModeChange}
-      />
+      <div className="mb-4 space-y-2">
+        <FilterChips
+          ariaLabel="특강 유형"
+          label="유형"
+          options={options}
+          value={tab}
+          onValueChange={handleTabChange}
+        />
+        <FilterChips
+          ariaLabel="진행 방식"
+          label="방식"
+          options={modeOptions}
+          value={mode}
+          onValueChange={handleModeChange}
+        />
+      </div>
       <div className="mb-4 flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
           <Search
