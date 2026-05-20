@@ -375,7 +375,7 @@ function WriteReviewForm({
           rows={6}
           maxLength={REVIEW_CONTENT_MAX + 50}
           placeholder={`최소 ${REVIEW_CONTENT_MIN}자, 최대 ${REVIEW_CONTENT_MAX}자`}
-          className="sb-field mt-3 min-h-[140px] resize-y"
+          className="sb-field mt-3 min-h-[140px] resize-y py-3"
           {...register("content")}
         />
         {errors.content ? (
