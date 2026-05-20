@@ -153,20 +153,15 @@ export function ReviewFeed() {
           <ul className="space-y-3">
             {data.items.map((item) => (
               <li key={item.id} className="rounded-xl bg-white px-5 py-5">
-                <div className="flex items-start gap-2">
-                  <StatusBadge
-                    className="mt-0.5 shrink-0"
-                    tone={item.eventType === "LECTURE" ? "blue" : "cyan"}
-                  >
-                    {TYPE_LABEL[item.eventType]}
-                  </StatusBadge>
-                  <Link
-                    href={routes.eventDetail(item.eventId)}
-                    className="min-w-0 text-[17px] font-extrabold leading-[26px] text-foreground hover:underline"
-                  >
-                    {item.eventTitle}
-                  </Link>
-                </div>
+                <StatusBadge tone={item.eventType === "LECTURE" ? "blue" : "cyan"}>
+                  {TYPE_LABEL[item.eventType]}
+                </StatusBadge>
+                <Link
+                  href={routes.eventDetail(item.eventId)}
+                  className="mt-3 block text-[17px] font-extrabold leading-[26px] text-foreground hover:underline"
+                >
+                  {item.eventTitle}
+                </Link>
                 <p className="mt-1.5 text-[13px] font-medium text-muted-foreground">
                   {item.mentorName ?? "멘토 미정"}
                 </p>
