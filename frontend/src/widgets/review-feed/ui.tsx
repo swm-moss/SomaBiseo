@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Search, UserRound } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 
 import { getReviewFeed } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
@@ -153,37 +153,40 @@ export function ReviewFeed() {
           <ul className="space-y-3">
             {data.items.map((item) => (
               <li key={item.id} className="rounded-xl bg-white px-5 py-5">
-                <StatusBadge tone={item.eventType === "LECTURE" ? "blue" : "cyan"}>
-                  {TYPE_LABEL[item.eventType]}
-                </StatusBadge>
-                <Link
-                  href={routes.eventDetail(item.eventId)}
-                  className="mt-3 inline-block text-[17px] font-extrabold leading-[25px] hover:underline"
-                >
-                  {item.eventTitle}
-                </Link>
-                <p className="mt-1 text-[13px] font-semibold text-muted-foreground">
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    href={routes.eventDetail(item.eventId)}
+                    className="min-w-0 flex-1 text-[17px] font-extrabold leading-[26px] text-foreground hover:underline"
+                  >
+                    {item.eventTitle}
+                  </Link>
+                  <StatusBadge
+                    className="shrink-0"
+                    tone={item.eventType === "LECTURE" ? "blue" : "cyan"}
+                  >
+                    {TYPE_LABEL[item.eventType]}
+                  </StatusBadge>
+                </div>
+                <p className="mt-1.5 text-[13px] font-medium text-muted-foreground">
                   {item.mentorName ?? "멘토 미정"}
                 </p>
-                <p className="mt-3 whitespace-pre-wrap text-[15px] font-medium leading-[24px] text-[#4e5968]">
+                <p className="mt-4 whitespace-pre-wrap text-[15px] leading-[24px] text-foreground">
                   {item.content}
                 </p>
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <p className="inline-flex items-center gap-1.5 text-[13px] font-bold">
-                    <UserRound aria-hidden="true" className="size-4 text-muted-foreground" />
+                <div className="mt-5 flex items-center justify-between gap-3 border-t border-border/40 pt-3">
+                  <p className="text-[13px] font-medium text-muted-foreground">
                     {item.authorName}
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[12px] font-semibold text-muted-foreground">
-                      {getRelativePublishedAt(item.createdAt)}
+                    <span aria-hidden="true" className="mx-1.5">
+                      ·
                     </span>
-                    {item.isAuthor ? (
-                      <ManageReviewActions
-                        reviewId={item.id}
-                        initialContent={item.content}
-                      />
-                    ) : null}
-                  </div>
+                    {getRelativePublishedAt(item.createdAt)}
+                  </p>
+                  {item.isAuthor ? (
+                    <ManageReviewActions
+                      reviewId={item.id}
+                      initialContent={item.content}
+                    />
+                  ) : null}
                 </div>
               </li>
             ))}
