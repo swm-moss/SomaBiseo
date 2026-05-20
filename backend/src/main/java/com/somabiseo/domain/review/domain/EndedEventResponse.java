@@ -8,6 +8,7 @@ public record EndedEventResponse(
         String eventId,
         EventType type,
         String title,
+        String topic,
         String mentorName,
         OffsetDateTime startAt,
         OffsetDateTime endAt,

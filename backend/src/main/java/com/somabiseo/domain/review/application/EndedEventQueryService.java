@@ -74,6 +74,7 @@ public class EndedEventQueryService {
                         event.getSourceId(),
                         event.getType(),
                         event.getTitle(),
+                        event.getTopic(),
                         event.getMentorName(),
                         event.getStartAt(),
                         event.getEndAt(),

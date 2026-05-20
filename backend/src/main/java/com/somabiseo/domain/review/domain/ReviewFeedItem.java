@@ -8,6 +8,7 @@ public record ReviewFeedItem(
         Long id,
         String eventId,
         String eventTitle,
+        String eventTopic,
         EventType eventType,
         String mentorName,
         String content,
