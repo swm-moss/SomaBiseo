@@ -1,18 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import {
-  createReview,
-  getRecentEndedEvents,
-  type CreateReviewInput,
-} from "@/entities/review/api";
-import { reviewKeys } from "@/entities/review/keys";
+import { createReview, type CreateReviewInput } from "@/entities/review/api";
 import { REVIEW_CONTENT_MAX, REVIEW_CONTENT_MIN } from "@/entities/review/model";
 
-const WRITABLE_LIMIT = 100;
-
 export const writeReviewSchema = z.object({
-  eventId: z.string().min(1, "강의를 선택해 주세요."),
   authorName: z
     .string()
     .trim()
@@ -28,15 +20,6 @@ export const writeReviewSchema = z.object({
 });
 
 export type WriteReviewFormValues = z.infer<typeof writeReviewSchema>;
-
-export function useWritableEventsForReview(enabled: boolean) {
-  return useQuery({
-    queryKey: reviewKeys.recentEvents(WRITABLE_LIMIT),
-    queryFn: () => getRecentEndedEvents(WRITABLE_LIMIT),
-    enabled,
-    staleTime: 5 * 60_000,
-  });
-}
 
 export function useCreateReview() {
   const queryClient = useQueryClient();

@@ -85,7 +85,8 @@ export function DashboardReviewPrompt() {
             <div className="mt-3 flex flex-wrap gap-2">
               {isWithinWriteWindow(event.endAt) ? (
                 <WriteReviewDialog
-                  preselectedEventId={event.eventId}
+                  eventId={event.eventId}
+                  eventTitle={event.title}
                   triggerClassName="w-full sm:w-auto"
                 />
               ) : null}

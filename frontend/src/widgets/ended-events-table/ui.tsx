@@ -242,7 +242,8 @@ export function EndedEventsTable() {
                             후기 보기
                           </a>
                           <WriteReviewDialog
-                            preselectedEventId={item.eventId}
+                            eventId={item.eventId}
+                            eventTitle={item.title}
                             triggerLabel="후기 작성"
                           />
                         </div>

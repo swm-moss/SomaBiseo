@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { PenSquare } from "lucide-react";
@@ -8,11 +8,9 @@ import { PenSquare } from "lucide-react";
 import { useAuthSessionQuery } from "@/features/auth/model";
 import {
   useCreateReview,
-  useWritableEventsForReview,
   writeReviewSchema,
   type WriteReviewFormValues,
 } from "@/features/write-review/model";
-import type { RecentEndedEvent } from "@/entities/review/model";
 import { REVIEW_CONTENT_MAX, REVIEW_CONTENT_MIN } from "@/entities/review/model";
 import { Button } from "@/shared/ui/button";
 import {
@@ -27,18 +25,19 @@ import {
 import { cn } from "@/shared/lib/utils";
 
 type WriteReviewDialogProps = {
-  preselectedEventId?: string;
+  eventId: string;
+  eventTitle?: string;
   triggerLabel?: string;
   triggerClassName?: string;
 };
 
 export function WriteReviewDialog({
-  preselectedEventId,
+  eventId,
+  eventTitle,
   triggerLabel = "후기 작성",
   triggerClassName,
 }: WriteReviewDialogProps) {
   const [open, setOpen] = useState(false);
-  const { data: writableEvents, isLoading, isError, refetch } = useWritableEventsForReview(open);
   const { session } = useAuthSessionQuery();
 
   return (
@@ -53,61 +52,31 @@ export function WriteReviewDialog({
         <DialogHeader>
           <DialogTitle>후기 작성</DialogTitle>
           <DialogDescription>
-            종료 후 3일 이내의 강의에만 후기를 남길 수 있어요. 직접 수강한 강의에 대해서만 솔직한 후기를 남겨주세요.
+            {eventTitle
+              ? `'${eventTitle}' 강의에 대한 후기를 남겨주세요.`
+              : "직접 수강한 강의에 대해서만 솔직한 후기를 남겨주세요."}
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
-          <p className="text-[14px] text-muted-foreground">강의 목록을 불러오는 중이에요.</p>
-        ) : null}
-
-        {isError ? (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[14px] text-destructive">강의 목록을 불러오지 못했어요.</p>
-            <Button onClick={() => void refetch()} size="sm" variant="ghost">
-              다시
-            </Button>
-          </div>
-        ) : null}
-
-        {writableEvents && writableEvents.length === 0 ? (
-          <p className="text-[14px] text-muted-foreground">
-            지금은 후기를 남길 수 있는 강의가 없어요.
-          </p>
-        ) : null}
-
-        {writableEvents && writableEvents.length > 0 ? (
-          <WriteReviewForm
-            events={writableEvents}
-            preselectedEventId={preselectedEventId}
-            sessionUsername={session?.username ?? null}
-            onClose={() => setOpen(false)}
-          />
-        ) : null}
+        <WriteReviewForm
+          eventId={eventId}
+          sessionUsername={session?.username ?? null}
+          onClose={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
 }
 
 function WriteReviewForm({
-  events,
-  preselectedEventId,
+  eventId,
   sessionUsername,
   onClose,
 }: {
-  events: RecentEndedEvent[];
-  preselectedEventId?: string;
+  eventId: string;
   sessionUsername: string | null;
   onClose: () => void;
 }) {
-  const initialEventId = useMemo(() => {
-    if (preselectedEventId && events.some((event) => event.eventId === preselectedEventId)) {
-      return preselectedEventId;
-    }
-
-    return events[0]?.eventId ?? "";
-  }, [events, preselectedEventId]);
-
   const {
     register,
     handleSubmit,
@@ -116,7 +85,6 @@ function WriteReviewForm({
     formState: { errors, isSubmitting },
   } = useForm<WriteReviewFormValues>({
     defaultValues: {
-      eventId: initialEventId,
       authorName: sessionUsername ?? "",
       content: "",
       attended: false,
@@ -150,7 +118,7 @@ function WriteReviewForm({
 
         try {
           await createMutation.mutateAsync({
-            eventId: parsed.data.eventId,
+            eventId,
             input: {
               authorName: parsed.data.authorName,
               content: parsed.data.content.trim(),
@@ -167,26 +135,6 @@ function WriteReviewForm({
         }
       })}
     >
-      <div>
-        <label className="text-[14px] font-bold leading-[20px]" htmlFor="review-event">
-          강의
-        </label>
-        <select
-          id="review-event"
-          className="sb-field mt-2"
-          {...register("eventId")}
-        >
-          {events.map((event) => (
-            <option key={event.eventId} value={event.eventId}>
-              {event.title} · {event.mentorName ?? "멘토 미정"}
-            </option>
-          ))}
-        </select>
-        {errors.eventId ? (
-          <p className="mt-1 text-[13px] text-destructive">{errors.eventId.message}</p>
-        ) : null}
-      </div>
-
       <div>
         <label className="text-[14px] font-bold leading-[20px]" htmlFor="review-author">
           이름
