@@ -77,7 +77,7 @@ railway up backend --path-as-root
 
 | 이름 | 예시 | 설명 |
 | --- | --- | --- |
-| `DATABASE_JDBC_URL` | `jdbc:postgresql://postgres-db.railway.internal:5432/railway` | Spring Boot용 JDBC URL |
+| `DATABASE_JDBC_URL` | `jdbc:postgresql://postgres-db.railway.internal:5432/railway` | Spring Boot용 JDBC URL. 없으면 `DATABASE_URL`을 자동 변환 |
 | `DATABASE_USERNAME` | `somabiseo` | DB 사용자 |
 | `DATABASE_PASSWORD` | `********` | DB 비밀번호 |
 | `CORS_ALLOWED_ORIGINS` | `https://somabiseo.vercel.app` | Vercel 프론트 도메인 |
@@ -95,7 +95,7 @@ railway up backend --path-as-root
 | `GOOGLE_LOGIN_FRONTEND_REDIRECT_URI` | `https://somabiseo.vercel.app/login/google/callback` | 선택값. 비우면 Calendar 프론트 URL의 origin으로 로그인 콜백 URL을 만든다 |
 | `GOOGLE_AUTH_SESSION_TTL_MINUTES` | `43200` | Google 로그인 앱 세션 유지 시간 |
 
-Railway Postgres의 기본 `DATABASE_URL`은 JDBC 형식이 아닐 수 있다. 그 경우 Railway 변수 참조로 `DATABASE_JDBC_URL`을 `jdbc:postgresql://...` 형태로 따로 만든다.
+Railway Postgres의 기본 `DATABASE_URL`은 `postgresql://...` 형식일 수 있다. 백엔드는 시작 시 이 값을 `jdbc:postgresql://...`로 자동 변환하지만, 운영에서 명시성을 높이려면 `DATABASE_JDBC_URL`을 따로 등록한다.
 백엔드와 Postgres가 같은 Railway 프로젝트에 있으면 공개 DB 도메인 대신 `postgres-db.railway.internal` private DNS를 사용한다.
 운영자 SOMA 계정은 사용자별 신청/취소가 아니라 공지와 멘토링 조회용으로만 사용한다.
 공지/멘토링은 DB에 저장한 뒤 TTL이 지났을 때만 재동기화해서 포털 요청량을 줄인다.

@@ -8,7 +8,10 @@ export function DashboardPage() {
   return (
     <AppShell>
       <main className="sb-page">
-        <PageHeader title={<DashboardGreeting />} description="오늘 확인할 소마 일정이에요." />
+        <PageHeader
+          title={<DashboardGreeting />}
+          description="공지, 특강, 멘토링을 최신 포털 데이터 기준으로 정리했어요."
+        />
         <DashboardSummary />
         <DashboardReviewPrompt />
       </main>
