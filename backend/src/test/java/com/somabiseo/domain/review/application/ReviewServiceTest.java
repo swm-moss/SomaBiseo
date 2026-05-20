@@ -67,14 +67,19 @@ class ReviewServiceTest {
     }
 
     @Test
-    void create_종료후_3일_초과면_ReviewForbiddenException() {
-        OffsetDateTime longAgo = OffsetDateTime.parse("2026-05-18T17:00:00+09:00");
+    void create_종료후_3일이_지났어도_저장된다() {
+        OffsetDateTime longAgo = OffsetDateTime.parse("2026-05-01T17:00:00+09:00");
         SomaEvent event = somaEventWith(longAgo);
         when(somaEventRepository.findBySourceId(EVENT_ID)).thenReturn(Optional.of(event));
+        when(reviewRepository.existsBySomaEventIdAndAuthorName(SOMA_EVENT_ID, "김연수")).thenReturn(false);
+        Review saved = Review.create(SOMA_EVENT_ID, "김연수", validContent(), "1.1.1.1");
+        setField(saved, "id", 300L);
+        setField(saved, "createdAt", Instant.parse("2026-05-22T01:00:00Z"));
+        when(reviewRepository.save(any(Review.class))).thenReturn(saved);
 
-        assertThatThrownBy(() -> service.create(EVENT_ID, "김연수", validContent(), "1.1.1.1"))
-                .isInstanceOf(ReviewForbiddenException.class)
-                .hasMessageContaining("3일");
+        ReviewResponse response = service.create(EVENT_ID, "김연수", validContent(), "1.1.1.1");
+
+        assertThat(response.id()).isEqualTo(300L);
     }
 
     @Test

@@ -27,13 +27,22 @@ export type Review = {
   createdAt: string;
 };
 
-export type RecentEndedEvent = {
+export type EndedEvent = {
   eventId: string;
   type: SomaEventType;
   title: string;
   mentorName: string | null;
+  startAt: string;
   endAt: string;
   reviewCount: number;
+};
+
+export type EndedEventPage = {
+  items: EndedEvent[];
+  page: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
 };
 
 export const REVIEW_CONTENT_MIN = 20;

@@ -36,7 +36,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                            or (e.mentorName is not null and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%')))
                            or lower(r.content) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
-                    order by r.createdAt desc
+                    order by r.createdAt desc, r.id desc
                     """,
             countQuery = """
                     select count(r)

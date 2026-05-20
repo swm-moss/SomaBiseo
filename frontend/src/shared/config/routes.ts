@@ -9,5 +9,7 @@ export const routes = {
   events: "/events",
   eventDetail: (eventId: string) => `/events/${eventId}`,
   reviews: "/reviews",
+  reviewsForEvent: (eventId: string) =>
+    `/reviews?eventId=${encodeURIComponent(eventId)}`,
   settings: "/settings",
 } as const;

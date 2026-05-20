@@ -14,13 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
 @Service
 public class ReviewService {
-    static final Duration REVIEW_WINDOW = Duration.ofDays(3);
     static final int MIN_CONTENT_LENGTH = 20;
     static final int MAX_CONTENT_LENGTH = 500;
 
@@ -104,10 +102,6 @@ public class ReviewService {
 
         if (now.isBefore(endAt)) {
             throw new ReviewForbiddenException("아직 종료되지 않은 강의예요.");
-        }
-
-        if (now.isAfter(endAt.plus(REVIEW_WINDOW))) {
-            throw new ReviewForbiddenException("종료 후 3일이 지난 강의에는 후기를 남길 수 없어요.");
         }
     }
 

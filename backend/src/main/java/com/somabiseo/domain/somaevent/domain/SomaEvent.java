@@ -31,6 +31,9 @@ public class SomaEvent {
     @Column(name = "mentor_name", length = 100)
     private String mentorName;
 
+    @Column(name = "start_at", nullable = false)
+    private OffsetDateTime startAt;
+
     @Column(name = "end_at", nullable = false)
     private OffsetDateTime endAt;
 
@@ -58,6 +61,10 @@ public class SomaEvent {
 
     public String getMentorName() {
         return mentorName;
+    }
+
+    public OffsetDateTime getStartAt() {
+        return startAt;
     }
 
     public OffsetDateTime getEndAt() {
