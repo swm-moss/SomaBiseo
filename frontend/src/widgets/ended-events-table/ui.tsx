@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { MessageSquareText, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 import { getEndedEvents } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
@@ -220,9 +220,13 @@ export function EndedEventsTable() {
               ) : null}
             </div>
 
-            <ul className="mt-3 flex flex-col gap-2 lg:hidden">
-              {data.items.map((item) => (
-                <EndedEventCard key={item.eventId} item={item} />
+            <ul className="mt-3 overflow-hidden rounded-2xl bg-white lg:hidden">
+              {data.items.map((item, index) => (
+                <EndedEventListItem
+                  key={item.eventId}
+                  item={item}
+                  isLast={index === data.items.length - 1}
+                />
               ))}
             </ul>
 
@@ -233,8 +237,8 @@ export function EndedEventsTable() {
                   <col />
                   <col className="w-[200px]" />
                   <col className="w-[140px]" />
-                  <col className="w-[88px]" />
-                  <col className="w-[220px]" />
+                  <col className="w-[80px]" />
+                  <col className="w-[260px]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border/70 bg-muted/40 text-[13px] font-bold text-muted-foreground">
@@ -296,10 +300,9 @@ function EndedEventRow({ item }: { item: EndedEvent }) {
       <td className="px-5 py-4">
         <div className="flex items-center justify-end gap-2">
           <Link
-            className="inline-flex h-9 items-center gap-1 rounded-lg bg-muted px-3 text-[13px] font-bold text-foreground transition-colors hover:bg-secondary"
+            className="inline-flex h-9 items-center whitespace-nowrap rounded-lg bg-muted px-3.5 text-[13px] font-bold text-foreground transition-colors hover:bg-secondary"
             href={routes.reviewsForEvent(item.eventId)}
           >
-            <MessageSquareText aria-hidden="true" className="size-3.5" />
             후기 보기
           </Link>
           <WriteReviewDialog
@@ -313,40 +316,53 @@ function EndedEventRow({ item }: { item: EndedEvent }) {
   );
 }
 
-function EndedEventCard({ item }: { item: EndedEvent }) {
+function EndedEventListItem({
+  item,
+  isLast,
+}: {
+  item: EndedEvent;
+  isLast: boolean;
+}) {
   return (
-    <li className="rounded-2xl bg-white p-5">
-      <div className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground">
+    <li
+      className={cn(
+        "px-5 py-5",
+        isLast ? null : "border-b border-border/60",
+      )}
+    >
+      <h3 className="text-[17px] font-extrabold leading-[24px] text-foreground">
+        {item.title}
+      </h3>
+      <p className="mt-1 text-[14px] font-semibold text-muted-foreground">
+        {item.mentorName ?? "멘토 미정"}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-muted-foreground">
         <StatusBadge tone={item.type === "LECTURE" ? "blue" : "cyan"}>
           {TYPE_LABEL[item.type]}
         </StatusBadge>
+        <span className="text-foreground">{formatDay(item.endAt)}</span>
         <span aria-hidden="true">·</span>
-        <span>{item.mentorName ?? "멘토 미정"}</span>
-      </div>
-      <p className="mt-3 text-[16px] font-bold leading-[24px] text-foreground">
-        {item.title}
-      </p>
-      <p className="mt-2 text-[13px] font-medium text-muted-foreground">
-        {formatDay(item.endAt)} · {formatTime(item.startAt)} ~ {formatTime(item.endAt)}
-      </p>
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <span className="text-[13px] font-semibold text-muted-foreground">
+        <span>
+          {formatTime(item.startAt)} ~ {formatTime(item.endAt)}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
           후기 <span className="font-bold text-foreground">{item.reviewCount}</span>
         </span>
-        <div className="flex items-center gap-2">
-          <Link
-            className="inline-flex h-9 items-center gap-1 rounded-lg bg-muted px-3 text-[13px] font-bold text-foreground transition-colors hover:bg-secondary"
-            href={routes.reviewsForEvent(item.eventId)}
-          >
-            <MessageSquareText aria-hidden="true" className="size-3.5" />
-            후기 보기
-          </Link>
-          <WriteReviewDialog
-            eventId={item.eventId}
-            eventTitle={item.title}
-            triggerLabel="후기 작성"
-          />
-        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-2">
+        <Link
+          className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-muted text-[14px] font-bold text-foreground transition-colors hover:bg-secondary"
+          href={routes.reviewsForEvent(item.eventId)}
+        >
+          후기 보기
+        </Link>
+        <WriteReviewDialog
+          eventId={item.eventId}
+          eventTitle={item.title}
+          triggerLabel="후기 작성"
+          triggerClassName="h-10 flex-1"
+        />
       </div>
     </li>
   );

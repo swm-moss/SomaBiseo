@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { PenSquare } from "lucide-react";
 
 import { useAuthSessionQuery } from "@/features/auth/model";
 import {
@@ -43,8 +42,11 @@ export function WriteReviewDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className={triggerClassName} size="sm" variant="default">
-          <PenSquare aria-hidden="true" />
+        <Button
+          className={cn("whitespace-nowrap", triggerClassName)}
+          size="sm"
+          variant="default"
+        >
           {triggerLabel}
         </Button>
       </DialogTrigger>
