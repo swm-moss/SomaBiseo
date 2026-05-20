@@ -1,14 +1,31 @@
 import type { User } from "@/entities/user/model";
+import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
 
-export const currentUserMock: User = {
-  id: "user-1",
-  email: "trainee@somabiseo.dev",
-  name: "소마비서 사용자",
-  provider: "GOOGLE",
+type AuthMeResponse = {
+  sessionId: string;
+  username: string;
+  email: string;
+  profileImageUrl?: string | null;
+  provider: "GOOGLE";
+  expiresAt: string;
 };
 
-export async function getCurrentUser() {
-  return new Promise<User>((resolve) => {
-    setTimeout(() => resolve(currentUserMock), 120);
-  });
+export async function getCurrentUser(sessionId: string) {
+  const session = await unwrapApiResponse(
+    apiClient
+      .get("me", {
+        headers: {
+          Authorization: `Bearer ${sessionId}`,
+        },
+      })
+      .json<ApiResponse<AuthMeResponse>>(),
+  );
+
+  return {
+    id: session.sessionId,
+    email: session.email,
+    name: session.username,
+    profileImageUrl: session.profileImageUrl ?? undefined,
+    provider: session.provider,
+  } satisfies User;
 }

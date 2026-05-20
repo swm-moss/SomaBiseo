@@ -1,30 +1,62 @@
-export type PortalLoginRequest = {
-  email: string;
-  name: string;
-};
+import {
+  ApiResponseError,
+  apiClient,
+  type ApiResponse,
+  unwrapApiResponse,
+} from "@/shared/api/client";
 
-export type PortalLoginResponse = {
+export type AuthSession = {
   sessionId: string;
   username: string;
+  email: string;
+  profileImageUrl?: string | null;
+  provider: "GOOGLE";
   expiresAt: string;
 };
 
-export async function loginSomaPortal(request: PortalLoginRequest): Promise<PortalLoginResponse> {
-  const sessionId =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString();
+type GoogleConnectUrlResponse = {
+  url: string;
+};
 
-  return {
-    sessionId,
-    username: request.name.trim() || request.email,
-    expiresAt,
-  };
+export async function getGoogleLoginUrl(returnTo: string) {
+  return unwrapApiResponse(
+    apiClient
+      .get("auth/google/connect-url", {
+        searchParams: {
+          returnTo,
+        },
+      })
+      .json<ApiResponse<GoogleConnectUrlResponse>>(),
+  );
 }
 
-export async function logoutSomaPortal(sessionId: string): Promise<void> {
-  void sessionId;
+export async function getCurrentSession(sessionId: string) {
+  const response = await apiClient.get("auth/me", {
+    headers: {
+      Authorization: `Bearer ${sessionId}`,
+    },
+  });
+  const payload = await response.json<ApiResponse<AuthSession>>();
 
-  return Promise.resolve();
+  if (!response.ok || !payload.success) {
+    throw new ApiResponseError(
+      payload.message ?? "로그인 상태를 확인하지 못했어요.",
+      response.status,
+    );
+  }
+
+  return payload.data;
+}
+
+export async function logoutGoogleSession(sessionId: string): Promise<void> {
+  const response = await apiClient.delete("auth/logout", {
+    headers: {
+      Authorization: `Bearer ${sessionId}`,
+    },
+  });
+  const payload = await response.json<ApiResponse<null>>();
+
+  if (!response.ok || !payload.success) {
+    throw new ApiResponseError(payload.message ?? "로그아웃하지 못했어요.", response.status);
+  }
 }

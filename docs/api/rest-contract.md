@@ -15,11 +15,14 @@ GET /api/health
 ## Auth
 
 ```txt
-POST /api/auth/google/login
-POST /api/auth/refresh
-POST /api/auth/logout
-GET  /api/me
+GET /api/auth/google/connect-url?returnTo={frontendCallbackUrl}
+GET /api/auth/me
+GET /api/me
+DELETE /api/auth/logout
 ```
+
+응답의 `url`로 이동하면 Google OAuth 동의 화면으로 진입한다. 백엔드는 승인 코드 콜백에서 Google 토큰을 교환하고 앱 세션을 만든 뒤 프론트 콜백 URL fragment로 `sessionId`, `username`, `email`, `profileImageUrl`, `expiresAt`을 전달한다.
+프론트는 `sessionId`만 Zustand persist에 보관하고, 실제 사용자 정보는 `Authorization: Bearer {sessionId}`로 `/api/me`를 호출해 TanStack Query 캐시에 저장한다.
 
 ## SOMA Portal Read Adapter
 
@@ -75,12 +78,14 @@ DELETE /api/events/{eventId}/favorite
 ## Calendar
 
 ```txt
-GET  /api/calendar/google/connect-url
-GET  /api/calendar/google/callback
+GET  /api/calendar/google/connect-url?returnTo={frontendCallbackUrl}
+GET  /api/calendar/google/callback?code={code}&state={state}
 GET  /api/calendar/conflicts?eventId=1
 POST /api/calendar/events/{eventId}
 DELETE /api/calendar/events/{eventId}
 ```
+
+Google 로그인과 Calendar 연결은 같은 OAuth client/redirect URI를 사용한다. 로그인은 `openid email profile`만 요청하고, Calendar 연결 플로우에서 Google Calendar 접근 권한을 추가 요청한다.
 
 ## Reviews
 

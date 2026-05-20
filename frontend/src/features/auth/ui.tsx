@@ -1,142 +1,113 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
-import { loginSomaPortal, logoutSomaPortal } from "@/features/auth/api";
-import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
+import { getGoogleLoginUrl, logoutGoogleSession } from "@/features/auth/api";
+import { authKeys, useAuthSessionQuery, useAuthStore } from "@/features/auth/model";
+import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
+import { ApiResponseError } from "@/shared/api/client";
 import { routes } from "@/shared/config/routes";
 import { Button } from "@/shared/ui/button";
 
-const loginSchema = z.object({
-  email: z.string().email("이메일 형식으로 입력해 주세요."),
-  name: z.string().min(1, "이름을 입력해 주세요."),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
-
 export function PortalLoginForm() {
-  const router = useRouter();
-  const setSession = usePortalAuthStore((state) => state.setSession);
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({
-    defaultValues: {
-      email: "",
-      name: "",
-    },
-  });
+  const [loading, setLoading] = useState(false);
 
   return (
-    <form
-      className="space-y-3"
-      onSubmit={handleSubmit(async (values) => {
-        const parsed = loginSchema.safeParse(values);
+    <div className="space-y-4">
+      <Button
+        className="h-[52px] w-full bg-foreground text-background hover:bg-foreground/90"
+        disabled={loading}
+        type="button"
+        onClick={async () => {
+          try {
+            setLoading(true);
+            const returnTo = `${window.location.origin}${routes.googleLoginCallback}?next=${encodeURIComponent(routes.dashboard)}`;
+            const { url } = await getGoogleLoginUrl(returnTo);
 
-        if (!parsed.success) {
-          const firstIssue = parsed.error.issues[0];
-
-          setError(firstIssue?.path[0] === "name" ? "name" : "email", {
-            message: parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요.",
-          });
-          return;
-        }
-
-        try {
-          const session = await loginSomaPortal(parsed.data);
-
-          setSession(session);
-          toast.success("SomaBiseo에 로그인했어요.");
-          router.push(routes.dashboard);
-        } catch (error) {
-          setError("root", {
-            message:
+            window.location.href = url;
+          } catch (error) {
+            setLoading(false);
+            toast.error(
               error instanceof Error
                 ? error.message
-                : "로그인하지 못했습니다. 입력값을 확인해 주세요.",
-          });
-        }
-      })}
-    >
-      <div>
-        <label className="text-[15px] font-bold leading-[22px]" htmlFor="email">
-          이메일
-        </label>
-        <input
-          className="sb-field"
-          id="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          type="email"
-          {...register("email")}
-        />
-        {errors.email ? (
-          <p className="mt-2 text-[14px] font-semibold leading-[21px] text-destructive">
-            {errors.email.message}
-          </p>
-        ) : null}
-      </div>
-      <div>
-        <label className="text-[15px] font-bold leading-[22px]" htmlFor="name">
-          이름
-        </label>
-        <input
-          className="sb-field"
-          id="name"
-          autoComplete="name"
-          placeholder="소마비서"
-          type="text"
-          {...register("name")}
-        />
-        {errors.name ? (
-          <p className="mt-2 text-[14px] font-semibold leading-[21px] text-destructive">
-            {errors.name.message}
-          </p>
-        ) : null}
-      </div>
-      {errors.root ? (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-[14px] font-semibold leading-[21px] text-destructive">
-          {errors.root.message}
-        </p>
-      ) : null}
-      <Button className="mt-5 h-[52px] w-full" disabled={isSubmitting} type="submit">
-        {isSubmitting ? "로그인 중" : "SomaBiseo 시작하기"}
+                : "Google 로그인을 시작하지 못했어요.",
+            );
+          }
+        }}
+      >
+        <span className="inline-flex size-6 items-center justify-center rounded-full bg-white text-[15px] font-bold text-foreground">
+          G
+        </span>
+        {loading ? "Google로 이동 중" : "Google로 계속하기"}
       </Button>
-      <p className="mt-3 text-[13px] font-medium leading-[20px] text-muted-foreground">
-        SOMA 포털 아이디와 비밀번호는 받지 않습니다.
+      <p className="text-[13px] font-medium leading-[20px] text-muted-foreground">
+        SOMA 포털 아이디와 비밀번호는 받지 않습니다. Google 계정으로 로그인하고
+        캘린더 권한은 사용자가 승인한 범위에서만 사용합니다.
       </p>
-    </form>
+    </div>
   );
 }
 
 export function PortalSessionStatus() {
-  const session = usePortalAuthStore((state) => state.session);
-  const clearSession = usePortalAuthStore((state) => state.clearSession);
+  const queryClient = useQueryClient();
+  const { error, session, sessionId, isLoading } = useAuthSessionQuery();
+  const clearSessionId = useAuthStore((state) => state.clearSessionId);
+  const calendarConnected = useGoogleCalendarStore((state) => state.connected);
+  const disconnectCalendar = useGoogleCalendarStore((state) => state.disconnect);
 
-  if (!session || isPortalSessionExpired(session)) {
+  useEffect(() => {
+    if (!sessionId && calendarConnected) {
+      disconnectCalendar();
+      return;
+    }
+
+    if (error instanceof ApiResponseError && error.status === 401) {
+      disconnectCalendar();
+      queryClient.removeQueries({ queryKey: authKeys.all });
+    }
+  }, [calendarConnected, disconnectCalendar, error, queryClient, sessionId]);
+
+  if (!sessionId) {
+    return null;
+  }
+
+  if (isLoading) {
+    return <div className="hidden h-8 w-28 rounded-full bg-muted sm:block" />;
+  }
+
+  if (!session) {
     return null;
   }
 
   return (
     <div className="flex items-center gap-2">
+      {session.profileImageUrl ? (
+        <span
+          aria-hidden="true"
+          className="hidden size-7 rounded-full bg-cover bg-center sm:block"
+          style={{ backgroundImage: `url(${session.profileImageUrl})` }}
+        />
+      ) : null}
       <span className="hidden max-w-44 truncate text-xs font-semibold text-muted-foreground sm:inline">
         {session.username}
       </span>
       <Button
         size="sm"
         variant="ghost"
-        onClick={() => {
-          const sessionId = session.sessionId;
-
-          clearSession();
-          void logoutSomaPortal(sessionId);
-          toast.success("로그아웃했어요.");
+        onClick={async () => {
+          try {
+            await logoutGoogleSession(session.sessionId);
+          } catch {
+            // 서버 세션이 이미 만료된 경우도 사용자 입장에서는 로그아웃 완료로 처리합니다.
+          } finally {
+            clearSessionId();
+            disconnectCalendar();
+            queryClient.removeQueries({ queryKey: authKeys.all });
+            toast.success("로그아웃했어요.");
+          }
         }}
       >
         <LogOut aria-hidden="true" />
@@ -144,4 +115,10 @@ export function PortalSessionStatus() {
       </Button>
     </div>
   );
+}
+
+export function DashboardGreeting() {
+  const { session } = useAuthSessionQuery();
+
+  return <>안녕하세요{session?.username ? `, ${session.username}님` : ""}</>;
 }

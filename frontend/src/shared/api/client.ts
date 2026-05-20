@@ -7,7 +7,10 @@ export type ApiResponse<T> = {
 };
 
 export class ApiResponseError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
     super(message);
     this.name = "ApiResponseError";
   }

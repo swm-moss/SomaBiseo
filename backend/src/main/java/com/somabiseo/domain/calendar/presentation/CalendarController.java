@@ -18,11 +18,6 @@ public class CalendarController {
         this.calendarService = calendarService;
     }
 
-    @GetMapping("/api/calendar/google/connect-url")
-    ApiResponse<ConnectUrlResponse> getConnectUrl() {
-        return ApiResponse.ok(new ConnectUrlResponse("/api/calendar/google/callback?mock=true"));
-    }
-
     @GetMapping("/api/calendar/conflicts")
     ApiResponse<CalendarConflictResponse> getConflict(@RequestParam String eventId) {
         return ApiResponse.ok(calendarService.getConflict(eventId));
@@ -31,8 +26,5 @@ public class CalendarController {
     @PostMapping("/api/calendar/events/{eventId}")
     ApiResponse<CalendarEventLinkResponse> addEvent(@PathVariable String eventId) {
         return ApiResponse.ok(calendarService.addEvent(eventId));
-    }
-
-    record ConnectUrlResponse(String url) {
     }
 }
