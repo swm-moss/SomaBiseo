@@ -56,11 +56,15 @@ const EVENT_SORTS = new Set<SomaEventSort>([
 ]);
 
 function parseTab(value: string | null): EventTab {
-  return value && EVENT_TABS.has(value as EventTab) ? (value as EventTab) : "ALL";
+  return value && EVENT_TABS.has(value as EventTab)
+    ? (value as EventTab)
+    : "ALL";
 }
 
 function parseMode(value: string | null): ModeFilter {
-  return value && EVENT_MODES.has(value as ModeFilter) ? (value as ModeFilter) : "ALL";
+  return value && EVENT_MODES.has(value as ModeFilter)
+    ? (value as ModeFilter)
+    : "ALL";
 }
 
 function parseSort(value: string | null): SomaEventSort {
@@ -89,12 +93,21 @@ export function EventList() {
   const [searchInput, setSearchInput] = useState(urlQ);
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300);
 
-  const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
+  const selectedTopicIds = useInterestPreferenceStore(
+    (state) => state.selectedTopicIds,
+  );
   const type = tab === "ALL" ? undefined : tab;
   const modeFilter = mode === "ALL" ? undefined : mode;
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["events", tab, mode, sort, debouncedSearch, page],
-    queryFn: () => getSomaEventsPage({ page, sort, type, mode: modeFilter, q: debouncedSearch }),
+    queryFn: () =>
+      getSomaEventsPage({
+        page,
+        sort,
+        type,
+        mode: modeFilter,
+        q: debouncedSearch,
+      }),
     placeholderData: keepPreviousData,
   });
 
@@ -108,7 +121,9 @@ export function EventList() {
 
     const queryString = params.toString();
 
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+      scroll: false,
+    });
   };
 
   useEffect(() => {
@@ -128,7 +143,9 @@ export function EventList() {
 
     const queryString = params.toString();
 
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, {
+      scroll: false,
+    });
   }, [debouncedSearch, urlQ, searchParams, router, pathname]);
 
   const handleTabChange = (nextTab: EventTab) => {
@@ -215,7 +232,9 @@ export function EventList() {
             aria-label="정렬"
             className="h-12 w-32 appearance-none rounded-lg border border-border bg-white pl-3 pr-9 text-[14px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 sm:w-40"
             value={sort}
-            onChange={(event) => handleSortChange(event.target.value as SomaEventSort)}
+            onChange={(event) =>
+              handleSortChange(event.target.value as SomaEventSort)
+            }
           >
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -232,7 +251,10 @@ export function EventList() {
       {isLoading ? <LoadingState /> : null}
       {isError ? <ErrorState onRetry={() => void refetch()} /> : null}
       {data && events.length === 0 ? (
-        <EmptyState title="일정이 없어요" description="이 페이지에는 조건에 맞는 일정이 없습니다." />
+        <EmptyState
+          title="일정이 없어요"
+          description="이 페이지에는 조건에 맞는 일정이 없습니다."
+        />
       ) : null}
       {events.length > 0 ? (
         <div className="sb-list-surface">
