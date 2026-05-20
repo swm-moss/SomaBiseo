@@ -37,7 +37,13 @@ public class ReviewService {
     }
 
     @Transactional
-    public ReviewResponse create(String eventId, String authorName, String content, String authorIp) {
+    public ReviewResponse create(
+            String eventId,
+            Long authorUserId,
+            String authorName,
+            String content,
+            String authorIp
+    ) {
         validateContent(content);
 
         String trimmedAuthor = trimAuthor(authorName);
@@ -46,11 +52,11 @@ public class ReviewService {
 
         validateWindow(event, now);
 
-        if (reviewRepository.existsBySomaEventIdAndAuthorName(event.getId(), trimmedAuthor)) {
+        if (reviewRepository.existsBySomaEventIdAndAuthorUserId(event.getId(), authorUserId)) {
             throw new ReviewConflictException("이미 후기를 작성하셨어요.");
         }
 
-        Review review = Review.create(event.getId(), trimmedAuthor, content.trim(), authorIp);
+        Review review = Review.create(event.getId(), authorUserId, trimmedAuthor, content.trim(), authorIp);
 
         try {
             Review saved = reviewRepository.save(review);

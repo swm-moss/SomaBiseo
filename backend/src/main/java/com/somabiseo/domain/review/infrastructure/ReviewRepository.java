@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-    boolean existsBySomaEventIdAndAuthorName(Long somaEventId, String authorName);
+    boolean existsBySomaEventIdAndAuthorUserId(Long somaEventId, Long authorUserId);
 
     @Query("""
             select new com.somabiseo.domain.review.infrastructure.ReviewSummaryRow(
