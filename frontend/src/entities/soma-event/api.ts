@@ -9,8 +9,15 @@ import type {
 } from "@/entities/soma-event/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
 
-const MAX_EVENT_LOOKUP_PAGES = 10;
 const MAX_DASHBOARD_EVENT_PAGES = 3;
+
+export type SomaEventSort =
+  | "LECTURE_DATE_DESC"
+  | "LECTURE_DATE_ASC"
+  | "REGISTERED_AT_DESC"
+  | "APPLICATION_DEADLINE_ASC";
+
+export const DEFAULT_SOMA_EVENT_SORT: SomaEventSort = "LECTURE_DATE_DESC";
 
 type PortalPage<T> = {
   items: T[];
@@ -97,31 +104,6 @@ function toSomaEvent(event: PortalEventResponse): SomaEvent {
   };
 }
 
-function mergeEvent(summary: SomaEvent, detail: SomaEvent): SomaEvent {
-  return {
-    ...summary,
-    ...detail,
-    id: summary.id,
-    sourceId: summary.sourceId,
-    type: detail.type ?? summary.type,
-    sourceUrl: summary.sourceUrl,
-    mentorName: detail.mentorName ?? summary.mentorName,
-    topic: detail.topic || summary.topic,
-    title: detail.title || summary.title,
-    location: detail.location ?? summary.location,
-    startAt: detail.startAt ?? summary.startAt,
-    status: detail.status === "UNKNOWN" ? summary.status : detail.status,
-    conflict: summary.conflict,
-  };
-}
-
-function byStartAt(a: SomaEvent, b: SomaEvent) {
-  const aTime = a.startAt ? new Date(a.startAt).getTime() : Number.POSITIVE_INFINITY;
-  const bTime = b.startAt ? new Date(b.startAt).getTime() : Number.POSITIVE_INFINITY;
-
-  return aTime - bTime;
-}
-
 function matchesFilter(event: SomaEvent, filter: SomaEventFilter) {
   if (filter.type && event.type !== filter.type) {
     return false;
@@ -138,31 +120,36 @@ function matchesFilter(event: SomaEvent, filter: SomaEventFilter) {
   return start >= from && start <= to;
 }
 
-export async function getSomaEvents(filter: SomaEventFilter = {}, page = 1) {
-  const eventsPage = await getSomaEventsPage(page);
+export async function getSomaEvents(
+  filter: SomaEventFilter = {},
+  page = 1,
+  sort: SomaEventSort = DEFAULT_SOMA_EVENT_SORT,
+) {
+  const eventsPage = await getSomaEventsPage(page, sort);
 
   return eventsPage.items.filter((event) => matchesFilter(event, filter));
 }
 
-async function getSomaEventsPages(maxPages: number) {
-  const firstPage = await getSomaEventsPage(1);
+async function getSomaEventsPages(maxPages: number, sort: SomaEventSort = DEFAULT_SOMA_EVENT_SORT) {
+  const firstPage = await getSomaEventsPage(1, sort);
   const events = [...firstPage.items];
   let currentPage = firstPage;
 
   for (let page = 2; page <= maxPages && currentPage.hasNextPage; page += 1) {
-    currentPage = await getSomaEventsPage(page);
+    currentPage = await getSomaEventsPage(page, sort);
     events.push(...currentPage.items);
   }
 
-  return events.sort(byStartAt);
+  return events;
 }
 
-export async function getSomaEventsPage(page = 1) {
+export async function getSomaEventsPage(page = 1, sort: SomaEventSort = DEFAULT_SOMA_EVENT_SORT) {
   const response = await unwrapApiResponse(
     apiClient
       .get("soma/events", {
         searchParams: {
           page,
+          sort,
         },
       })
       .json<ApiResponse<PortalEventResponse[] | PortalPage<PortalEventResponse>>>(),
@@ -171,41 +158,22 @@ export async function getSomaEventsPage(page = 1) {
 
   return {
     ...pageResponse,
-    items: pageResponse.items.map(toSomaEvent).sort(byStartAt),
+    items: pageResponse.items.map(toSomaEvent),
   };
 }
 
 export async function getSomaEventById(eventId: string) {
-  let summary: SomaEvent | null = null;
-
-  for (let page = 1; page <= MAX_EVENT_LOOKUP_PAGES; page += 1) {
-    const eventsPage = await getSomaEventsPage(page);
-    summary = eventsPage.items.find((event) => event.id === eventId) ?? null;
-
-    if (summary) {
-      break;
-    }
-
-    if (!eventsPage.hasNextPage) {
-      break;
-    }
-  }
-
-  if (summary == null) {
-    return null;
-  }
-
   const detail = await unwrapApiResponse(
     apiClient
       .get("soma/events/detail", {
         searchParams: {
-          sourceUrl: summary.sourceUrl,
+          sourceId: eventId,
         },
       })
       .json<ApiResponse<PortalEventResponse>>(),
   );
 
-  return mergeEvent(summary, toSomaEvent(detail));
+  return toSomaEvent(detail);
 }
 
 export async function applyMentoLec(sessionId: string, qustnrSn: string) {
@@ -261,7 +229,7 @@ function normalizePortalPage<T>(
 }
 
 export async function getDashboardEvents() {
-  const events = await getSomaEventsPages(MAX_DASHBOARD_EVENT_PAGES);
+  const events = await getSomaEventsPages(MAX_DASHBOARD_EVENT_PAGES, "LECTURE_DATE_ASC");
   const today = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Seoul",
     year: "numeric",

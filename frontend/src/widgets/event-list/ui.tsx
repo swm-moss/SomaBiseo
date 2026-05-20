@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import { getSomaEventsPage } from "@/entities/soma-event/api";
+import {
+  DEFAULT_SOMA_EVENT_SORT,
+  getSomaEventsPage,
+  type SomaEventSort,
+} from "@/entities/soma-event/api";
 import type { SomaEventType } from "@/entities/soma-event/model";
 import {
   getEventRecommendation,
@@ -24,13 +28,21 @@ const options = [
   { label: "자유멘토링", value: "MENTORING" },
 ] satisfies { label: string; value: EventTab }[];
 
+const sortOptions = [
+  { label: "최신 강의순", value: "LECTURE_DATE_DESC" },
+  { label: "빠른 강의순", value: "LECTURE_DATE_ASC" },
+  { label: "최근 등록순", value: "REGISTERED_AT_DESC" },
+  { label: "마감 임박순", value: "APPLICATION_DEADLINE_ASC" },
+] satisfies { label: string; value: SomaEventSort }[];
+
 export function EventList() {
   const [tab, setTab] = useState<EventTab>("ALL");
+  const [sort, setSort] = useState<SomaEventSort>(DEFAULT_SOMA_EVENT_SORT);
   const [page, setPage] = useState(1);
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: ["events", page],
-    queryFn: () => getSomaEventsPage(page),
+    queryKey: ["events", page, sort],
+    queryFn: () => getSomaEventsPage(page, sort),
     placeholderData: keepPreviousData,
   });
 
@@ -48,9 +60,32 @@ export function EventList() {
     setPage(1);
   };
 
+  const handleSortChange = (nextSort: SomaEventSort) => {
+    setSort(nextSort);
+    setPage(1);
+  };
+
   return (
     <section className="sb-section">
-      <SegmentControl options={options} value={tab} onValueChange={handleTabChange} />
+      <div className="space-y-3">
+        <SegmentControl options={options} value={tab} onValueChange={handleTabChange} />
+        <label className="block">
+          <span className="mb-2 block text-[13px] font-semibold leading-[18px] text-muted-foreground">
+            정렬
+          </span>
+          <select
+            className="h-12 w-full rounded-lg border border-border bg-white px-4 text-[15px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-primary/15 sm:w-52"
+            value={sort}
+            onChange={(event) => handleSortChange(event.target.value as SomaEventSort)}
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       {isLoading ? <LoadingState /> : null}
       {isError ? <ErrorState onRetry={() => void refetch()} /> : null}
       {data && events.length === 0 ? (
