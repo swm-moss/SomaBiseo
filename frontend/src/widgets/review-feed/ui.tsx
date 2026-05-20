@@ -33,6 +33,7 @@ export function ReviewFeed() {
 
   const urlQ = searchParams.get("q") ?? "";
   const eventId = searchParams.get("eventId");
+  const mentorName = searchParams.get("mentorName");
   const pageParam = Number(searchParams.get("page") ?? "1");
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
 
@@ -66,10 +67,11 @@ export function ReviewFeed() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: reviewKeys.feed(debouncedSearch, eventId, page, PAGE_SIZE),
+    queryKey: reviewKeys.feed(debouncedSearch, eventId, mentorName, page, PAGE_SIZE),
     queryFn: () => getReviewFeed({
       q: debouncedSearch,
       eventId: eventId ?? undefined,
+      mentorName: mentorName ?? undefined,
       page,
       size: PAGE_SIZE,
     }),
@@ -96,19 +98,26 @@ export function ReviewFeed() {
     });
   };
 
-  const hasFilter = debouncedSearch.length > 0 || Boolean(eventId);
+  const hasFilter = debouncedSearch.length > 0 || Boolean(eventId) || Boolean(mentorName);
 
   return (
     <section className="sb-section">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        {eventId ? (
-          <Link
-            href={routes.reviews}
-            className="inline-flex items-center gap-1 text-[13px] font-bold text-primary hover:underline"
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            전체 후기로 돌아가기
-          </Link>
+        {eventId || mentorName ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Link
+              href={routes.reviews}
+              className="inline-flex items-center gap-1 text-[13px] font-bold text-primary hover:underline"
+            >
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              전체 후기로 돌아가기
+            </Link>
+            {mentorName ? (
+              <span className="text-[13px] font-semibold text-muted-foreground">
+                {mentorName} 멘토의 후기
+              </span>
+            ) : null}
+          </div>
         ) : (
           <p className="text-[13px] font-semibold text-muted-foreground">
             {data ? `총 ${data.totalElements}개의 후기` : "후기를 불러오는 중"}

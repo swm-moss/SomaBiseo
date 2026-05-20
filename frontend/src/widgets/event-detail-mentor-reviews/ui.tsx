@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { MessageSquare } from "lucide-react";
+import Link from "next/link";
 
-import { Button } from "@/shared/ui/button";
+import { routes } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { getRelativePublishedAt } from "@/shared/lib/date";
 
@@ -15,9 +14,9 @@ type MentorReview = {
   createdAt: string;
 };
 
-const INITIAL_COUNT = 3;
+const VISIBLE_COUNT = 3;
 
-// TODO(#34): mock 데이터. 백엔드 연동 시 useQuery + getReviewFeedByMentor 로 교체.
+// TODO(#34): mock 데이터. 백엔드 연동 시 useQuery + getReviewFeed({ mentorName }) 로 교체.
 const MOCK_REVIEWS: MentorReview[] = [
   {
     id: 1,
@@ -66,30 +65,21 @@ export function EventDetailMentorReviews({
 }: {
   mentorName: string | null;
 }) {
-  const [expanded, setExpanded] = useState(false);
-
   const reviews = MOCK_REVIEWS;
-  const visible = expanded ? reviews : reviews.slice(0, INITIAL_COUNT);
-  const remaining = reviews.length - INITIAL_COUNT;
-  const hasMore = remaining > 0;
+  const visible = reviews.slice(0, VISIBLE_COUNT);
 
   return (
     <section>
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <MessageSquare aria-hidden="true" className="size-5 text-primary" />
-          <h2 className="text-[20px] font-black leading-[29px]">
-            멘토 후기
-            {mentorName ? (
-              <span className="ml-2 text-[15px] font-bold text-muted-foreground">
-                {mentorName} 멘토
-              </span>
-            ) : null}
-          </h2>
-        </div>
-        <span className="text-[13px] font-semibold text-muted-foreground">
-          총 {reviews.length}개
-        </span>
+        <h2 className="text-[20px] font-black leading-[29px]">연수생 후기</h2>
+        {mentorName ? (
+          <Link
+            href={routes.reviewsForMentor(mentorName)}
+            className="text-[14px] font-bold text-primary hover:underline"
+          >
+            더보기
+          </Link>
+        ) : null}
       </div>
 
       {reviews.length === 0 ? (
@@ -99,42 +89,28 @@ export function EventDetailMentorReviews({
           description="이 멘토의 강의가 끝나면 연수생들이 후기를 남길 수 있어요."
         />
       ) : (
-        <>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {visible.map((review) => (
-              <li
-                key={review.id}
-                className="flex h-full flex-col rounded-lg bg-white px-5 py-5"
-              >
-                <p className="text-[15px] font-extrabold leading-[22px] text-foreground">
-                  {review.eventTopic}
-                </p>
-                <p className="mt-3 line-clamp-4 flex-1 text-[14px] leading-[22px] text-[#4e5968]">
-                  {review.content}
-                </p>
-                <p className="mt-4 text-[13px] font-semibold text-muted-foreground">
-                  {review.authorName}
-                  <span aria-hidden="true" className="mx-1.5">
-                    ·
-                  </span>
-                  {getRelativePublishedAt(review.createdAt)}
-                </p>
-              </li>
-            ))}
-          </ul>
-
-          {hasMore ? (
-            <div className="mt-4 flex justify-center">
-              <Button
-                className="w-full sm:w-auto"
-                onClick={() => setExpanded((value) => !value)}
-                variant="outline"
-              >
-                {expanded ? "접기" : `더보기 (+${remaining})`}
-              </Button>
-            </div>
-          ) : null}
-        </>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {visible.map((review) => (
+            <li
+              key={review.id}
+              className="flex h-full flex-col rounded-lg bg-white px-5 py-5"
+            >
+              <p className="text-[15px] font-extrabold leading-[22px] text-foreground">
+                {review.eventTopic}
+              </p>
+              <p className="mt-3 line-clamp-4 flex-1 text-[14px] leading-[22px] text-[#4e5968]">
+                {review.content}
+              </p>
+              <p className="mt-4 text-[13px] font-semibold text-muted-foreground">
+                {review.authorName}
+                <span aria-hidden="true" className="mx-1.5">
+                  ·
+                </span>
+                {getRelativePublishedAt(review.createdAt)}
+              </p>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );
