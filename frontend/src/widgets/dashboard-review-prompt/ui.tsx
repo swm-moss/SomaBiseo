@@ -17,6 +17,19 @@ const TYPE_LABEL = {
 } as const;
 
 const DASHBOARD_LIMIT = 3;
+const WRITE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+function isWithinWriteWindow(endAt: string) {
+  const ended = new Date(endAt).getTime();
+
+  if (Number.isNaN(ended)) {
+    return false;
+  }
+
+  const now = Date.now();
+
+  return now >= ended && now - ended <= WRITE_WINDOW_MS;
+}
 
 export function DashboardReviewPrompt() {
   const { data: events } = useQuery({
@@ -70,10 +83,12 @@ export function DashboardReviewPrompt() {
               {event.mentorName ?? "멘토 미정"} · 후기 {event.reviewCount}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <WriteReviewDialog
-                preselectedEventId={event.eventId}
-                triggerClassName="w-full sm:w-auto"
-              />
+              {isWithinWriteWindow(event.endAt) ? (
+                <WriteReviewDialog
+                  preselectedEventId={event.eventId}
+                  triggerClassName="w-full sm:w-auto"
+                />
+              ) : null}
               <Link
                 href={`${routes.reviews}?eventId=${encodeURIComponent(event.eventId)}`}
                 className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-white px-4 text-[14px] font-bold text-foreground hover:bg-muted"
