@@ -27,15 +27,6 @@ export type Review = {
   createdAt: string;
 };
 
-export type WritableEvent = {
-  eventId: string;
-  type: SomaEventType;
-  title: string;
-  mentorName: string | null;
-  endAt: string;
-  applicants: string[];
-};
-
 export type RecentEndedEvent = {
   eventId: string;
   type: SomaEventType;
@@ -43,20 +34,6 @@ export type RecentEndedEvent = {
   mentorName: string | null;
   endAt: string;
   reviewCount: number;
-};
-
-export type ReviewPage = {
-  items: Review[];
-  page: number;
-  size: number;
-  totalPages: number;
-  totalElements: number;
-};
-
-export type ReviewSummary = {
-  eventId: string;
-  reviewCount: number;
-  lastCreatedAt: string | null;
 };
 
 export const REVIEW_CONTENT_MIN = 20;
