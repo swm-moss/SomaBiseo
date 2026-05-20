@@ -8,6 +8,7 @@ import { ArrowLeft, CalendarClock, Search, UserRound } from "lucide-react";
 
 import { getReviewFeed } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
+import { WriteReviewDialog } from "@/features/write-review/ui";
 import { routes } from "@/shared/config/routes";
 import { getRelativePublishedAt } from "@/shared/lib/date";
 import { useDebouncedValue } from "@/shared/lib/use-debounced-value";
@@ -98,15 +99,26 @@ export function ReviewFeed() {
 
   return (
     <section className="sb-section">
-      {eventId ? (
-        <Link
-          href={routes.reviews}
-          className="mb-3 inline-flex items-center gap-1 text-[13px] font-bold text-primary hover:underline"
-        >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-          전체 강의로 돌아가기
-        </Link>
-      ) : null}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        {eventId ? (
+          <Link
+            href={routes.reviews}
+            className="inline-flex items-center gap-1 text-[13px] font-bold text-primary hover:underline"
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            전체 후기로 돌아가기
+          </Link>
+        ) : (
+          <p className="text-[13px] font-semibold text-muted-foreground">
+            {data ? `총 ${data.totalElements}개의 후기` : "후기를 불러오는 중"}
+          </p>
+        )}
+        <WriteReviewDialog
+          triggerLabel="후기 작성하기"
+          triggerSize="default"
+          triggerClassName="w-full sm:w-auto"
+        />
+      </div>
 
       <div className="relative">
         <Search
