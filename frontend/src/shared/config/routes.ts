@@ -1,6 +1,7 @@
 export const routes = {
   home: "/",
   login: "/login",
+  googleLoginCallback: "/login/google/callback",
   dashboard: "/dashboard",
   notices: "/notices",
   noticeDetail: (noticeId: string) => `/notices/${noticeId}`,

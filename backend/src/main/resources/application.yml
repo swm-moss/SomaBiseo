@@ -45,3 +45,10 @@ somabiseo:
     model: ${OPENAI_SUMMARY_MODEL:gpt-5.4-mini}
     max-input-characters: ${OPENAI_SUMMARY_MAX_INPUT_CHARACTERS:18000}
     timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:30}
+  google-oauth:
+    client-id: ${GOOGLE_CALENDAR_CLIENT_ID:}
+    client-secret: ${GOOGLE_CALENDAR_CLIENT_SECRET:}
+    redirect-uri: ${GOOGLE_CALENDAR_REDIRECT_URI:http://localhost:8080/api/calendar/google/callback}
+    frontend-login-redirect-uri: ${GOOGLE_LOGIN_FRONTEND_REDIRECT_URI:}
+    frontend-calendar-redirect-uri: ${GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI:http://localhost:3000/settings}
+    session-ttl-minutes: ${GOOGLE_AUTH_SESSION_TTL_MINUTES:43200}

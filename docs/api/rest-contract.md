@@ -15,11 +15,10 @@ GET /api/health
 ## Auth
 
 ```txt
-POST /api/auth/google/login
-POST /api/auth/refresh
-POST /api/auth/logout
-GET  /api/me
+GET /api/auth/google/connect-url?returnTo={frontendCallbackUrl}
 ```
+
+응답의 `url`로 이동하면 Google OAuth 동의 화면으로 진입한다. 백엔드는 승인 코드 콜백에서 Google 토큰을 교환하고 앱 세션을 만든 뒤 프론트 콜백 URL fragment로 `sessionId`, `username`, `email`, `expiresAt`을 전달한다.
 
 ## SOMA Portal Read Adapter
 
@@ -75,12 +74,14 @@ DELETE /api/events/{eventId}/favorite
 ## Calendar
 
 ```txt
-GET  /api/calendar/google/connect-url
-GET  /api/calendar/google/callback
+GET  /api/calendar/google/connect-url?returnTo={frontendCallbackUrl}
+GET  /api/calendar/google/callback?code={code}&state={state}
 GET  /api/calendar/conflicts?eventId=1
 POST /api/calendar/events/{eventId}
 DELETE /api/calendar/events/{eventId}
 ```
+
+Google 로그인과 Calendar 연결은 같은 OAuth client/redirect URI를 사용한다. 권한 scope는 `openid email profile`과 Google Calendar 접근 권한을 함께 요청한다.
 
 ## Reviews
 

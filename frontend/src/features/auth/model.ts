@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 export type PortalSession = {
   sessionId: string;
   username: string;
+  email?: string;
   expiresAt: string;
 };
 

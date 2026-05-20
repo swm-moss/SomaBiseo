@@ -1,15 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { CalendarCheck, PlugZap, Unplug } from "lucide-react";
 import { toast } from "sonner";
 
+import { getGoogleCalendarConnectUrl } from "@/entities/calendar/api";
 import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
+import { routes } from "@/shared/config/routes";
 import { Button } from "@/shared/ui/button";
 
 export function ConnectGoogleCalendarPanel() {
+  const [loading, setLoading] = useState(false);
   const connected = useGoogleCalendarStore((state) => state.connected);
   const email = useGoogleCalendarStore((state) => state.googleAccountEmail);
-  const connect = useGoogleCalendarStore((state) => state.connect);
   const disconnect = useGoogleCalendarStore((state) => state.disconnect);
 
   if (connected) {
@@ -46,13 +49,26 @@ export function ConnectGoogleCalendarPanel() {
       </p>
       <Button
         className="mt-4 h-11 w-full"
-        onClick={() => {
-          connect();
-          toast.success("캘린더 연결 mock이 켜졌어요.");
+        disabled={loading}
+        onClick={async () => {
+          try {
+            setLoading(true);
+            const returnTo = `${window.location.origin}${routes.googleLoginCallback}?next=${encodeURIComponent(routes.settings)}`;
+            const { url } = await getGoogleCalendarConnectUrl(returnTo);
+
+            window.location.href = url;
+          } catch (error) {
+            setLoading(false);
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Google Calendar 연결을 시작하지 못했어요.",
+            );
+          }
         }}
       >
         <PlugZap aria-hidden="true" />
-        Google Calendar 연결
+        {loading ? "Google로 이동 중" : "Google Calendar 연결"}
       </Button>
     </div>
   );
