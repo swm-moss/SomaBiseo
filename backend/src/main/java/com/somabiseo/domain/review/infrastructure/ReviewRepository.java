@@ -31,22 +31,22 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                     )
                     from Review r
                     join SomaEvent e on e.id = r.somaEventId
-                    where (:q is null
-                           or lower(e.title) like lower(concat('%', :q, '%'))
-                           or lower(coalesce(e.mentorName, '')) like lower(concat('%', :q, '%'))
-                           or lower(r.content) like lower(concat('%', :q, '%')))
-                      and (:eventId is null or e.sourceId = :eventId)
+                    where (cast(:q as string) is null
+                           or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
+                           or (e.mentorName is not null and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%')))
+                           or lower(r.content) like lower(concat('%', cast(:q as string), '%')))
+                      and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
                     order by r.createdAt desc
                     """,
             countQuery = """
                     select count(r)
                     from Review r
                     join SomaEvent e on e.id = r.somaEventId
-                    where (:q is null
-                           or lower(e.title) like lower(concat('%', :q, '%'))
-                           or lower(coalesce(e.mentorName, '')) like lower(concat('%', :q, '%'))
-                           or lower(r.content) like lower(concat('%', :q, '%')))
-                      and (:eventId is null or e.sourceId = :eventId)
+                    where (cast(:q as string) is null
+                           or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
+                           or (e.mentorName is not null and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%')))
+                           or lower(r.content) like lower(concat('%', cast(:q as string), '%')))
+                      and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
                     """
     )
     Page<ReviewFeedItem> findFeed(@Param("q") String q, @Param("eventId") String eventId, Pageable pageable);
