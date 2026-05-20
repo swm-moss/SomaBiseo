@@ -326,7 +326,7 @@ function EndedEventRow({ item }: { item: EndedEvent }) {
         </p>
       </td>
       <td className="px-5 py-4">
-        <p className="text-[14px] font-semibold text-foreground">{formatDay(item.endAt)}</p>
+        <p className="text-[14px] font-semibold text-foreground">{formatDay(item.startAt)}</p>
         <p className="mt-0.5 text-[13px] font-medium text-muted-foreground">
           {formatTime(item.startAt)} ~ {formatTime(item.endAt)}
         </p>
@@ -380,7 +380,7 @@ function EndedEventListItem({
         <StatusBadge tone={item.type === "LECTURE" ? "blue" : "cyan"}>
           {TYPE_LABEL[item.type]}
         </StatusBadge>
-        <span className="text-foreground">{formatDay(item.endAt)}</span>
+        <span className="text-foreground">{formatDay(item.startAt)}</span>
         <span aria-hidden="true">·</span>
         <span>
           {formatTime(item.startAt)} ~ {formatTime(item.endAt)}

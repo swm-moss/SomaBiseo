@@ -69,7 +69,7 @@ class EndedEventQueryServiceTest {
     }
 
     @Test
-    void find_pageable은_1_기반을_0_기반으로_변환하고_endAt_desc_정렬을_전달() {
+    void find_pageable은_1_기반을_0_기반으로_변환하고_startAt_desc_정렬을_전달() {
         when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
         service.find(null, null, null, 3, 25);
@@ -79,9 +79,12 @@ class EndedEventQueryServiceTest {
         Pageable pageable = captor.getValue();
         assertThat(pageable.getPageNumber()).isEqualTo(2);
         assertThat(pageable.getPageSize()).isEqualTo(25);
-        Sort.Order order = pageable.getSort().getOrderFor("endAt");
-        assertThat(order).isNotNull();
-        assertThat(order.getDirection()).isEqualTo(Sort.Direction.DESC);
+        Sort.Order startOrder = pageable.getSort().getOrderFor("startAt");
+        assertThat(startOrder).isNotNull();
+        assertThat(startOrder.getDirection()).isEqualTo(Sort.Direction.DESC);
+        Sort.Order idOrder = pageable.getSort().getOrderFor("id");
+        assertThat(idOrder).isNotNull();
+        assertThat(idOrder.getDirection()).isEqualTo(Sort.Direction.DESC);
     }
 
     @Test
