@@ -1,9 +1,22 @@
 "use client";
 
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { getGoogleCalendarConnection } from "@/entities/calendar/api";
 import type { CalendarConnection } from "@/entities/calendar/model";
+import { useAuthStore } from "@/features/auth/model";
+
+export const googleCalendarKeys = {
+  all: ["google-calendar"] as const,
+  connection: (sessionId: string | null) => [
+    ...googleCalendarKeys.all,
+    "connection",
+    sessionId ?? "guest",
+  ] as const,
+};
 
 type GoogleCalendarState = {
   connected: boolean;
@@ -43,3 +56,32 @@ export const useGoogleCalendarStore = create<GoogleCalendarState>()(
     },
   ),
 );
+
+export function useGoogleCalendarConnectionSync() {
+  const sessionId = useAuthStore((state) => state.sessionId);
+  const setConnection = useGoogleCalendarStore((state) => state.setConnection);
+  const disconnect = useGoogleCalendarStore((state) => state.disconnect);
+  const query = useQuery({
+    queryKey: googleCalendarKeys.connection(sessionId),
+    queryFn: getGoogleCalendarConnection,
+    enabled: Boolean(sessionId),
+    retry: 0,
+  });
+
+  useEffect(() => {
+    if (!sessionId) {
+      disconnect();
+      return;
+    }
+
+    if (query.data) {
+      setConnection(query.data);
+    }
+
+    if (query.isError) {
+      disconnect();
+    }
+  }, [disconnect, query.data, query.isError, sessionId, setConnection]);
+
+  return query;
+}
