@@ -102,8 +102,8 @@ export function EventDetailMentorReviews({
                 다음 후기를 남겨주세요
               </p>
               <p className="text-[13px] leading-[20px] text-muted-foreground">
-                {mentorName} 멘토의 강의가 좋았다면 후기를 남겨 다른 연수생에게
-                도움을 줄 수 있어요.
+                멘토님의 강의에 대한 후기를 작성해 다른 연수생에게 도움을 줄 수
+                있어요.
               </p>
               <WriteReviewDialog
                 defaultMentorName={mentorName ?? undefined}
