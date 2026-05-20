@@ -21,6 +21,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,7 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
     private static final String AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
     private static final String USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
+    private static final DateTimeFormatter GOOGLE_DATE_TIME_FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
     private static final int GOOGLE_API_CONNECT_TIMEOUT_MILLIS = 3_000;
     private static final int GOOGLE_API_READ_TIMEOUT_MILLIS = 5_000;
 
@@ -155,8 +157,8 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                             .scheme("https")
                             .host("www.googleapis.com")
                             .path("/calendar/v3/calendars/{calendarId}/events")
-                            .queryParam("timeMin", from.toString())
-                            .queryParam("timeMax", to.toString())
+                            .queryParam("timeMin", googleDateTime(from))
+                            .queryParam("timeMax", googleDateTime(to))
                             .queryParam("singleEvents", "true")
                             .queryParam("orderBy", "startTime")
                             .build(calendarId))
@@ -213,8 +215,8 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
         Map<String, String> start = new HashMap<>();
         Map<String, String> end = new HashMap<>();
 
-        start.put("dateTime", startAt.toString());
-        end.put("dateTime", endAt.toString());
+        start.put("dateTime", googleDateTime(startAt));
+        end.put("dateTime", googleDateTime(endAt));
         request.put("summary", title);
         request.put("description", description);
         request.put("location", location);
@@ -435,6 +437,10 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
         }
 
         return null;
+    }
+
+    private String googleDateTime(OffsetDateTime dateTime) {
+        return GOOGLE_DATE_TIME_FORMATTER.format(dateTime);
     }
 
     private void ensureConfigured() {
