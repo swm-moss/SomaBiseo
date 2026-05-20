@@ -66,7 +66,7 @@ export function PaginationControl({
       <div className="flex items-center justify-center gap-1 sm:gap-2">
         <button
           aria-label="처음 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page <= 1 || isDisabled}
           type="button"
           onClick={() => goToPage(1)}
@@ -75,7 +75,7 @@ export function PaginationControl({
         </button>
         <button
           aria-label="이전 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page <= 1 || isDisabled}
           type="button"
           onClick={() => goToPage(page - 1)}
@@ -87,7 +87,7 @@ export function PaginationControl({
             key={item}
             aria-current={item === page ? "page" : undefined}
             className={cn(
-              "sb-tap size-10 rounded-full text-[16px] font-semibold transition-colors disabled:opacity-50",
+              "grid size-10 place-items-center rounded-full text-[16px] font-semibold transition-colors disabled:opacity-50",
               item === page
                 ? "bg-primary text-white"
                 : "text-foreground hover:bg-muted",
@@ -101,7 +101,7 @@ export function PaginationControl({
         ))}
         <button
           aria-label="다음 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page >= safeTotalPages || isDisabled}
           type="button"
           onClick={() => goToPage(page + 1)}
@@ -110,7 +110,7 @@ export function PaginationControl({
         </button>
         <button
           aria-label="마지막 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page >= safeTotalPages || isDisabled}
           type="button"
           onClick={() => goToPage(safeTotalPages)}
