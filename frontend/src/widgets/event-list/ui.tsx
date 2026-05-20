@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 
@@ -36,10 +36,39 @@ const sortOptions = [
   { label: "마감 임박순", value: "APPLICATION_DEADLINE_ASC" },
 ] satisfies { label: string; value: SomaEventSort }[];
 
+const EVENT_TABS = new Set<EventTab>(["ALL", "LECTURE", "MENTORING"]);
+const EVENT_SORTS = new Set<SomaEventSort>([
+  "LECTURE_DATE_DESC",
+  "LECTURE_DATE_ASC",
+  "REGISTERED_AT_DESC",
+  "APPLICATION_DEADLINE_ASC",
+]);
+
+function parseTab(value: string | null): EventTab {
+  return value && EVENT_TABS.has(value as EventTab) ? (value as EventTab) : "ALL";
+}
+
+function parseSort(value: string | null): SomaEventSort {
+  return value && EVENT_SORTS.has(value as SomaEventSort)
+    ? (value as SomaEventSort)
+    : DEFAULT_SOMA_EVENT_SORT;
+}
+
+function parsePage(value: string | null): number {
+  const parsed = Number(value ?? "1");
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
 export function EventList() {
-  const [tab, setTab] = useState<EventTab>("ALL");
-  const [sort, setSort] = useState<SomaEventSort>(DEFAULT_SOMA_EVENT_SORT);
-  const [page, setPage] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const tab = parseTab(searchParams.get("tab"));
+  const sort = parseSort(searchParams.get("sort"));
+  const page = parsePage(searchParams.get("page"));
+
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
   const type = tab === "ALL" ? undefined : tab;
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
@@ -51,14 +80,48 @@ export function EventList() {
   const events = data?.items ?? [];
   const totalPages = data?.totalPages ?? page;
 
+  const updateSearchParams = (mutate: (params: URLSearchParams) => void) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    mutate(params);
+
+    const queryString = params.toString();
+
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  };
+
   const handleTabChange = (nextTab: EventTab) => {
-    setTab(nextTab);
-    setPage(1);
+    updateSearchParams((params) => {
+      if (nextTab === "ALL") {
+        params.delete("tab");
+      } else {
+        params.set("tab", nextTab);
+      }
+
+      params.delete("page");
+    });
   };
 
   const handleSortChange = (nextSort: SomaEventSort) => {
-    setSort(nextSort);
-    setPage(1);
+    updateSearchParams((params) => {
+      if (nextSort === DEFAULT_SOMA_EVENT_SORT) {
+        params.delete("sort");
+      } else {
+        params.set("sort", nextSort);
+      }
+
+      params.delete("page");
+    });
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    updateSearchParams((params) => {
+      if (nextPage <= 1) {
+        params.delete("page");
+      } else {
+        params.set("page", String(nextPage));
+      }
+    });
   };
 
   return (
@@ -109,7 +172,7 @@ export function EventList() {
         isDisabled={isFetching}
         page={page}
         totalPages={totalPages}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
       />
     </section>
   );
