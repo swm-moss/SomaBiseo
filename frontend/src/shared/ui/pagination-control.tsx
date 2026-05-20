@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { cn } from "@/shared/lib/utils";
@@ -23,20 +23,28 @@ function getPaginationItems(page: number, totalPages: number, windowSize: number
   return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
 }
 
+function subscribeDesktopMediaQuery(notify: () => void) {
+  const mediaQueryList = window.matchMedia(DESKTOP_MEDIA_QUERY);
+
+  mediaQueryList.addEventListener("change", notify);
+
+  return () => mediaQueryList.removeEventListener("change", notify);
+}
+
+function getDesktopSnapshot() {
+  return window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
+}
+
+function getDesktopServerSnapshot() {
+  return false;
+}
+
 function useIsDesktop() {
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const mediaQueryList = window.matchMedia(DESKTOP_MEDIA_QUERY);
-    const handleChange = (event: MediaQueryListEvent) => setIsDesktop(event.matches);
-
-    setIsDesktop(mediaQueryList.matches);
-    mediaQueryList.addEventListener("change", handleChange);
-
-    return () => mediaQueryList.removeEventListener("change", handleChange);
-  }, []);
-
-  return isDesktop;
+  return useSyncExternalStore(
+    subscribeDesktopMediaQuery,
+    getDesktopSnapshot,
+    getDesktopServerSnapshot,
+  );
 }
 
 export function PaginationControl({
