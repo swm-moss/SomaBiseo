@@ -83,3 +83,15 @@ export async function createReview(eventId: string, input: CreateReviewInput) {
       .json<ApiResponse<Review>>(),
   );
 }
+
+export async function updateReview(reviewId: number, content: string) {
+  await unwrapApiResponse(
+    apiClient.put(`reviews/${reviewId}`, { json: { content } }).json<ApiResponse<null>>(),
+  );
+}
+
+export async function deleteReview(reviewId: number) {
+  await unwrapApiResponse(
+    apiClient.delete(`reviews/${reviewId}`).json<ApiResponse<null>>(),
+  );
+}

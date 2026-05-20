@@ -23,6 +23,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ReviewFeedQueryServiceTest {
+    private static final Long VIEWER_USER_ID = 9L;
+
     private ReviewRepository reviewRepository;
     private ReviewFeedQueryService service;
 
@@ -34,53 +36,53 @@ class ReviewFeedQueryServiceTest {
 
     @Test
     void findFeed_q와_eventId가_null이면_그대로_null로_전달() {
-        when(reviewRepository.findFeed(any(), any(), any())).thenReturn(Page.empty());
+        when(reviewRepository.findFeed(any(), any(), any(), any())).thenReturn(Page.empty());
 
-        service.findFeed(null, null, 1, 10);
+        service.findFeed(VIEWER_USER_ID, null, null, 1, 10);
 
-        verify(reviewRepository).findFeed(eq(null), eq(null), any(Pageable.class));
+        verify(reviewRepository).findFeed(eq(null), eq(null), eq(VIEWER_USER_ID), any(Pageable.class));
     }
 
     @Test
     void findFeed_q와_eventId의_공백을_trim하고_빈문자열은_null로() {
-        when(reviewRepository.findFeed(any(), any(), any())).thenReturn(Page.empty());
+        when(reviewRepository.findFeed(any(), any(), any(), any())).thenReturn(Page.empty());
 
-        service.findFeed("  ", "   ", 1, 10);
+        service.findFeed(VIEWER_USER_ID, "  ", "   ", 1, 10);
 
-        verify(reviewRepository).findFeed(eq(null), eq(null), any(Pageable.class));
+        verify(reviewRepository).findFeed(eq(null), eq(null), eq(VIEWER_USER_ID), any(Pageable.class));
     }
 
     @Test
     void findFeed_q는_trim된_값으로_eventId도_trim된_값으로_전달() {
-        when(reviewRepository.findFeed(any(), any(), any())).thenReturn(Page.empty());
+        when(reviewRepository.findFeed(any(), any(), any(), any())).thenReturn(Page.empty());
 
-        service.findFeed("  AI  ", "  soma-1  ", 2, 5);
+        service.findFeed(VIEWER_USER_ID, "  AI  ", "  soma-1  ", 2, 5);
 
         ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
-        verify(reviewRepository).findFeed(eq("AI"), eq("soma-1"), pageable.capture());
+        verify(reviewRepository).findFeed(eq("AI"), eq("soma-1"), eq(VIEWER_USER_ID), pageable.capture());
         assertThat(pageable.getValue().getPageNumber()).isEqualTo(1);
         assertThat(pageable.getValue().getPageSize()).isEqualTo(5);
     }
 
     @Test
     void findFeed_page는_1부터_시작하여_0_기반으로_변환되고_음수는_0으로_clamp() {
-        when(reviewRepository.findFeed(any(), any(), any())).thenReturn(Page.empty());
+        when(reviewRepository.findFeed(any(), any(), any(), any())).thenReturn(Page.empty());
 
-        service.findFeed(null, null, 0, 10);
+        service.findFeed(VIEWER_USER_ID, null, null, 0, 10);
 
         ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
-        verify(reviewRepository).findFeed(any(), any(), pageable.capture());
+        verify(reviewRepository).findFeed(any(), any(), any(), pageable.capture());
         assertThat(pageable.getValue().getPageNumber()).isEqualTo(0);
     }
 
     @Test
     void findFeed_size가_0이면_1로_올림() {
-        when(reviewRepository.findFeed(any(), any(), any())).thenReturn(Page.empty());
+        when(reviewRepository.findFeed(any(), any(), any(), any())).thenReturn(Page.empty());
 
-        service.findFeed(null, null, 1, 0);
+        service.findFeed(VIEWER_USER_ID, null, null, 1, 0);
 
         ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
-        verify(reviewRepository).findFeed(any(), any(), pageable.capture());
+        verify(reviewRepository).findFeed(any(), any(), any(), pageable.capture());
         assertThat(pageable.getValue().getPageSize()).isEqualTo(1);
     }
 
@@ -94,6 +96,7 @@ class ReviewFeedQueryServiceTest {
                 "정다은 멘토",
                 "정말 좋았습니다",
                 "김연수",
+                true,
                 Instant.parse("2026-05-22T01:00:00Z")
         );
         Page<ReviewFeedItem> mocked = new PageImpl<>(
@@ -101,11 +104,12 @@ class ReviewFeedQueryServiceTest {
                 PageRequest.of(2, 5),
                 21
         );
-        when(reviewRepository.findFeed(any(), any(), any())).thenReturn(mocked);
+        when(reviewRepository.findFeed(any(), any(), any(), any())).thenReturn(mocked);
 
-        ReviewFeedPageResponse response = service.findFeed("ai", null, 3, 5);
+        ReviewFeedPageResponse response = service.findFeed(VIEWER_USER_ID, "ai", null, 3, 5);
 
         assertThat(response.items()).containsExactly(item);
+        assertThat(response.items().get(0).isAuthor()).isTrue();
         assertThat(response.page()).isEqualTo(3);
         assertThat(response.size()).isEqualTo(5);
         assertThat(response.totalElements()).isEqualTo(21);

@@ -16,8 +16,8 @@ import java.time.Instant;
 @Table(
         name = "reviews",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_review_event_author",
-                columnNames = {"soma_event_id", "author_name"}
+                name = "uk_review_event_user",
+                columnNames = {"soma_event_id", "author_user_id"}
         )
 )
 public class Review {
@@ -27,6 +27,9 @@ public class Review {
 
     @Column(name = "soma_event_id", nullable = false)
     private Long somaEventId;
+
+    @Column(name = "author_user_id", nullable = false)
+    private Long authorUserId;
 
     @Column(name = "author_name", nullable = false, length = 100)
     private String authorName;
@@ -46,15 +49,26 @@ public class Review {
     protected Review() {
     }
 
-    private Review(Long somaEventId, String authorName, String content, String authorIp) {
+    private Review(Long somaEventId, Long authorUserId, String authorName, String content, String authorIp) {
         this.somaEventId = somaEventId;
+        this.authorUserId = authorUserId;
         this.authorName = authorName;
         this.content = content;
         this.authorIp = authorIp;
     }
 
-    public static Review create(Long somaEventId, String authorName, String content, String authorIp) {
-        return new Review(somaEventId, authorName, content, authorIp);
+    public static Review create(
+            Long somaEventId,
+            Long authorUserId,
+            String authorName,
+            String content,
+            String authorIp
+    ) {
+        return new Review(somaEventId, authorUserId, authorName, content, authorIp);
+    }
+
+    public void updateContent(String content) {
+        this.content = content;
     }
 
     @PrePersist
@@ -75,6 +89,10 @@ public class Review {
 
     public Long getSomaEventId() {
         return somaEventId;
+    }
+
+    public Long getAuthorUserId() {
+        return authorUserId;
     }
 
     public String getAuthorName() {
