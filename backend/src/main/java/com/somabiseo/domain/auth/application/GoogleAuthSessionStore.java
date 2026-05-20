@@ -1,17 +1,24 @@
 package com.somabiseo.domain.auth.application;
 
+import com.somabiseo.domain.auth.domain.GoogleAuthSessionEntity;
 import com.somabiseo.domain.auth.domain.GoogleAuthSessionResponse;
+import com.somabiseo.domain.auth.infrastructure.GoogleAuthSessionRepository;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 @Component
 public class GoogleAuthSessionStore {
-    private final ConcurrentMap<String, GoogleAuthSession> sessions = new ConcurrentHashMap<>();
+    private final GoogleAuthSessionRepository sessionRepository;
+    private final Clock clock;
+
+    public GoogleAuthSessionStore(GoogleAuthSessionRepository sessionRepository, Clock clock) {
+        this.sessionRepository = sessionRepository;
+        this.clock = clock;
+    }
 
     public GoogleAuthSessionResponse save(
             Long userId,
@@ -26,7 +33,8 @@ public class GoogleAuthSessionStore {
             boolean inviteVerified
     ) {
         String sessionId = UUID.randomUUID().toString();
-        GoogleAuthSession session = new GoogleAuthSession(
+        Instant now = clock.instant();
+        GoogleAuthSessionEntity session = new GoogleAuthSessionEntity(
                 sessionId,
                 userId,
                 googleSubject,
@@ -37,12 +45,13 @@ public class GoogleAuthSessionStore {
                 refreshToken,
                 tokenExpiresAt,
                 sessionExpiresAt,
-                inviteVerified
+                inviteVerified,
+                now
         );
 
-        sessions.put(sessionId, session);
+        sessionRepository.save(session);
 
-        return session.toResponse();
+        return toDomain(session).toResponse();
     }
 
     public Optional<GoogleAuthSession> find(String sessionId) {
@@ -50,30 +59,49 @@ public class GoogleAuthSessionStore {
             return Optional.empty();
         }
 
-        GoogleAuthSession session = sessions.get(sessionId);
+        Optional<GoogleAuthSessionEntity> session = sessionRepository.findById(sessionId);
 
-        if (session == null) {
+        if (session.isEmpty()) {
             return Optional.empty();
         }
 
-        if (session.isExpired()) {
-            sessions.remove(sessionId);
+        GoogleAuthSessionEntity entity = session.get();
 
+        if (entity.isExpired(clock.instant())) {
+            sessionRepository.deleteById(sessionId);
             return Optional.empty();
         }
 
-        return Optional.of(session);
+        return Optional.of(toDomain(entity));
     }
 
     public void remove(String sessionId) {
-        sessions.remove(sessionId);
+        if (sessionId != null && !sessionId.isBlank()) {
+            sessionRepository.deleteById(sessionId);
+        }
     }
 
     public void updateToken(String sessionId, String accessToken, Instant tokenExpiresAt) {
-        find(sessionId).ifPresent((session) -> sessions.put(
-                sessionId,
-                session.withToken(accessToken, tokenExpiresAt)
-        ));
+        sessionRepository.findById(sessionId).ifPresent((session) -> {
+            session.updateToken(accessToken, tokenExpiresAt, clock.instant());
+            sessionRepository.save(session);
+        });
+    }
+
+    private GoogleAuthSession toDomain(GoogleAuthSessionEntity entity) {
+        return new GoogleAuthSession(
+                entity.getSessionId(),
+                entity.getUserId(),
+                entity.getGoogleSubject(),
+                entity.getEmail(),
+                entity.getName(),
+                entity.getProfileImageUrl(),
+                entity.getAccessToken(),
+                entity.getRefreshToken(),
+                entity.getTokenExpiresAt(),
+                entity.getSessionExpiresAt(),
+                entity.isInviteVerified()
+        );
     }
 
     public record GoogleAuthSession(
@@ -89,10 +117,6 @@ public class GoogleAuthSessionStore {
             Instant sessionExpiresAt,
             boolean inviteVerified
     ) {
-        boolean isExpired() {
-            return sessionExpiresAt.isBefore(Instant.now());
-        }
-
         GoogleAuthSessionResponse toResponse() {
             return new GoogleAuthSessionResponse(
                     sessionId,
@@ -100,22 +124,6 @@ public class GoogleAuthSessionStore {
                     email,
                     profileImageUrl,
                     "GOOGLE",
-                    sessionExpiresAt,
-                    inviteVerified
-            );
-        }
-
-        GoogleAuthSession withToken(String newAccessToken, Instant newTokenExpiresAt) {
-            return new GoogleAuthSession(
-                    sessionId,
-                    userId,
-                    googleSubject,
-                    email,
-                    name,
-                    profileImageUrl,
-                    newAccessToken,
-                    refreshToken,
-                    newTokenExpiresAt,
                     sessionExpiresAt,
                     inviteVerified
             );
