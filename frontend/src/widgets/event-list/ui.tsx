@@ -14,6 +14,11 @@ import {
   getEventRecommendation,
   useInterestPreferenceStore,
 } from "@/features/user-interests/model";
+import {
+  useGoogleCalendarConflictStatuses,
+  useGoogleCalendarConnectionSync,
+  useGoogleCalendarStore,
+} from "@/features/connect-google-calendar/model";
 import { UpcomingEventCard } from "@/widgets/upcoming-event-card/ui";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
@@ -41,6 +46,8 @@ export function EventList() {
   const [sort, setSort] = useState<SomaEventSort>(DEFAULT_SOMA_EVENT_SORT);
   const [page, setPage] = useState(1);
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
+  useGoogleCalendarConnectionSync();
+  const calendarConnected = useGoogleCalendarStore((state) => state.connected);
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["events", page, sort],
     queryFn: () => getSomaEventsPage(page, sort),
@@ -55,6 +62,11 @@ export function EventList() {
     return event.type === tab;
   });
   const totalPages = data?.totalPages ?? page;
+  const eventIds = events.map((event) => event.id);
+  const conflictStatusesQuery = useGoogleCalendarConflictStatuses(eventIds);
+  const conflictStatusByEventId = new Map(
+    (conflictStatusesQuery.data ?? []).map((status) => [status.eventId, status]),
+  );
 
   const handleTabChange = (nextTab: EventTab) => {
     setTab(nextTab);
@@ -105,6 +117,16 @@ export function EventList() {
             <UpcomingEventCard
               key={event.id}
               event={event}
+              calendarCheckState={
+                calendarConnected
+                  ? conflictStatusesQuery.isError
+                    ? "error"
+                    : conflictStatusesQuery.isLoading || conflictStatusesQuery.isFetching
+                      ? "loading"
+                      : "ready"
+                  : "idle"
+              }
+              calendarStatus={conflictStatusByEventId.get(event.id)}
               recommendation={getEventRecommendation(event, selectedTopicIds)}
             />
           ))}

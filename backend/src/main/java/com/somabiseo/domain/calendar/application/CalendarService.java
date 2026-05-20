@@ -1,6 +1,7 @@
 package com.somabiseo.domain.calendar.application;
 
 import com.somabiseo.domain.calendar.domain.CalendarConnectionResponse;
+import com.somabiseo.domain.calendar.domain.CalendarConflictStatusResponse;
 import com.somabiseo.domain.calendar.domain.CalendarEventLinkResponse;
 import com.somabiseo.domain.calendar.domain.GoogleCalendarConnectionException;
 import com.somabiseo.domain.calendar.domain.GoogleCalendarClient;
@@ -19,7 +20,12 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class CalendarService {
@@ -98,6 +104,58 @@ public class CalendarService {
         return getConflict(calendarSessionId, null, startAt, endAt);
     }
 
+    public List<CalendarConflictStatusResponse> getConflictStatuses(String calendarSessionId, List<String> eventIds) {
+        List<String> distinctEventIds = eventIds == null
+                ? List.of()
+                : eventIds.stream()
+                .filter((eventId) -> eventId != null && !eventId.isBlank())
+                .distinct()
+                .limit(50)
+                .toList();
+
+        if (distinctEventIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<CalendarEventWithId> events = distinctEventIds.stream()
+                .map((eventId) -> new CalendarEventWithId(eventId, findCalendarEvent(eventId)))
+                .toList();
+        List<CalendarEventWithId> validEvents = events.stream()
+                .filter((event) -> hasValidPeriod(event.event()))
+                .toList();
+
+        if (!googleCalendarClient.isConnected(calendarSessionId) || validEvents.isEmpty()) {
+            return events.stream()
+                    .map((event) -> new CalendarConflictStatusResponse(event.eventId(), false, false, List.of()))
+                    .toList();
+        }
+
+        OffsetDateTime from = validEvents.stream()
+                .map((event) -> event.event().startAt())
+                .min(Comparator.naturalOrder())
+                .orElseThrow();
+        OffsetDateTime to = validEvents.stream()
+                .map((event) -> event.event().endAt())
+                .max(Comparator.naturalOrder())
+                .orElseThrow();
+        List<GoogleCalendarEventResponse> googleEvents = googleCalendarClient.findEvents(calendarSessionId, from, to);
+        String calendarId = googleCalendarClient.calendarId();
+        Map<String, GoogleCalendarEventLink> linkByEventId = googleCalendarEventLinkRepository
+                .findByCalendarSessionIdAndSourceIdInAndCalendarId(calendarSessionId, distinctEventIds, calendarId)
+                .stream()
+                .filter(GoogleCalendarEventLink::isCreated)
+                .collect(Collectors.toMap(
+                        GoogleCalendarEventLink::getSourceId,
+                        (link) -> link,
+                        (first, second) -> first,
+                        LinkedHashMap::new
+                ));
+
+        return events.stream()
+                .map((event) -> toConflictStatus(event, googleEvents, linkByEventId.get(event.eventId())))
+                .toList();
+    }
+
     private CalendarConflictResponse getConflict(
             String calendarSessionId,
             String eventId,
@@ -124,6 +182,48 @@ public class CalendarService {
                 .toList();
 
         return new CalendarConflictResponse(!busyBlocks.isEmpty(), busyBlocks);
+    }
+
+    private CalendarConflictStatusResponse toConflictStatus(
+            CalendarEventWithId event,
+            List<GoogleCalendarEventResponse> googleEvents,
+            GoogleCalendarEventLink link
+    ) {
+        if (!hasValidPeriod(event.event())) {
+            return new CalendarConflictStatusResponse(event.eventId(), false, false, List.of());
+        }
+
+        Set<String> linkedGoogleEventIds = link != null && link.getGoogleEventId() != null
+                ? Set.of(link.getGoogleEventId())
+                : Set.of();
+        boolean alreadyAdded = googleEvents.stream()
+                .anyMatch((googleEvent) ->
+                        hasEventIdMarker(googleEvent.description(), event.eventId())
+                                || linkedGoogleEventIds.contains(googleEvent.id())
+                );
+        List<BusyBlockResponse> busyBlocks = googleEvents.stream()
+                .filter((googleEvent) -> !hasEventIdMarker(googleEvent.description(), event.eventId()))
+                .filter((googleEvent) -> !linkedGoogleEventIds.contains(googleEvent.id()))
+                .filter((googleEvent) -> overlaps(
+                        event.event().startAt(),
+                        event.event().endAt(),
+                        googleEvent.startAt(),
+                        googleEvent.endAt()
+                ))
+                .map((googleEvent) -> new BusyBlockResponse(
+                        googleEvent.id(),
+                        googleEvent.title(),
+                        googleEvent.startAt(),
+                        googleEvent.endAt()
+                ))
+                .toList();
+
+        return new CalendarConflictStatusResponse(
+                event.eventId(),
+                alreadyAdded,
+                !busyBlocks.isEmpty(),
+                busyBlocks
+        );
     }
 
     public CalendarEventLinkResponse getEventLink(String calendarSessionId, String eventId) {
@@ -283,7 +383,15 @@ public class CalendarService {
     }
 
     private boolean hasEventIdMarker(String description, String eventId) {
-        return description != null && description.contains(eventIdMarker(eventId));
+        if (description == null || eventId == null || eventId.isBlank()) {
+            return false;
+        }
+
+        String marker = eventIdMarker(eventId);
+
+        return description.lines()
+                .map(String::trim)
+                .anyMatch(marker::equals);
     }
 
     private boolean overlaps(
@@ -293,6 +401,10 @@ public class CalendarService {
             OffsetDateTime busyEndAt
     ) {
         return targetStartAt.isBefore(busyEndAt) && busyStartAt.isBefore(targetEndAt);
+    }
+
+    private boolean hasValidPeriod(CalendarEvent event) {
+        return event.startAt() != null && event.endAt() != null && event.startAt().isBefore(event.endAt());
     }
 
     private CalendarEvent findCalendarEvent(String eventId) {
@@ -332,6 +444,12 @@ public class CalendarService {
             String location,
             OffsetDateTime startAt,
             OffsetDateTime endAt
+    ) {
+    }
+
+    private record CalendarEventWithId(
+            String eventId,
+            CalendarEvent event
     ) {
     }
 }

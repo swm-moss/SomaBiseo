@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, CalendarDays, Clock3, Star } from "lucide-react";
+import { Bell, CalendarDays, Star } from "lucide-react";
 
 import { getNotices } from "@/entities/notice/api";
 import { getDashboardEvents } from "@/entities/soma-event/api";
@@ -11,29 +11,24 @@ import {
   useInterestPreferenceStore,
 } from "@/features/user-interests/model";
 import {
-  useUpcomingGoogleCalendarEvents,
+  useGoogleCalendarEventsInRange,
   useGoogleCalendarConnectionSync,
   useGoogleCalendarStore,
 } from "@/features/connect-google-calendar/model";
 import { useAuthStore } from "@/features/auth/model";
 import { GoogleCalendarEventList } from "@/widgets/google-calendar-event-list/ui";
 import { routes } from "@/shared/config/routes";
-import { formatOptionalDateTime } from "@/shared/lib/date";
+import { formatOptionalDateTime, getWeekRange } from "@/shared/lib/date";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { LoadingState } from "@/shared/ui/loading-state";
-import { StatusBadge } from "@/shared/ui/status-badge";
-
-const TYPE_LABEL = {
-  LECTURE: "멘토특강",
-  MENTORING: "자유멘토링",
-} as const;
 
 export function DashboardSummary() {
   const sessionId = useAuthStore((state) => state.sessionId);
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
   useGoogleCalendarConnectionSync();
   const calendarConnected = useGoogleCalendarStore((state) => state.connected);
-  const calendarEventsQuery = useUpcomingGoogleCalendarEvents();
+  const { start: weekStart, end: weekEnd } = getWeekRange();
+  const calendarEventsQuery = useGoogleCalendarEventsInRange(weekStart, weekEnd);
   const eventsQuery = useQuery({
     queryKey: ["dashboard-events"],
     queryFn: () => getDashboardEvents(),
@@ -50,7 +45,6 @@ export function DashboardSummary() {
   const dashboard = eventsQuery.data;
   const notices = noticesQuery.data ?? [];
   const newNotices = notices.slice(0, 2);
-  const upcomingSomaEvents = dashboard?.upcomingEvents ?? [];
   const recommendationCandidates = dashboard?.recommendationCandidates ?? [];
   const recommendedEvents = getRecommendedEvents(recommendationCandidates, selectedTopicIds, 3);
   const deadlineSoon = dashboard?.deadlineSoonEvents ?? [];
@@ -72,7 +66,7 @@ export function DashboardSummary() {
           >
             <CalendarDays aria-hidden="true" className="size-5 text-primary" />
             <p className="mt-3 text-[14px] font-semibold leading-[21px] text-muted-foreground">
-              내 일정
+              이번주 일정
             </p>
             <p className="mt-1 text-[24px] font-bold leading-[32px]">{calendarSummaryValue}</p>
           </Link>
@@ -91,40 +85,6 @@ export function DashboardSummary() {
 
       <section id="my-calendar-events" className="sb-section scroll-mt-24">
         <GoogleCalendarEventList />
-      </section>
-
-      <section className="sb-section">
-        <div className="flex items-center gap-2">
-          <CalendarDays aria-hidden="true" className="size-5 text-primary" />
-          <h2 className="sb-section-title">다가오는 소마 일정</h2>
-        </div>
-        {upcomingSomaEvents.length === 0 ? (
-          <EmptyState className="mt-3" title="다가오는 소마 일정이 없어요" />
-        ) : (
-          <div className="sb-list-surface">
-            {upcomingSomaEvents.map((event) => (
-              <Link
-                key={event.id}
-                className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
-                href={routes.eventDetail(event.id)}
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
-                    {TYPE_LABEL[event.type]}
-                  </StatusBadge>
-                  <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-muted-foreground">
-                    <Clock3 aria-hidden="true" className="size-4" />
-                    {formatOptionalDateTime(event.startAt)}
-                  </span>
-                </div>
-                <p className="mt-3 text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
-                <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-                  {event.mentorName ?? "멘토 미정"} · {event.location ?? "장소 미정"}
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
       </section>
 
       <section className="sb-section">

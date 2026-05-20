@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
-import { getConflictForEvent } from "@/entities/calendar/api";
+import { getConflictForEvent, getGoogleCalendarEventLink } from "@/entities/calendar/api";
 import type { SomaEvent } from "@/entities/soma-event/model";
 import { useAuthStore } from "@/features/auth/model";
 import {
@@ -19,10 +19,16 @@ export function CalendarConflictResult({ event }: { event: SomaEvent }) {
   const sessionId = useAuthStore((state) => state.sessionId);
   useGoogleCalendarConnectionSync();
   const connected = useGoogleCalendarStore((state) => state.connected);
-  const { data, error, isError, isLoading, refetch } = useQuery({
-    queryKey: ["calendar-conflict", event.id],
-    queryFn: () => getConflictForEvent(event),
+  const linkQuery = useQuery({
+    queryKey: ["google-calendar-event-link", event.id],
+    queryFn: () => getGoogleCalendarEventLink(event),
     enabled: connected && Boolean(sessionId),
+    retry: 0,
+  });
+  const { data, error, isError, isLoading, refetch } = useQuery({
+    queryKey: ["calendar-conflict", event.id, sessionId],
+    queryFn: () => getConflictForEvent(event),
+    enabled: connected && Boolean(sessionId) && linkQuery.data?.alreadyAdded === false,
     retry: 0,
   });
 
@@ -32,6 +38,14 @@ export function CalendarConflictResult({ event }: { event: SomaEvent }) {
         Google로 로그인하면 이 일정의 충돌 여부를 확인합니다.
       </div>
     );
+  }
+
+  if (linkQuery.isLoading) {
+    return <LoadingState className="min-h-24 rounded-lg border bg-white" label="캘린더 상태 확인 중" />;
+  }
+
+  if (linkQuery.data?.alreadyAdded) {
+    return null;
   }
 
   if (isLoading) {

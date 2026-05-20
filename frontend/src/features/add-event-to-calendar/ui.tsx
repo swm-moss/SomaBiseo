@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { addEventToGoogleCalendar, getGoogleCalendarEventLink } from "@/entities/calendar/api";
 import type { SomaEvent } from "@/entities/soma-event/model";
 import {
+  googleCalendarKeys,
   useGoogleCalendarConnectionSync,
   useGoogleCalendarStore,
 } from "@/features/connect-google-calendar/model";
@@ -27,7 +28,8 @@ export function AddEventToCalendarButton({ event }: { event: SomaEvent }) {
     mutationFn: () => addEventToGoogleCalendar(event),
     onSuccess: (response) => {
       void queryClient.invalidateQueries({ queryKey: linkQueryKey });
-      void queryClient.invalidateQueries({ queryKey: ["google-calendar-events"] });
+      void queryClient.invalidateQueries({ queryKey: googleCalendarKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ["calendar-conflict", event.id] });
       toast.success(response.alreadyAdded ? "이미 캘린더에 추가된 일정입니다." : "내 캘린더에 일정을 추가했어요.");
     },
     onError: () => {

@@ -5,7 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { getGoogleCalendarConnection, getGoogleCalendarEvents } from "@/entities/calendar/api";
+import {
+  getConflictStatusesForEvents,
+  getGoogleCalendarConnection,
+  getGoogleCalendarEvents,
+} from "@/entities/calendar/api";
 import type { CalendarConnection } from "@/entities/calendar/model";
 import { useAuthStore } from "@/features/auth/model";
 
@@ -21,6 +25,20 @@ export const googleCalendarKeys = {
     "events",
     "upcoming",
     sessionId ?? "guest",
+  ] as const,
+  eventsByRange: (sessionId: string | null, from: string, to: string) => [
+    ...googleCalendarKeys.all,
+    "events",
+    "range",
+    sessionId ?? "guest",
+    from,
+    to,
+  ] as const,
+  conflictStatuses: (sessionId: string | null, eventIds: string[]) => [
+    ...googleCalendarKeys.all,
+    "conflicts",
+    sessionId ?? "guest",
+    eventIds.join(","),
   ] as const,
 };
 
@@ -105,6 +123,33 @@ export function useUpcomingGoogleCalendarEvents() {
       return getGoogleCalendarEvents(now.toISOString(), sevenDaysLater.toISOString());
     },
     enabled: connected && Boolean(sessionId),
+    retry: 0,
+  });
+}
+
+export function useGoogleCalendarEventsInRange(from: Date, to: Date) {
+  const sessionId = useAuthStore((state) => state.sessionId);
+  const connected = useGoogleCalendarStore((state) => state.connected);
+  const fromIso = from.toISOString();
+  const toIso = to.toISOString();
+
+  return useQuery({
+    queryKey: googleCalendarKeys.eventsByRange(sessionId, fromIso, toIso),
+    queryFn: () => getGoogleCalendarEvents(fromIso, toIso),
+    enabled: connected && Boolean(sessionId),
+    retry: 0,
+  });
+}
+
+export function useGoogleCalendarConflictStatuses(eventIds: string[]) {
+  const sessionId = useAuthStore((state) => state.sessionId);
+  const connected = useGoogleCalendarStore((state) => state.connected);
+  const uniqueEventIds = [...new Set(eventIds)].filter(Boolean);
+
+  return useQuery({
+    queryKey: googleCalendarKeys.conflictStatuses(sessionId, uniqueEventIds),
+    queryFn: () => getConflictStatusesForEvents(uniqueEventIds),
+    enabled: connected && Boolean(sessionId) && uniqueEventIds.length > 0,
     retry: 0,
   });
 }

@@ -7,12 +7,19 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface GoogleCalendarEventLinkRepository extends JpaRepository<GoogleCalendarEventLink, Long> {
     Optional<GoogleCalendarEventLink> findByCalendarSessionIdAndSourceIdAndCalendarId(
             String calendarSessionId,
             String sourceId,
+            String calendarId
+    );
+
+    List<GoogleCalendarEventLink> findByCalendarSessionIdAndSourceIdInAndCalendarId(
+            String calendarSessionId,
+            List<String> sourceIds,
             String calendarId
     );
 
