@@ -13,6 +13,7 @@ import com.somabiseo.domain.portal.domain.SomaPortalUnauthorizedException;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalClient;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalHtmlParser;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalProperties;
+import com.somabiseo.domain.somaevent.domain.EventType;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -94,19 +95,30 @@ public class SomaPortalService {
         return toPageResponse(notices, html, safePage);
     }
 
-    public SomaPortalPageResponse<SomaPortalEventResponse> getPublicEvents(int page, SomaPortalEventSort sort) {
+    public SomaPortalPageResponse<SomaPortalEventResponse> getPublicEvents(
+            int page,
+            SomaPortalEventSort sort,
+            EventType type,
+            String q
+    ) {
         syncEventsIfNeeded();
 
-        return cacheService.getEvents(page, PAGE_SIZE, sort);
+        return cacheService.getEvents(page, PAGE_SIZE, sort, type, q);
     }
 
-    public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(String sessionId, int page, SomaPortalEventSort sort) {
+    public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(
+            String sessionId,
+            int page,
+            SomaPortalEventSort sort,
+            EventType type,
+            String q
+    ) {
         SomaPortalSession session = sessionStore.get(sessionId);
         SomaPortalPageResponse<SomaPortalEventResponse> response = fetchEvents(session, page);
 
         cacheService.upsertEvents(response.items());
 
-        return response;
+        return cacheService.getEvents(page, PAGE_SIZE, sort, type, q);
     }
 
     public SomaPortalEventResponse getPublicEventDetailBySourceId(String sourceId) {

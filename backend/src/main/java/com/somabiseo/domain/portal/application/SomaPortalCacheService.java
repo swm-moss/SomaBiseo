@@ -11,6 +11,7 @@ import com.somabiseo.domain.portal.infrastructure.CachedPortalNotice;
 import com.somabiseo.domain.portal.infrastructure.CachedPortalNoticeRepository;
 import com.somabiseo.domain.portal.infrastructure.CachedPortalSyncLog;
 import com.somabiseo.domain.portal.infrastructure.CachedPortalSyncLogRepository;
+import com.somabiseo.domain.somaevent.domain.EventType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -122,14 +123,21 @@ public class SomaPortalCacheService {
     }
 
     @Transactional(readOnly = true)
-    public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(int page, int size, SomaPortalEventSort sort) {
+    public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(
+            int page,
+            int size,
+            SomaPortalEventSort sort,
+            EventType type,
+            String q
+    ) {
         int safePage = Math.max(page, 1);
         PageRequest pageRequest = PageRequest.of(safePage - 1, size);
+        String trimmedQ = (q == null || q.isBlank()) ? null : q.trim();
         Page<CachedPortalEvent> eventPage = switch (sort == null ? SomaPortalEventSort.LECTURE_DATE_DESC : sort) {
-            case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(pageRequest);
-            case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(pageRequest);
-            case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(pageRequest);
-            case APPLICATION_DEADLINE_ASC -> eventRepository.findPageOrderByApplicationEndAtAsc(pageRequest);
+            case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(type, trimmedQ, pageRequest);
+            case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(type, trimmedQ, pageRequest);
+            case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(type, trimmedQ, pageRequest);
+            case APPLICATION_DEADLINE_ASC -> eventRepository.findPageOrderByApplicationEndAtAsc(type, trimmedQ, pageRequest);
         };
 
         return new SomaPortalPageResponse<>(
