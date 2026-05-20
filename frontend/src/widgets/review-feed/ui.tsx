@@ -160,7 +160,7 @@ export function ReviewFeed() {
                   href={routes.eventDetail(item.eventId)}
                   className="mt-3 block text-[17px] font-extrabold leading-[26px] text-foreground hover:underline"
                 >
-                  {item.eventTitle}
+                  {item.eventTopic}
                 </Link>
                 <p className="mt-1.5 text-[13px] font-medium text-muted-foreground">
                   {item.mentorName ?? "멘토 미정"}

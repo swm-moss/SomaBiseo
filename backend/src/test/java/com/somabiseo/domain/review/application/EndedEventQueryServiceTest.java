@@ -131,10 +131,10 @@ class EndedEventQueryServiceTest {
 
     @Test
     void find_각_이벤트의_reviewCount가_매핑되고_없는_경우_0() {
-        SomaEvent eventA = somaEventWith(11L, "soma-a", "AI 입문", "정멘토",
+        SomaEvent eventA = somaEventWith(11L, "soma-a", "[멘토특강] AI 입문", "AI 입문", "정멘토",
                 OffsetDateTime.parse("2026-05-20T15:00:00+09:00"),
                 OffsetDateTime.parse("2026-05-20T17:00:00+09:00"));
-        SomaEvent eventB = somaEventWith(22L, "soma-b", "백엔드 멘토링", null,
+        SomaEvent eventB = somaEventWith(22L, "soma-b", "[자유멘토링] 백엔드 멘토링", "백엔드 멘토링", null,
                 OffsetDateTime.parse("2026-05-19T10:00:00+09:00"),
                 OffsetDateTime.parse("2026-05-19T12:00:00+09:00"));
         Page<SomaEvent> page = new PageImpl<>(List.of(eventA, eventB), PageRequest.of(0, 10), 2);
@@ -147,21 +147,39 @@ class EndedEventQueryServiceTest {
         assertThat(response.items()).hasSize(2);
         EndedEventResponse first = response.items().get(0);
         assertThat(first.eventId()).isEqualTo("soma-a");
+        assertThat(first.topic()).isEqualTo("AI 입문");
         assertThat(first.startAt()).isEqualTo(OffsetDateTime.parse("2026-05-20T15:00:00+09:00"));
         assertThat(first.endAt()).isEqualTo(OffsetDateTime.parse("2026-05-20T17:00:00+09:00"));
         assertThat(first.reviewCount()).isEqualTo(4L);
         EndedEventResponse second = response.items().get(1);
         assertThat(second.eventId()).isEqualTo("soma-b");
+        assertThat(second.topic()).isEqualTo("백엔드 멘토링");
         assertThat(second.mentorName()).isNull();
         assertThat(second.reviewCount()).isEqualTo(0L);
         assertThat(response.page()).isEqualTo(1);
         assertThat(response.totalElements()).isEqualTo(2);
     }
 
+    @Test
+    void find_topic이_null이면_title로_폴백() {
+        SomaEvent legacy = somaEventWith(99L, "soma-legacy", "레거시 강의 제목", null, "오멘토",
+                OffsetDateTime.parse("2026-05-15T10:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-15T12:00:00+09:00"));
+        Page<SomaEvent> page = new PageImpl<>(List.of(legacy), PageRequest.of(0, 10), 1);
+        when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(page);
+        when(reviewRepository.findSummariesIn(List.of(99L))).thenReturn(List.of());
+
+        EndedEventPageResponse response = service.find(null, null, null, 1, 10);
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().get(0).topic()).isEqualTo("레거시 강의 제목");
+    }
+
     private SomaEvent somaEventWith(
             Long id,
             String sourceId,
             String title,
+            String topic,
             String mentorName,
             OffsetDateTime startAt,
             OffsetDateTime endAt
@@ -174,6 +192,7 @@ class EndedEventQueryServiceTest {
             setField(event, "sourceId", sourceId);
             setField(event, "type", EventType.LECTURE);
             setField(event, "title", title);
+            setField(event, "topic", topic);
             setField(event, "mentorName", mentorName);
             setField(event, "startAt", startAt);
             setField(event, "endAt", endAt);

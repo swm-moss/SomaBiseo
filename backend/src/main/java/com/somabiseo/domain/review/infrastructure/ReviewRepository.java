@@ -27,7 +27,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query(
             value = """
                     select new com.somabiseo.domain.review.domain.ReviewFeedItem(
-                        r.id, e.sourceId, e.title, e.type, e.mentorName, r.content, r.authorName,
+                        r.id, e.sourceId, coalesce(e.topic, e.title), e.type, e.mentorName, r.content, r.authorName,
                         case when r.authorUserId = :viewerUserId then true else false end,
                         r.createdAt
                     )
@@ -35,6 +35,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                     join SomaEvent e on e.id = r.somaEventId
                     where (cast(:q as string) is null
                            or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
+                           or (e.topic is not null and lower(e.topic) like lower(concat('%', cast(:q as string), '%')))
                            or (e.mentorName is not null and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%')))
                            or lower(r.content) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
@@ -46,6 +47,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                     join SomaEvent e on e.id = r.somaEventId
                     where (cast(:q as string) is null
                            or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
+                           or (e.topic is not null and lower(e.topic) like lower(concat('%', cast(:q as string), '%')))
                            or (e.mentorName is not null and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%')))
                            or lower(r.content) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
