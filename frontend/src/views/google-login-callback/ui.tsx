@@ -36,6 +36,7 @@ export function GoogleLoginCallbackPage() {
     const email = fragment.get("email");
     const profileImageUrl = fragment.get("profileImageUrl");
     const expiresAt = fragment.get("expiresAt");
+    const inviteVerified = fragment.get("inviteVerified") === "true";
 
     if (!sessionId || !username || !email || !expiresAt) {
       toast.error("Google 로그인 정보를 확인하지 못했어요.");
@@ -50,6 +51,7 @@ export function GoogleLoginCallbackPage() {
       profileImageUrl: profileImageUrl || null,
       provider: "GOOGLE",
       expiresAt,
+      inviteVerified,
     };
 
     setSessionId(sessionId);
@@ -64,7 +66,7 @@ export function GoogleLoginCallbackPage() {
     }
 
     toast.success("Google 계정으로 로그인했어요.");
-    router.replace(next);
+    router.replace(inviteVerified ? next : `${routes.inviteVerify}?next=${encodeURIComponent(next)}`);
   }, [queryClient, router, setConnection, setSessionId]);
 
   return (

@@ -82,13 +82,9 @@ public class SomaPortalController {
 
     @PostMapping("/api/soma/events/summary")
     ApiResponse<EventAiSummaryResponse> summarizeEvent(
-            @Valid @RequestBody EventAiSummaryRequest request,
-            @RequestHeader(value = "Authorization", required = false) String authorization
+            @Valid @RequestBody EventAiSummaryRequest request
     ) {
-        String sessionId = bearerSessionIdOrNull(authorization);
-        SomaPortalEventResponse event = hasText(sessionId)
-                ? portalService.getEventDetail(sessionId, request.sourceUrl())
-                : portalService.getPublicEventDetail(request.sourceUrl());
+        SomaPortalEventResponse event = portalService.getPublicEventDetail(request.sourceUrl());
 
         return ApiResponse.ok(eventAiSummaryService.getOrCreate(event));
     }
@@ -111,16 +107,6 @@ public class SomaPortalController {
         String sessionId = bearerSessionId(authorization);
 
         return ApiResponse.ok(portalService.cancelMentoLec(sessionId, qustnrSn));
-    }
-
-    private String bearerSessionIdOrNull(String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return null;
-        }
-
-        String sessionId = authorization.substring("Bearer ".length()).trim();
-
-        return sessionId.isBlank() ? null : sessionId;
     }
 
     private String bearerSessionId(String authorization) {

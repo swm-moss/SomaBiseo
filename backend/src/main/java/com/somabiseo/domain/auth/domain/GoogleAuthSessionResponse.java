@@ -8,6 +8,7 @@ public record GoogleAuthSessionResponse(
         String email,
         String profileImageUrl,
         String provider,
-        Instant expiresAt
+        Instant expiresAt,
+        boolean inviteVerified
 ) {
 }

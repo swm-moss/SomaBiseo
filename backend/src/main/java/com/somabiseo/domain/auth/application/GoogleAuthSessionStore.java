@@ -14,6 +14,7 @@ public class GoogleAuthSessionStore {
     private final ConcurrentMap<String, GoogleAuthSession> sessions = new ConcurrentHashMap<>();
 
     public GoogleAuthSessionResponse save(
+            Long userId,
             String googleSubject,
             String email,
             String name,
@@ -21,11 +22,13 @@ public class GoogleAuthSessionStore {
             String accessToken,
             String refreshToken,
             Instant tokenExpiresAt,
-            Instant sessionExpiresAt
+            Instant sessionExpiresAt,
+            boolean inviteVerified
     ) {
         String sessionId = UUID.randomUUID().toString();
         GoogleAuthSession session = new GoogleAuthSession(
                 sessionId,
+                userId,
                 googleSubject,
                 email,
                 name,
@@ -33,7 +36,8 @@ public class GoogleAuthSessionStore {
                 accessToken,
                 refreshToken,
                 tokenExpiresAt,
-                sessionExpiresAt
+                sessionExpiresAt,
+                inviteVerified
         );
 
         sessions.put(sessionId, session);
@@ -74,6 +78,7 @@ public class GoogleAuthSessionStore {
 
     public record GoogleAuthSession(
             String sessionId,
+            Long userId,
             String googleSubject,
             String email,
             String name,
@@ -81,14 +86,39 @@ public class GoogleAuthSessionStore {
             String accessToken,
             String refreshToken,
             Instant tokenExpiresAt,
-            Instant sessionExpiresAt
+            Instant sessionExpiresAt,
+            boolean inviteVerified
     ) {
         boolean isExpired() {
             return sessionExpiresAt.isBefore(Instant.now());
         }
 
         GoogleAuthSessionResponse toResponse() {
-            return new GoogleAuthSessionResponse(sessionId, name, email, profileImageUrl, "GOOGLE", sessionExpiresAt);
+            return new GoogleAuthSessionResponse(
+                    sessionId,
+                    name,
+                    email,
+                    profileImageUrl,
+                    "GOOGLE",
+                    sessionExpiresAt,
+                    inviteVerified
+            );
+        }
+
+        GoogleAuthSession withToken(String newAccessToken, Instant newTokenExpiresAt) {
+            return new GoogleAuthSession(
+                    sessionId,
+                    userId,
+                    googleSubject,
+                    email,
+                    name,
+                    profileImageUrl,
+                    newAccessToken,
+                    refreshToken,
+                    newTokenExpiresAt,
+                    sessionExpiresAt,
+                    inviteVerified
+            );
         }
 
         GoogleAuthSession withToken(String newAccessToken, Instant newTokenExpiresAt) {
