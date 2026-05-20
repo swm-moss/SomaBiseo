@@ -1,8 +1,9 @@
 package com.somabiseo.global.exception;
 
 import com.somabiseo.global.response.ApiResponse;
+import com.somabiseo.domain.auth.domain.GoogleAuthException;
+import com.somabiseo.domain.auth.domain.GoogleAuthUnauthorizedException;
 import com.somabiseo.domain.eventsummary.domain.EventAiSummaryException;
-import com.somabiseo.domain.calendar.domain.GoogleCalendarConnectionException;
 import com.somabiseo.domain.portal.domain.SomaPortalException;
 import com.somabiseo.domain.portal.domain.SomaPortalUnauthorizedException;
 import com.somabiseo.domain.review.domain.ReviewConflictException;
@@ -54,11 +55,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(exception.getMessage()));
     }
 
-    @ExceptionHandler(GoogleCalendarConnectionException.class)
-    ResponseEntity<ApiResponse<Void>> handleGoogleCalendarConnectionException(
-            GoogleCalendarConnectionException exception
-    ) {
+    @ExceptionHandler(GoogleAuthException.class)
+    ResponseEntity<ApiResponse<Void>> handleGoogleAuthException(GoogleAuthException exception) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(exception.getMessage()));
+    }
+
+    @ExceptionHandler(GoogleAuthUnauthorizedException.class)
+    ResponseEntity<ApiResponse<Void>> handleGoogleAuthUnauthorizedException(GoogleAuthUnauthorizedException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(exception.getMessage()));
     }
 

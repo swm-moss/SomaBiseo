@@ -1,73 +1,45 @@
-import type {
-  CalendarConnection,
-  CalendarConflict,
-  GoogleCalendarEvent,
-} from "@/entities/calendar/model";
+import type { CalendarConflict } from "@/entities/calendar/model";
 import type { SomaEvent } from "@/entities/soma-event/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
 
-export type CalendarEventLink = {
-  eventId: string;
-  googleEventId: string | null;
-  calendarId: string;
-  alreadyAdded: boolean;
+type GoogleConnectUrlResponse = {
+  url: string;
 };
 
+function overlaps(event: SomaEvent, busy: { startAt: string; endAt: string }) {
+  if (!event.startAt || !event.endAt) {
+    return false;
+  }
+
+  return (
+    new Date(event.startAt).getTime() < new Date(busy.endAt).getTime() &&
+    new Date(event.endAt).getTime() > new Date(busy.startAt).getTime()
+  );
+}
+
 export async function getConflictForEvent(event: SomaEvent): Promise<CalendarConflict> {
+  const busyBlocks = event.conflict.busyBlocks.filter((busy) => overlaps(event, busy));
+
+  return new Promise((resolve) => {
+    setTimeout(
+      () =>
+        resolve({
+          hasConflict: busyBlocks.length > 0,
+          busyBlocks,
+        }),
+      220,
+    );
+  });
+}
+
+export async function getGoogleCalendarConnectUrl(returnTo: string) {
   return unwrapApiResponse(
     apiClient
-      .get("calendar/conflicts", {
+      .get("calendar/google/connect-url", {
         searchParams: {
-          eventId: event.id,
+          returnTo,
         },
       })
-      .json<ApiResponse<CalendarConflict>>(),
-  );
-}
-
-export async function getGoogleCalendarConnection() {
-  return unwrapApiResponse(
-    apiClient.get("calendar/google/status").json<ApiResponse<CalendarConnection>>(),
-  );
-}
-
-export async function getGoogleCalendarConnectUrl() {
-  return unwrapApiResponse(
-    apiClient.get("calendar/google/connect-url").json<ApiResponse<{ url: string }>>(),
-  );
-}
-
-export async function disconnectGoogleCalendar() {
-  return unwrapApiResponse(
-    apiClient.delete("calendar/google/connection").json<ApiResponse<CalendarConnection>>(),
-  );
-}
-
-export async function getGoogleCalendarEvents(from: string, to: string) {
-  return unwrapApiResponse(
-    apiClient
-      .get("calendar/google/events", {
-        searchParams: {
-          from,
-          to,
-        },
-      })
-      .json<ApiResponse<GoogleCalendarEvent[]>>(),
-  );
-}
-
-export async function addEventToGoogleCalendar(event: SomaEvent) {
-  return unwrapApiResponse(
-    apiClient
-      .post(`calendar/events/${event.id}`)
-      .json<ApiResponse<CalendarEventLink>>(),
-  );
-}
-
-export async function getGoogleCalendarEventLink(event: SomaEvent) {
-  return unwrapApiResponse(
-    apiClient
-      .get(`calendar/events/${event.id}/link`)
-      .json<ApiResponse<CalendarEventLink>>(),
+      .json<ApiResponse<GoogleConnectUrlResponse>>(),
   );
 }

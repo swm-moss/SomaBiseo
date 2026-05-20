@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { PenSquare } from "lucide-react";
 
-import { usePortalAuthStore } from "@/features/auth/model";
+import { useAuthSessionQuery } from "@/features/auth/model";
 import {
   useCreateReview,
   useWritableEvents,
@@ -39,7 +39,7 @@ export function WriteReviewDialog({
 }: WriteReviewDialogProps) {
   const [open, setOpen] = useState(false);
   const { data: writableEvents, isLoading, isError, refetch } = useWritableEvents(open);
-  const session = usePortalAuthStore((state) => state.session);
+  const { session } = useAuthSessionQuery();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
