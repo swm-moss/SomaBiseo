@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { cn } from "@/shared/lib/utils";
@@ -11,13 +12,31 @@ type PaginationControlProps = {
   isDisabled?: boolean;
 };
 
-const PAGE_WINDOW_SIZE = 10;
+const MOBILE_WINDOW_SIZE = 5;
+const DESKTOP_WINDOW_SIZE = 9;
+const DESKTOP_MEDIA_QUERY = "(min-width: 640px)";
 
-function getPaginationItems(page: number, totalPages: number) {
-  const startPage = Math.floor((page - 1) / PAGE_WINDOW_SIZE) * PAGE_WINDOW_SIZE + 1;
-  const endPage = Math.min(startPage + PAGE_WINDOW_SIZE - 1, totalPages);
+function getPaginationItems(page: number, totalPages: number, windowSize: number) {
+  const startPage = Math.floor((page - 1) / windowSize) * windowSize + 1;
+  const endPage = Math.min(startPage + windowSize - 1, totalPages);
 
   return Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+}
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mediaQueryList = window.matchMedia(DESKTOP_MEDIA_QUERY);
+    const handleChange = (event: MediaQueryListEvent) => setIsDesktop(event.matches);
+
+    setIsDesktop(mediaQueryList.matches);
+    mediaQueryList.addEventListener("change", handleChange);
+
+    return () => mediaQueryList.removeEventListener("change", handleChange);
+  }, []);
+
+  return isDesktop;
 }
 
 export function PaginationControl({
@@ -27,6 +46,8 @@ export function PaginationControl({
   isDisabled = false,
 }: PaginationControlProps) {
   const safeTotalPages = Math.max(totalPages, 1);
+  const isDesktop = useIsDesktop();
+  const windowSize = isDesktop ? DESKTOP_WINDOW_SIZE : MOBILE_WINDOW_SIZE;
 
   if (safeTotalPages <= 1) {
     return null;
@@ -41,8 +62,8 @@ export function PaginationControl({
   };
 
   return (
-    <nav aria-label="페이지" className="-mx-5 mt-5 overflow-x-auto px-5">
-      <div className="flex min-w-max items-center justify-center gap-2">
+    <nav aria-label="페이지" className="mt-5">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
         <button
           aria-label="처음 페이지"
           className="sb-tap grid size-10 place-items-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
@@ -61,7 +82,7 @@ export function PaginationControl({
         >
           <ChevronLeft className="size-5" />
         </button>
-        {getPaginationItems(page, safeTotalPages).map((item) => (
+        {getPaginationItems(page, safeTotalPages, windowSize).map((item) => (
           <button
             key={item}
             aria-current={item === page ? "page" : undefined}
