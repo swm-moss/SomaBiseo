@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Comparator;
@@ -18,6 +19,8 @@ import java.util.Map;
 
 @Service
 public class RecentEndedEventQueryService {
+    private static final Duration RECENT_WINDOW = Duration.ofDays(3);
+
     private final SomaEventRepository somaEventRepository;
     private final ReviewRepository reviewRepository;
     private final Clock clock;
@@ -36,7 +39,7 @@ public class RecentEndedEventQueryService {
     public List<RecentEndedEventResponse> findRecent(int limit) {
         int safeLimit = Math.max(limit, 1);
         OffsetDateTime now = OffsetDateTime.now(clock.withZone(ZoneId.of("Asia/Seoul")));
-        OffsetDateTime windowStart = now.minus(ReviewService.REVIEW_WINDOW);
+        OffsetDateTime windowStart = now.minus(RECENT_WINDOW);
 
         List<SomaEvent> events = somaEventRepository.findByEndAtBetween(windowStart, now).stream()
                 .sorted(Comparator.comparing(SomaEvent::getEndAt).reversed())
