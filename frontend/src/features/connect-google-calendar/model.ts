@@ -10,11 +10,6 @@ type GoogleCalendarState = {
   googleAccountEmail?: string;
   selectedCalendarId?: string;
   connect: () => void;
-  setConnection: (connection: {
-    connected: boolean;
-    googleAccountEmail?: string;
-    selectedCalendarId?: string;
-  }) => void;
   disconnect: () => void;
   setConnection: (connection: CalendarConnection) => void;
 };
@@ -28,12 +23,6 @@ export const useGoogleCalendarStore = create<GoogleCalendarState>()(
           connected: true,
           googleAccountEmail: "trainee@gmail.com",
           selectedCalendarId: "primary",
-        }),
-      setConnection: (connection) =>
-        set({
-          connected: connection.connected,
-          googleAccountEmail: connection.googleAccountEmail,
-          selectedCalendarId: connection.selectedCalendarId,
         }),
       disconnect: () =>
         set({

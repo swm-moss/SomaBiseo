@@ -1,16 +1,22 @@
 package com.somabiseo.domain.calendar.infrastructure;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.somabiseo.domain.auth.application.GoogleAuthSessionStore;
 import com.somabiseo.domain.calendar.domain.GoogleCalendarClient;
 import com.somabiseo.domain.calendar.domain.GoogleCalendarConnectionException;
 import com.somabiseo.domain.calendar.domain.GoogleCalendarEventResponse;
 import com.somabiseo.domain.calendar.infrastructure.GoogleOAuthTokenStore.GoogleOAuthToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
@@ -25,19 +31,38 @@ import java.util.UUID;
 @Component
 @ConditionalOnProperty(name = "somabiseo.google-calendar.mock-enabled", havingValue = "false", matchIfMissing = true)
 public class GoogleCalendarApiClient implements GoogleCalendarClient {
+    private static final Logger log = LoggerFactory.getLogger(GoogleCalendarApiClient.class);
     private static final String CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
     private static final String AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
     private static final String USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
+    private static final int GOOGLE_API_CONNECT_TIMEOUT_MILLIS = 3_000;
+    private static final int GOOGLE_API_READ_TIMEOUT_MILLIS = 5_000;
 
     private final GoogleCalendarProperties properties;
     private final GoogleOAuthTokenStore tokenStore;
+    private final GoogleAuthSessionStore authSessionStore;
     private final RestClient restClient;
 
-    public GoogleCalendarApiClient(GoogleCalendarProperties properties, GoogleOAuthTokenStore tokenStore) {
+    public GoogleCalendarApiClient(
+            GoogleCalendarProperties properties,
+            GoogleOAuthTokenStore tokenStore,
+            GoogleAuthSessionStore authSessionStore
+    ) {
         this.properties = properties;
         this.tokenStore = tokenStore;
-        this.restClient = RestClient.create();
+        this.authSessionStore = authSessionStore;
+        this.restClient = RestClient.builder()
+                .requestFactory(requestFactory())
+                .build();
+    }
+
+    private SimpleClientHttpRequestFactory requestFactory() {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(GOOGLE_API_CONNECT_TIMEOUT_MILLIS);
+        requestFactory.setReadTimeout(GOOGLE_API_READ_TIMEOUT_MILLIS);
+
+        return requestFactory;
     }
 
     public String buildAuthorizationUrl(String sessionId) {
@@ -97,12 +122,13 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
     }
 
     public boolean isConnected(String sessionId) {
-        return tokenStore.find(sessionId).isPresent();
+        return authSessionStore.find(sessionId).isPresent() || tokenStore.find(sessionId).isPresent();
     }
 
     public String googleAccountEmail(String sessionId) {
-        return tokenStore.find(sessionId)
-                .map(GoogleOAuthToken::googleAccountEmail)
+        return authSessionStore.find(sessionId)
+                .map(GoogleAuthSessionStore.GoogleAuthSession::email)
+                .or(() -> tokenStore.find(sessionId).map(GoogleOAuthToken::googleAccountEmail))
                 .orElse(null);
     }
 
@@ -121,19 +147,27 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
         String accessToken = validAccessToken(sessionId);
         String calendarId = properties.calendarIdOrDefault();
 
-        JsonNode response = restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .scheme("https")
-                        .host("www.googleapis.com")
-                        .path("/calendar/v3/calendars/{calendarId}/events")
-                        .queryParam("timeMin", from.toString())
-                        .queryParam("timeMax", to.toString())
-                        .queryParam("singleEvents", "true")
-                        .queryParam("orderBy", "startTime")
-                        .build(calendarId))
-                .headers(headers -> headers.setBearerAuth(accessToken))
-                .retrieve()
-                .body(JsonNode.class);
+        JsonNode response;
+
+        try {
+            response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .scheme("https")
+                            .host("www.googleapis.com")
+                            .path("/calendar/v3/calendars/{calendarId}/events")
+                            .queryParam("timeMin", from.toString())
+                            .queryParam("timeMax", to.toString())
+                            .queryParam("singleEvents", "true")
+                            .queryParam("orderBy", "startTime")
+                            .build(calendarId))
+                    .headers(headers -> headers.setBearerAuth(accessToken))
+                    .retrieve()
+                    .body(JsonNode.class);
+        } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden exception) {
+            throw calendarPermissionException();
+        } catch (RestClientException exception) {
+            throw calendarApiException(exception);
+        }
 
         return toEvents(response, calendarId);
     }
@@ -157,6 +191,10 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
             return toEvent(response, calendarId);
         } catch (HttpClientErrorException.NotFound exception) {
             return Optional.empty();
+        } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden exception) {
+            throw calendarPermissionException();
+        } catch (RestClientException exception) {
+            throw calendarApiException(exception);
         }
     }
 
@@ -183,17 +221,25 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
         request.put("start", start);
         request.put("end", end);
 
-        JsonNode response = restClient.post()
-                .uri(uriBuilder -> uriBuilder
-                        .scheme("https")
-                        .host("www.googleapis.com")
-                        .path("/calendar/v3/calendars/{calendarId}/events")
-                        .build(calendarId))
-                .headers(headers -> headers.setBearerAuth(accessToken))
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .body(JsonNode.class);
+        JsonNode response;
+
+        try {
+            response = restClient.post()
+                    .uri(uriBuilder -> uriBuilder
+                            .scheme("https")
+                            .host("www.googleapis.com")
+                            .path("/calendar/v3/calendars/{calendarId}/events")
+                            .build(calendarId))
+                    .headers(headers -> headers.setBearerAuth(accessToken))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(JsonNode.class);
+        } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.Forbidden exception) {
+            throw calendarPermissionException();
+        } catch (RestClientException exception) {
+            throw calendarApiException(exception);
+        }
 
         OffsetDateTime insertedStartAt = response == null ? startAt : readDateTime(response.path("start"));
         OffsetDateTime insertedEndAt = response == null ? endAt : readDateTime(response.path("end"));
@@ -209,7 +255,37 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
         );
     }
 
+    private GoogleCalendarConnectionException calendarPermissionException() {
+        return new GoogleCalendarConnectionException(
+                "Google Calendar 권한이 없습니다. 로그아웃 후 다시 로그인해 주세요."
+        );
+    }
+
+    private GoogleCalendarConnectionException calendarApiException(RestClientException exception) {
+        if (exception instanceof RestClientResponseException responseException) {
+            log.warn(
+                    "Google Calendar API request failed. status={}, body={}",
+                    responseException.getStatusCode(),
+                    responseException.getResponseBodyAsString(),
+                    responseException
+            );
+        } else {
+            log.warn("Google Calendar API request failed.", exception);
+        }
+
+        return new GoogleCalendarConnectionException(
+                "Google Calendar API 호출에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+                exception
+        );
+    }
+
     private String validAccessToken(String sessionId) {
+        Optional<GoogleAuthSessionStore.GoogleAuthSession> authSession = authSessionStore.find(sessionId);
+
+        if (authSession.isPresent()) {
+            return validAuthSessionAccessToken(authSession.get());
+        }
+
         GoogleOAuthToken token = tokenStore.find(sessionId)
                 .orElseThrow(() -> new GoogleCalendarConnectionException("Google Calendar 연결이 필요합니다."));
 
@@ -245,6 +321,42 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
         tokenStore.save(sessionId, refreshed);
 
         return refreshed.accessToken();
+    }
+
+    private String validAuthSessionAccessToken(GoogleAuthSessionStore.GoogleAuthSession session) {
+        if (session.tokenExpiresAt().minusSeconds(60).isAfter(Instant.now())) {
+            return session.accessToken();
+        }
+
+        if (session.refreshToken() == null || session.refreshToken().isBlank()) {
+            throw new GoogleCalendarConnectionException("Google Calendar 연결이 만료되었습니다. 다시 로그인해 주세요.");
+        }
+
+        var form = new LinkedMultiValueMap<String, String>();
+        form.add("client_id", properties.clientId());
+        form.add("client_secret", properties.clientSecret());
+        form.add("refresh_token", session.refreshToken());
+        form.add("grant_type", "refresh_token");
+
+        JsonNode tokenResponse = restClient.post()
+                .uri(TOKEN_URL)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(form)
+                .retrieve()
+                .body(JsonNode.class);
+
+        if (tokenResponse == null || !tokenResponse.hasNonNull("access_token")) {
+            throw new GoogleCalendarConnectionException("Google Calendar 토큰을 갱신하지 못했습니다.");
+        }
+
+        String accessToken = tokenResponse.path("access_token").asText();
+        authSessionStore.updateToken(
+                session.sessionId(),
+                accessToken,
+                Instant.now().plusSeconds(tokenResponse.path("expires_in").asLong(3600))
+        );
+
+        return accessToken;
     }
 
     private String fetchGoogleAccountEmail(String accessToken) {

@@ -28,13 +28,14 @@ public class GoogleAuthService {
             " ",
             "openid",
             "email",
-            "profile"
+            "profile",
+            "https://www.googleapis.com/auth/calendar.events"
     );
     private static final String CALENDAR_SCOPES = String.join(
             " ",
-            LOGIN_SCOPES,
-            "https://www.googleapis.com/auth/calendar"
+            LOGIN_SCOPES
     );
+    private static final String GOOGLE_AUTH_PROMPT = "consent select_account";
 
     private final GoogleOAuthProperties properties;
     private final GoogleAuthSessionStore sessionStore;
@@ -119,7 +120,7 @@ public class GoogleAuthService {
                 .queryParam("scope", flow == GoogleAuthFlow.CALENDAR ? CALENDAR_SCOPES : LOGIN_SCOPES)
                 .queryParam("access_type", "offline")
                 .queryParam("include_granted_scopes", "true")
-                .queryParam("prompt", flow == GoogleAuthFlow.CALENDAR ? "consent select_account" : "select_account")
+                .queryParam("prompt", GOOGLE_AUTH_PROMPT)
                 .queryParam("state", state)
                 .build()
                 .toUriString();
@@ -196,7 +197,7 @@ public class GoogleAuthService {
                 "email", session.email(),
                 "profileImageUrl", session.profileImageUrl(),
                 "expiresAt", session.expiresAt().toString(),
-                "calendarConnected", Boolean.toString(calendarConnected)
+                "calendarConnected", "true"
         );
 
         return appendFragment(returnTo, fragment);

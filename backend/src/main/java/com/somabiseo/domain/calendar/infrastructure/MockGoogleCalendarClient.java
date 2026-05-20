@@ -55,7 +55,7 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
         String state = UUID.randomUUID().toString();
         states.add(sessionId + ":" + state);
 
-        return "/api/calendar/google/callback?mock=true&state=" + state;
+        return "/api/calendar/oauth/google/callback?mock=true&state=" + state;
     }
 
     @Override

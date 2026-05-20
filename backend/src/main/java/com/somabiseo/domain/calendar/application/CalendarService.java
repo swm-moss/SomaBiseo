@@ -121,7 +121,7 @@ public class CalendarService {
         GoogleCalendarEventLink link = findExistingLink(calendarSessionId, eventId, calendarId);
 
         if (link == null) {
-            return new CalendarEventLinkResponse(eventId, null, calendarId, false);
+            return recoverEventLink(calendarSessionId, eventId, calendarId);
         }
 
         if (!link.isCreated()) {
@@ -134,6 +134,15 @@ public class CalendarService {
             return new CalendarEventLinkResponse(eventId, null, calendarId, false);
         }
 
+        return new CalendarEventLinkResponse(
+                eventId,
+                link.getGoogleEventId(),
+                link.getCalendarId(),
+                true
+        );
+    }
+
+    private CalendarEventLinkResponse recoverEventLink(String calendarSessionId, String eventId, String calendarId) {
         CalendarEvent event = findCalendarEvent(eventId);
         GoogleCalendarEventResponse recoveredEvent = findRecoverableGoogleEvent(calendarSessionId, eventId, event);
         if (recoveredEvent == null) {

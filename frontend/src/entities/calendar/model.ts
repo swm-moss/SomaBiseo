@@ -24,4 +24,5 @@ export type GoogleCalendarEvent = {
   endAt: string;
   calendarId: string;
   location: string | null;
+  description: string | null;
 };

@@ -1,6 +1,7 @@
 package com.somabiseo.global.config;
 
 import com.somabiseo.domain.auth.infrastructure.GoogleOAuthProperties;
+import com.somabiseo.domain.calendar.infrastructure.GoogleCalendarProperties;
 import com.somabiseo.domain.eventsummary.infrastructure.OpenAiProperties;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -15,7 +16,8 @@ import java.util.List;
         CorsProperties.class,
         SomaPortalProperties.class,
         OpenAiProperties.class,
-        GoogleOAuthProperties.class
+        GoogleOAuthProperties.class,
+        GoogleCalendarProperties.class
 })
 public class WebConfig implements WebMvcConfigurer {
     private final CorsProperties corsProperties;
