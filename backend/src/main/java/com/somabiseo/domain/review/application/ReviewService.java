@@ -37,6 +37,32 @@ public class ReviewService {
     }
 
     @Transactional
+    public void update(Long reviewId, Long sessionUserId, String content) {
+        validateContent(content);
+
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new NotFoundException("후기를 찾을 수 없어요."));
+
+        if (!review.getAuthorUserId().equals(sessionUserId)) {
+            throw new ReviewForbiddenException("본인이 작성한 후기만 수정할 수 있어요.");
+        }
+
+        review.updateContent(content.trim());
+    }
+
+    @Transactional
+    public void delete(Long reviewId, Long sessionUserId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new NotFoundException("후기를 찾을 수 없어요."));
+
+        if (!review.getAuthorUserId().equals(sessionUserId)) {
+            throw new ReviewForbiddenException("본인이 작성한 후기만 삭제할 수 있어요.");
+        }
+
+        reviewRepository.delete(review);
+    }
+
+    @Transactional
     public ReviewResponse create(
             String eventId,
             Long authorUserId,

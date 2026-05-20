@@ -27,7 +27,9 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query(
             value = """
                     select new com.somabiseo.domain.review.domain.ReviewFeedItem(
-                        r.id, e.sourceId, e.title, e.type, e.mentorName, r.content, r.authorName, r.createdAt
+                        r.id, e.sourceId, e.title, e.type, e.mentorName, r.content, r.authorName,
+                        case when r.authorUserId = :viewerUserId then true else false end,
+                        r.createdAt
                     )
                     from Review r
                     join SomaEvent e on e.id = r.somaEventId
@@ -49,5 +51,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                       and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
                     """
     )
-    Page<ReviewFeedItem> findFeed(@Param("q") String q, @Param("eventId") String eventId, Pageable pageable);
+    Page<ReviewFeedItem> findFeed(
+            @Param("q") String q,
+            @Param("eventId") String eventId,
+            @Param("viewerUserId") Long viewerUserId,
+            Pageable pageable
+    );
 }

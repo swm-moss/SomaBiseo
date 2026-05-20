@@ -67,6 +67,10 @@ public class Review {
         return new Review(somaEventId, authorUserId, authorName, content, authorIp);
     }
 
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
     @PrePersist
     void prePersist() {
         Instant now = Instant.now();

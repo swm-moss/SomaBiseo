@@ -163,6 +163,72 @@ class ReviewServiceTest {
         assertThat(response.id()).isEqualTo(100L);
     }
 
+    @Test
+    void update_본인_후기는_내용을_수정한다() {
+        Review existing = Review.create(SOMA_EVENT_ID, AUTHOR_USER_ID, "김연수", validContent(), "1.1.1.1");
+        setField(existing, "id", 11L);
+        when(reviewRepository.findById(11L)).thenReturn(Optional.of(existing));
+
+        service.update(11L, AUTHOR_USER_ID, "수정된 후기 내용입니다. 정말 좋았어요.");
+
+        assertThat(existing.getContent()).isEqualTo("수정된 후기 내용입니다. 정말 좋았어요.");
+    }
+
+    @Test
+    void update_본인이_아니면_ReviewForbiddenException() {
+        Review existing = Review.create(SOMA_EVENT_ID, AUTHOR_USER_ID, "김연수", validContent(), "1.1.1.1");
+        setField(existing, "id", 11L);
+        when(reviewRepository.findById(11L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.update(11L, 999L, "남이 수정하려고 하는 내용입니다입니다"))
+                .isInstanceOf(ReviewForbiddenException.class);
+    }
+
+    @Test
+    void update_없는_후기면_NotFoundException() {
+        when(reviewRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(404L, AUTHOR_USER_ID, validContent()))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void update_내용이_짧으면_ReviewException() {
+        assertThatThrownBy(() -> service.update(11L, AUTHOR_USER_ID, "짧음"))
+                .isInstanceOf(ReviewException.class);
+        verify(reviewRepository, never()).findById(any());
+    }
+
+    @Test
+    void delete_본인_후기는_삭제된다() {
+        Review existing = Review.create(SOMA_EVENT_ID, AUTHOR_USER_ID, "김연수", validContent(), "1.1.1.1");
+        setField(existing, "id", 11L);
+        when(reviewRepository.findById(11L)).thenReturn(Optional.of(existing));
+
+        service.delete(11L, AUTHOR_USER_ID);
+
+        verify(reviewRepository).delete(existing);
+    }
+
+    @Test
+    void delete_본인이_아니면_ReviewForbiddenException() {
+        Review existing = Review.create(SOMA_EVENT_ID, AUTHOR_USER_ID, "김연수", validContent(), "1.1.1.1");
+        setField(existing, "id", 11L);
+        when(reviewRepository.findById(11L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.delete(11L, 999L))
+                .isInstanceOf(ReviewForbiddenException.class);
+        verify(reviewRepository, never()).delete(any(Review.class));
+    }
+
+    @Test
+    void delete_없는_후기면_NotFoundException() {
+        when(reviewRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.delete(404L, AUTHOR_USER_ID))
+                .isInstanceOf(NotFoundException.class);
+    }
+
     private void stubEvent() {
         SomaEvent event = somaEventWith(END_AT);
         when(somaEventRepository.findBySourceId(EVENT_ID)).thenReturn(Optional.of(event));

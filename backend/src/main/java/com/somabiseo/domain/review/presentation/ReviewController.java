@@ -13,9 +13,11 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,9 +49,11 @@ public class ReviewController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String eventId,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest httpServletRequest
     ) {
-        return ApiResponse.ok(reviewFeedQueryService.findFeed(q, eventId, page, size));
+        GoogleAuthSessionStore.GoogleAuthSession session = requireSession(httpServletRequest);
+        return ApiResponse.ok(reviewFeedQueryService.findFeed(session.userId(), q, eventId, page, size));
     }
 
     @GetMapping("/api/reviews/ended-events")
@@ -70,10 +74,7 @@ public class ReviewController {
             @Valid @RequestBody ReviewCreateRequest request,
             HttpServletRequest httpServletRequest
     ) {
-        GoogleAuthSessionStore.GoogleAuthSession session = googleAuthService.requireVerifiedAuthor(
-                httpServletRequest.getHeader("Authorization"),
-                authSessionCookie(httpServletRequest)
-        );
+        GoogleAuthSessionStore.GoogleAuthSession session = requireSession(httpServletRequest);
 
         return ApiResponse.ok(reviewService.create(
                 eventId,
@@ -82,6 +83,34 @@ public class ReviewController {
                 request.content(),
                 resolveClientIp(httpServletRequest)
         ));
+    }
+
+    @PutMapping("/api/reviews/{id}")
+    ApiResponse<Void> updateReview(
+            @PathVariable Long id,
+            @Valid @RequestBody ReviewUpdateRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        GoogleAuthSessionStore.GoogleAuthSession session = requireSession(httpServletRequest);
+        reviewService.update(id, session.userId(), request.content());
+        return ApiResponse.ok(null);
+    }
+
+    @DeleteMapping("/api/reviews/{id}")
+    ApiResponse<Void> deleteReview(
+            @PathVariable Long id,
+            HttpServletRequest httpServletRequest
+    ) {
+        GoogleAuthSessionStore.GoogleAuthSession session = requireSession(httpServletRequest);
+        reviewService.delete(id, session.userId());
+        return ApiResponse.ok(null);
+    }
+
+    private GoogleAuthSessionStore.GoogleAuthSession requireSession(HttpServletRequest request) {
+        return googleAuthService.requireVerifiedAuthor(
+                request.getHeader("Authorization"),
+                authSessionCookie(request)
+        );
     }
 
     private String resolveClientIp(HttpServletRequest request) {

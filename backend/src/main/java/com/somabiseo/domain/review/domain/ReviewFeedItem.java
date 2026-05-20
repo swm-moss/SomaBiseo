@@ -12,6 +12,7 @@ public record ReviewFeedItem(
         String mentorName,
         String content,
         String authorName,
+        boolean isAuthor,
         Instant createdAt
 ) {
 }
