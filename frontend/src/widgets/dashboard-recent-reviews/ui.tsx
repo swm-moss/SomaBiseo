@@ -19,7 +19,7 @@ const DASHBOARD_LIMIT = 3;
 
 export function DashboardRecentReviews() {
   const { data } = useQuery({
-    queryKey: reviewKeys.feed("", null, 1),
+    queryKey: reviewKeys.feed("", null, 1, DASHBOARD_LIMIT),
     queryFn: () => getReviewFeed({ size: DASHBOARD_LIMIT }),
   });
 

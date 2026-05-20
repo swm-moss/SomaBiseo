@@ -66,7 +66,7 @@ export function ReviewFeed() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: reviewKeys.feed(debouncedSearch, eventId, page),
+    queryKey: reviewKeys.feed(debouncedSearch, eventId, page, PAGE_SIZE),
     queryFn: () => getReviewFeed({
       q: debouncedSearch,
       eventId: eventId ?? undefined,
