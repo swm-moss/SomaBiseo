@@ -1,8 +1,10 @@
 import type {
+  EndedEventPage,
   RecentEndedEvent,
   Review,
   ReviewFeedPage,
 } from "@/entities/review/model";
+import type { SomaEventType } from "@/entities/soma-event/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
 
 export async function getRecentEndedEvents(limit = 3) {
@@ -10,6 +12,36 @@ export async function getRecentEndedEvents(limit = 3) {
     apiClient
       .get("reviews/recent-events", { searchParams: { limit } })
       .json<ApiResponse<RecentEndedEvent[]>>(),
+  );
+}
+
+export type GetEndedEventsParams = {
+  type?: SomaEventType;
+  q?: string;
+  page?: number;
+  size?: number;
+};
+
+export async function getEndedEvents({
+  type,
+  q,
+  page = 1,
+  size = 10,
+}: GetEndedEventsParams = {}) {
+  const searchParams: Record<string, string | number> = { page, size };
+
+  if (type) {
+    searchParams.type = type;
+  }
+
+  if (q && q.trim() !== "") {
+    searchParams.q = q.trim();
+  }
+
+  return unwrapApiResponse(
+    apiClient
+      .get("reviews/ended-events", { searchParams })
+      .json<ApiResponse<EndedEventPage>>(),
   );
 }
 
