@@ -1,6 +1,7 @@
 package com.somabiseo.domain.portal.application;
 
 import com.somabiseo.domain.portal.domain.SomaPortalEventResponse;
+import com.somabiseo.domain.portal.domain.SomaPortalEventSort;
 import com.somabiseo.domain.portal.domain.SomaPortalException;
 import com.somabiseo.domain.portal.domain.SomaPortalLoginResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationDetail;
@@ -93,19 +94,35 @@ public class SomaPortalService {
         return toPageResponse(notices, html, safePage);
     }
 
-    public SomaPortalPageResponse<SomaPortalEventResponse> getPublicEvents(int page) {
+    public SomaPortalPageResponse<SomaPortalEventResponse> getPublicEvents(int page, SomaPortalEventSort sort) {
         syncEventsIfNeeded();
 
-        return cacheService.getEvents(page, PAGE_SIZE);
+        return cacheService.getEvents(page, PAGE_SIZE, sort);
     }
 
-    public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(String sessionId, int page) {
+    public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(String sessionId, int page, SomaPortalEventSort sort) {
         SomaPortalSession session = sessionStore.get(sessionId);
         SomaPortalPageResponse<SomaPortalEventResponse> response = fetchEvents(session, page);
 
         cacheService.upsertEvents(response.items());
 
         return response;
+    }
+
+    public SomaPortalEventResponse getPublicEventDetailBySourceId(String sourceId) {
+        syncEventsIfNeeded();
+
+        return cacheService.findEventDetailBySourceId(sourceId)
+                .orElseGet(() -> {
+                    String sourceUrl = cacheService.findEventBySourceId(sourceId)
+                            .map(SomaPortalEventResponse::sourceUrl)
+                            .orElseGet(() -> sourceUrlFromSourceId(sourceId));
+                    SomaPortalEventResponse detail = withOperatorSession((session) -> fetchEventDetail(session, sourceUrl));
+
+                    cacheService.upsertEvent(detail);
+
+                    return detail;
+                });
     }
 
     private SomaPortalPageResponse<SomaPortalEventResponse> fetchEvents(SomaPortalSession session, int page) {
@@ -181,6 +198,14 @@ public class SomaPortalService {
         }
 
         return qustnrSn;
+    }
+
+    private String sourceUrlFromSourceId(String sourceId) {
+        if (sourceId != null && sourceId.startsWith("qustnrSn-")) {
+            return portalClient.mentoLecViewPath(sourceId.substring("qustnrSn-".length()));
+        }
+
+        throw new SomaPortalException("캐시에서 멘토링 상세 주소를 찾지 못했습니다.");
     }
 
     private void syncNoticesIfNeeded() {

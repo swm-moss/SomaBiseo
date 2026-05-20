@@ -5,6 +5,7 @@ import com.somabiseo.domain.eventsummary.domain.EventAiSummaryResponse;
 import com.somabiseo.domain.eventsummary.presentation.EventAiSummaryRequest;
 import com.somabiseo.domain.portal.application.SomaPortalService;
 import com.somabiseo.domain.portal.domain.SomaPortalEventResponse;
+import com.somabiseo.domain.portal.domain.SomaPortalEventSort;
 import com.somabiseo.domain.portal.domain.SomaPortalLoginResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalNoticeResponse;
@@ -59,21 +60,27 @@ public class SomaPortalController {
     @GetMapping("/api/soma/events")
     ApiResponse<SomaPortalPageResponse<SomaPortalEventResponse>> getEvents(
             @RequestParam(required = false) String sessionId,
-            @RequestParam(defaultValue = "1") int page
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "LECTURE_DATE_DESC") SomaPortalEventSort sort
     ) {
         if (!hasText(sessionId)) {
-            return ApiResponse.ok(portalService.getPublicEvents(page));
+            return ApiResponse.ok(portalService.getPublicEvents(page, sort));
         }
 
-        return ApiResponse.ok(portalService.getEvents(sessionId, page));
+        return ApiResponse.ok(portalService.getEvents(sessionId, page, sort));
     }
 
     @GetMapping("/api/soma/events/detail")
     ApiResponse<SomaPortalEventResponse> getEventDetail(
             @RequestParam(required = false) String sessionId,
-            @RequestParam String sourceUrl
+            @RequestParam(required = false) String sourceUrl,
+            @RequestParam(required = false) String sourceId
     ) {
         if (!hasText(sessionId)) {
+            if (hasText(sourceId)) {
+                return ApiResponse.ok(portalService.getPublicEventDetailBySourceId(sourceId));
+            }
+
             return ApiResponse.ok(portalService.getPublicEventDetail(sourceUrl));
         }
 

@@ -2,6 +2,7 @@ package com.somabiseo.domain.portal.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.somabiseo.domain.portal.domain.SomaPortalEventResponse;
+import com.somabiseo.domain.portal.domain.SomaPortalEventSort;
 import com.somabiseo.domain.portal.domain.SomaPortalNoticeResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalPageResponse;
 import com.somabiseo.domain.portal.infrastructure.CachedPortalEvent;
@@ -121,15 +122,15 @@ public class SomaPortalCacheService {
     }
 
     @Transactional(readOnly = true)
-    public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(int page, int size) {
+    public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(int page, int size, SomaPortalEventSort sort) {
         int safePage = Math.max(page, 1);
-        Page<CachedPortalEvent> eventPage = eventRepository.findAll(
-                PageRequest.of(
-                        safePage - 1,
-                        size,
-                        Sort.by(Sort.Direction.ASC, "startAt").and(Sort.by(Sort.Direction.ASC, "id"))
-                )
-        );
+        PageRequest pageRequest = PageRequest.of(safePage - 1, size);
+        Page<CachedPortalEvent> eventPage = switch (sort == null ? SomaPortalEventSort.LECTURE_DATE_DESC : sort) {
+            case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(pageRequest);
+            case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(pageRequest);
+            case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(pageRequest);
+            case APPLICATION_DEADLINE_ASC -> eventRepository.findPageOrderByApplicationEndAtAsc(pageRequest);
+        };
 
         return new SomaPortalPageResponse<>(
                 eventPage.map((event) -> event.toResponse(objectMapper)).toList(),
@@ -142,6 +143,19 @@ public class SomaPortalCacheService {
     @Transactional(readOnly = true)
     public Optional<SomaPortalEventResponse> findEventDetail(String sourceUrl) {
         return eventRepository.findBySourceUrl(sourceUrl)
+                .filter(CachedPortalEvent::hasDetail)
+                .map((event) -> event.toResponse(objectMapper));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<SomaPortalEventResponse> findEventBySourceId(String sourceId) {
+        return eventRepository.findBySourceId(sourceId)
+                .map((event) -> event.toResponse(objectMapper));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<SomaPortalEventResponse> findEventDetailBySourceId(String sourceId) {
+        return eventRepository.findBySourceId(sourceId)
                 .filter(CachedPortalEvent::hasDetail)
                 .map((event) -> event.toResponse(objectMapper));
     }

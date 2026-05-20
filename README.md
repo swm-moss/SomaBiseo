@@ -22,6 +22,17 @@ Open the URL printed by Next.js, usually `http://localhost:3000`. If another app
 
 ## Run Backend
 
+Create a local env file first. The real invite code and production secrets must stay in your
+ignored `.env`.
+
+```bash
+cp .env.example .env
+```
+
+For this workspace, `.env` is already populated from Railway secrets with localhost DB and
+redirect overrides. The raw Railway dump is stored in ignored `.env.railway.local` only for local
+operator reference. Do not commit either file.
+
 ```bash
 docker compose up -d --build backend
 ```

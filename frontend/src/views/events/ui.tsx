@@ -6,7 +6,7 @@ export function EventsPage() {
   return (
     <AppShell>
       <main className="sb-page">
-        <PageHeader title="특강 / 멘토링" description="멘토특강과 자유멘토링을 시간순으로 봅니다." />
+        <PageHeader title="특강 / 멘토링" description="최신 강의부터 보고, 필요한 기준으로 정렬합니다." />
         <EventList />
       </main>
     </AppShell>
