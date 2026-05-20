@@ -7,6 +7,7 @@ export const reviewKeys = {
   endedEvents: (
     type: SomaEventType | null,
     q: string,
+    date: string | null,
     page: number,
-  ) => ["reviews", "ended-events", type ?? "", q, page] as const,
+  ) => ["reviews", "ended-events", type ?? "", q, date ?? "", page] as const,
 };

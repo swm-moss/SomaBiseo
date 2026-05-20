@@ -20,7 +20,7 @@ const DASHBOARD_LIMIT = 3;
 
 export function DashboardReviewPrompt() {
   const { data } = useQuery({
-    queryKey: reviewKeys.endedEvents(null, "", 1),
+    queryKey: reviewKeys.endedEvents(null, "", null, 1),
     queryFn: () => getEndedEvents({ size: DASHBOARD_LIMIT }),
   });
 

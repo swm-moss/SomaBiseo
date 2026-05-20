@@ -9,6 +9,7 @@ import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/cli
 export type GetEndedEventsParams = {
   type?: SomaEventType;
   q?: string;
+  date?: string;
   page?: number;
   size?: number;
 };
@@ -16,6 +17,7 @@ export type GetEndedEventsParams = {
 export async function getEndedEvents({
   type,
   q,
+  date,
   page = 1,
   size = 10,
 }: GetEndedEventsParams = {}) {
@@ -27,6 +29,10 @@ export async function getEndedEvents({
 
   if (q && q.trim() !== "") {
     searchParams.q = q.trim();
+  }
+
+  if (date && date.trim() !== "") {
+    searchParams.date = date.trim();
   }
 
   return unwrapApiResponse(

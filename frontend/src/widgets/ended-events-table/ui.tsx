@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 import { getEndedEvents } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
@@ -73,6 +73,7 @@ export function EndedEventsTable() {
 
   const urlQ = searchParams.get("q") ?? "";
   const typeFilter = parseTypeFilter(searchParams.get("type"));
+  const dateFilter = searchParams.get("date") ?? "";
   const pageParam = Number(searchParams.get("page") ?? "1");
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
 
@@ -104,12 +105,15 @@ export function EndedEventsTable() {
   const apiType: SomaEventType | undefined =
     typeFilter === "ALL" ? undefined : typeFilter;
 
+  const apiDate = dateFilter || undefined;
+
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: reviewKeys.endedEvents(apiType ?? null, debouncedSearch, page),
+    queryKey: reviewKeys.endedEvents(apiType ?? null, debouncedSearch, dateFilter || null, page),
     queryFn: () =>
       getEndedEvents({
         type: apiType,
         q: debouncedSearch,
+        date: apiDate,
         page,
         size: PAGE_SIZE,
       }),
@@ -140,6 +144,18 @@ export function EndedEventsTable() {
     });
   };
 
+  const changeDateFilter = (next: string) => {
+    updateSearchParams((params) => {
+      if (next === "") {
+        params.delete("date");
+      } else {
+        params.set("date", next);
+      }
+
+      params.delete("page");
+    });
+  };
+
   const changePage = (nextPage: number) => {
     updateSearchParams((params) => {
       if (nextPage <= 1) {
@@ -151,7 +167,8 @@ export function EndedEventsTable() {
   };
 
   const totalElements = data?.totalElements ?? 0;
-  const hasFilter = debouncedSearch.length > 0 || typeFilter !== "ALL";
+  const hasFilter =
+    debouncedSearch.length > 0 || typeFilter !== "ALL" || dateFilter !== "";
 
   return (
     <section className="mt-6 lg:mt-8">
@@ -170,7 +187,30 @@ export function EndedEventsTable() {
             onChange={(event) => setSearchInput(event.target.value)}
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap items-center gap-2 lg:gap-3">
+          <div className="relative">
+            <input
+              aria-label="진행 날짜로 필터"
+              className={cn(
+                "h-12 rounded-xl border-0 bg-muted px-4 text-[15px] font-semibold outline-none transition-colors focus:bg-white focus:ring-2 focus:ring-primary/25",
+                dateFilter ? "text-foreground" : "text-muted-foreground",
+                dateFilter ? "pr-10" : "pr-4",
+              )}
+              type="date"
+              value={dateFilter}
+              onChange={(event) => changeDateFilter(event.target.value)}
+            />
+            {dateFilter ? (
+              <button
+                aria-label="날짜 필터 해제"
+                className="absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-white text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                type="button"
+                onClick={() => changeDateFilter("")}
+              >
+                <X aria-hidden="true" className="size-3.5" />
+              </button>
+            ) : null}
+          </div>
           {TYPE_OPTIONS.map((option) => {
             const isSelected = option.value === typeFilter;
 
