@@ -127,7 +127,7 @@ export function InviteVerifyPage() {
               id="invite-code"
               inputMode="numeric"
               maxLength={6}
-              pattern="\\d{6}"
+              pattern="[0-9]{6}"
               placeholder="6자리"
               value={code}
               onChange={(event) => {
