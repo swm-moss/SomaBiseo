@@ -125,46 +125,46 @@ export function ReviewFeed() {
 
   return (
     <section className="sb-section">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        {eventId || mentorName ? (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <Link
-              href={routes.reviews}
-              className="inline-flex items-center gap-1 text-[13px] font-bold text-primary hover:underline"
-            >
-              <ArrowLeft aria-hidden="true" className="size-4" />
-              전체 후기로 돌아가기
-            </Link>
-            {mentorName ? (
-              <span className="text-[13px] font-semibold text-muted-foreground">
-                {mentorName} 멘토의 후기
-              </span>
-            ) : null}
-          </div>
-        ) : (
-          <p className="text-[13px] font-semibold text-muted-foreground">
-            {data ? `총 ${data.totalElements}개의 후기` : "후기를 불러오는 중"}
-          </p>
-        )}
+      {eventId || mentorName ? (
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Link
+            href={routes.reviews}
+            className="inline-flex items-center gap-1 text-[13px] font-bold text-primary hover:underline"
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            전체 후기로 돌아가기
+          </Link>
+          {mentorName ? (
+            <span className="text-[13px] font-semibold text-muted-foreground">
+              {mentorName} 멘토의 후기
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <p className="mb-3 text-[13px] font-semibold text-muted-foreground">
+          {data ? `총 ${data.totalElements}개의 후기` : "후기를 불러오는 중"}
+        </p>
+      )}
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative min-w-0 flex-1">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            aria-label="후기 검색"
+            className="h-12 w-full rounded-lg border border-border bg-white pl-10 pr-3 text-[15px] font-medium text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/15"
+            placeholder="멘토명 · 강의명 · 내용으로 검색"
+            type="search"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+          />
+        </div>
         <WriteReviewDialog
           triggerLabel="후기 작성하기"
           triggerSize="default"
           triggerClassName="w-full sm:w-auto"
-        />
-      </div>
-
-      <div className="relative">
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <input
-          aria-label="후기 검색"
-          className="sb-field mt-0 h-11 w-full pl-10"
-          placeholder="멘토명 · 강의명 · 내용으로 검색"
-          type="search"
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
         />
       </div>
 

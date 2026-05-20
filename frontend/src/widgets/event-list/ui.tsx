@@ -152,17 +152,31 @@ export function EventList() {
 
   return (
     <section className="sb-section">
-      <div className="mb-4 flex items-center gap-3">
-        <SegmentControl
-          className="mx-0 min-w-0 flex-1 px-0"
-          options={options}
-          value={tab}
-          onValueChange={handleTabChange}
-        />
+      <SegmentControl
+        className="mx-0 mb-3 min-w-0 px-0"
+        options={options}
+        value={tab}
+        onValueChange={handleTabChange}
+      />
+      <div className="mb-4 flex items-center gap-2">
+        <div className="relative min-w-0 flex-1">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            aria-label="특강 검색"
+            className="h-12 w-full rounded-lg border border-border bg-white pl-10 pr-3 text-[15px] font-medium text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/15"
+            placeholder="제목 · 멘토 · 주제로 검색"
+            type="search"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+          />
+        </div>
         <div className="relative shrink-0">
           <select
             aria-label="정렬"
-            className="h-12 w-32 appearance-none rounded-lg border border-border bg-white pl-3 pr-9 text-[14px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-primary/15 sm:w-40"
+            className="h-12 w-32 appearance-none rounded-lg border border-border bg-white pl-3 pr-9 text-[14px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 sm:w-40"
             value={sort}
             onChange={(event) => handleSortChange(event.target.value as SomaEventSort)}
           >
@@ -177,20 +191,6 @@ export function EventList() {
             className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
           />
         </div>
-      </div>
-      <div className="relative mb-4">
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <input
-          aria-label="특강 검색"
-          className="sb-field mt-0 h-11 w-full pl-10"
-          placeholder="제목 · 멘토 · 주제로 검색"
-          type="search"
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-        />
       </div>
       {isLoading ? <LoadingState /> : null}
       {isError ? <ErrorState onRetry={() => void refetch()} /> : null}
