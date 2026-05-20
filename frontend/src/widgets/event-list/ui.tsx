@@ -15,6 +15,11 @@ import {
   getEventRecommendation,
   useInterestPreferenceStore,
 } from "@/features/user-interests/model";
+import {
+  useGoogleCalendarConflictStatuses,
+  useGoogleCalendarConnectionSync,
+  useGoogleCalendarStore,
+} from "@/features/connect-google-calendar/model";
 import { UpcomingEventCard } from "@/widgets/upcoming-event-card/ui";
 import { useDebouncedValue } from "@/shared/lib/use-debounced-value";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -76,6 +81,8 @@ export function EventList() {
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300);
 
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
+  useGoogleCalendarConnectionSync();
+  const calendarConnected = useGoogleCalendarStore((state) => state.connected);
   const type = tab === "ALL" ? undefined : tab;
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["events", tab, sort, debouncedSearch, page],
@@ -85,6 +92,11 @@ export function EventList() {
 
   const events = data?.items ?? [];
   const totalPages = data?.totalPages ?? page;
+  const eventIds = events.map((event) => event.id);
+  const conflictStatusesQuery = useGoogleCalendarConflictStatuses(eventIds);
+  const conflictStatusByEventId = new Map(
+    (conflictStatusesQuery.data ?? []).map((status) => [status.eventId, status]),
+  );
 
   const updateSearchParams = (mutate: (params: URLSearchParams) => void) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -203,6 +215,16 @@ export function EventList() {
             <UpcomingEventCard
               key={event.id}
               event={event}
+              calendarCheckState={
+                calendarConnected
+                  ? conflictStatusesQuery.isError
+                    ? "error"
+                    : conflictStatusesQuery.isLoading || conflictStatusesQuery.isFetching
+                      ? "loading"
+                      : "ready"
+                  : "idle"
+              }
+              calendarStatus={conflictStatusByEventId.get(event.id)}
               recommendation={getEventRecommendation(event, selectedTopicIds)}
             />
           ))}

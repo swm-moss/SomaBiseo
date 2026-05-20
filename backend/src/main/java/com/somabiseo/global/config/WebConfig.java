@@ -56,6 +56,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/events/**",
                         "/api/reviews/**",
                         "/api/calendar/conflicts",
+                        "/api/calendar/conflicts/batch",
                         "/api/calendar/events/**",
                         "/api/calendar/google/status",
                         "/api/calendar/google/events",

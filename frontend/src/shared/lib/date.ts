@@ -30,6 +30,12 @@ export function formatDate(value: string) {
   return dateFormatter.format(new Date(value));
 }
 
+export function formatDateRange(start: Date, end: Date) {
+  const inclusiveEnd = new Date(end.getTime() - 1);
+
+  return `${dateFormatter.format(start)} - ${dateFormatter.format(inclusiveEnd)}`;
+}
+
 export function formatTime(value: string) {
   return timeFormatter.format(new Date(value));
 }
@@ -63,4 +69,18 @@ export function getRelativePublishedAt(value: string) {
   }
 
   return `${Math.floor(hours / 24)}일 전`;
+}
+
+export function getWeekRange(weekOffset = 0) {
+  const start = new Date();
+  const day = start.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+
+  start.setDate(start.getDate() + mondayOffset + weekOffset * 7);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 7);
+
+  return { start, end };
 }

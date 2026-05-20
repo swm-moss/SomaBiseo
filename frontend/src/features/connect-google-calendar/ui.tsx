@@ -1,12 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { CalendarCheck } from "lucide-react";
+import { toast } from "sonner";
 
+import { getGoogleCalendarConnectUrl } from "@/entities/calendar/api";
 import { useAuthSessionQuery } from "@/features/auth/model";
 import {
   useGoogleCalendarConnectionSync,
   useGoogleCalendarStore,
 } from "@/features/connect-google-calendar/model";
+import { Button } from "@/shared/ui/button";
 
 export function ConnectGoogleCalendarPanel() {
   const { session } = useAuthSessionQuery();
@@ -31,8 +35,41 @@ export function ConnectGoogleCalendarPanel() {
               : "Google로 로그인하면 캘린더 권한도 함께 승인됩니다."}
           </p>
           {email ? <p className="mt-1 truncate text-sm text-muted-foreground">{email}</p> : null}
+          {!connected ? <GoogleCalendarConnectButton className="mt-4" /> : null}
         </div>
       </div>
     </div>
+  );
+}
+
+export function GoogleCalendarConnectButton({ className }: { className?: string }) {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <Button
+      className={className}
+      disabled={loading}
+      size="sm"
+      type="button"
+      onClick={async () => {
+        try {
+          setLoading(true);
+          const returnTo = `${window.location.origin}${window.location.pathname}`;
+          const { url } = await getGoogleCalendarConnectUrl(returnTo);
+
+          window.location.href = url;
+        } catch (error) {
+          setLoading(false);
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "캘린더 연동을 시작하지 못했어요.",
+          );
+        }
+      }}
+    >
+      <CalendarCheck aria-hidden="true" />
+      {loading ? "Google로 이동 중" : "캘린더 연동하기"}
+    </Button>
   );
 }

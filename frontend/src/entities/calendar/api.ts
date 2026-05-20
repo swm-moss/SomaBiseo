@@ -1,6 +1,7 @@
 import type {
   CalendarConnection,
   CalendarConflict,
+  CalendarConflictStatus,
   GoogleCalendarEvent,
 } from "@/entities/calendar/model";
 import type { SomaEvent } from "@/entities/soma-event/model";
@@ -24,6 +25,19 @@ export async function getConflictForEvent(event: SomaEvent): Promise<CalendarCon
         },
       })
       .json<ApiResponse<CalendarConflict>>(),
+  );
+}
+
+export async function getConflictStatusesForEvents(eventIds: string[]): Promise<CalendarConflictStatus[]> {
+  return unwrapApiResponse(
+    apiClient
+      .post("calendar/conflicts/batch", {
+        headers: authHeaders(),
+        json: {
+          eventIds,
+        },
+      })
+      .json<ApiResponse<CalendarConflictStatus[]>>(),
   );
 }
 

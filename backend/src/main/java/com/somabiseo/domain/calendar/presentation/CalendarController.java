@@ -3,6 +3,7 @@ package com.somabiseo.domain.calendar.presentation;
 import com.somabiseo.domain.auth.presentation.GoogleAuthController;
 import com.somabiseo.domain.calendar.application.CalendarService;
 import com.somabiseo.domain.calendar.domain.CalendarConnectionResponse;
+import com.somabiseo.domain.calendar.domain.CalendarConflictStatusResponse;
 import com.somabiseo.domain.calendar.domain.CalendarEventLinkResponse;
 import com.somabiseo.domain.calendar.domain.GoogleCalendarEventResponse;
 import com.somabiseo.domain.calendar.infrastructure.GoogleCalendarProperties;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -101,6 +103,19 @@ public class CalendarController {
             HttpServletResponse response
     ) {
         return ApiResponse.ok(calendarService.getConflict(googleSessionId(authorization, request, response), eventId));
+    }
+
+    @PostMapping("/api/calendar/conflicts/batch")
+    ApiResponse<List<CalendarConflictStatusResponse>> getConflictStatuses(
+            @RequestBody CalendarConflictBatchRequest conflictRequest,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        return ApiResponse.ok(calendarService.getConflictStatuses(
+                googleSessionId(authorization, request, response),
+                conflictRequest.eventIds()
+        ));
     }
 
     @PostMapping("/api/calendar/events/{eventId}")

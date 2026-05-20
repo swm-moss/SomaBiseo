@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { AlertTriangle, MapPin } from "lucide-react";
+import { AlertTriangle, CalendarCheck, MapPin } from "lucide-react";
 
+import type { CalendarConflictStatus } from "@/entities/calendar/model";
 import type { SomaEvent } from "@/entities/soma-event/model";
 import type { EventRecommendation } from "@/features/user-interests/model";
 import { FavoriteEventButton } from "@/features/favorite-event/ui";
@@ -16,9 +17,13 @@ const typeLabel = {
 
 export function UpcomingEventCard({
   event,
+  calendarCheckState = "idle",
+  calendarStatus,
   recommendation,
 }: {
   event: SomaEvent;
+  calendarCheckState?: "idle" | "loading" | "ready" | "error";
+  calendarStatus?: CalendarConflictStatus;
   recommendation?: EventRecommendation;
 }) {
   return (
@@ -33,14 +38,23 @@ export function UpcomingEventCard({
               추천 {recommendation.matchedTopics.map((topic) => topic.label).join(", ")}
             </StatusBadge>
           ) : null}
-          {event.conflict.hasConflict ? (
+          {calendarStatus?.alreadyAdded ? (
+            <StatusBadge tone="green">
+              <CalendarCheck aria-hidden="true" className="mr-1 size-3" />
+              캘린더 추가됨
+            </StatusBadge>
+          ) : calendarStatus?.hasConflict ? (
             <StatusBadge tone="amber">
               <AlertTriangle aria-hidden="true" className="mr-1 size-3" />
               일정 충돌
             </StatusBadge>
-          ) : (
+          ) : calendarStatus ? (
             <StatusBadge tone="green">충돌 없음</StatusBadge>
-          )}
+          ) : calendarCheckState === "loading" ? (
+            <StatusBadge tone="neutral">확인 중</StatusBadge>
+          ) : calendarCheckState === "error" ? (
+            <StatusBadge tone="red">확인 실패</StatusBadge>
+          ) : null}
         </div>
         <h3 className="mt-2 line-clamp-2 text-[17px] font-extrabold leading-[25.5px]">
           {event.topic}

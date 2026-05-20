@@ -1,7 +1,6 @@
 import { ConnectGoogleCalendarPanel } from "@/features/connect-google-calendar/ui";
 import { InterestPreferencePanel } from "@/features/user-interests/ui";
 import { AppShell } from "@/widgets/app-shell/ui";
-import { GoogleCalendarEventList } from "@/widgets/google-calendar-event-list/ui";
 import { MVP_GUARDRAILS } from "@/shared/constants/product";
 import { PageHeader } from "@/shared/ui/page-header";
 
@@ -15,7 +14,6 @@ export function SettingsPage() {
         </section>
         <section className="sb-section">
           <ConnectGoogleCalendarPanel />
-          <GoogleCalendarEventList />
         </section>
         <section className="sb-section">
           <h2 className="sb-section-title">MVP 가드레일</h2>

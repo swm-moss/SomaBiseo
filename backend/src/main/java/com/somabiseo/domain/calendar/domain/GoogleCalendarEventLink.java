@@ -85,6 +85,10 @@ public class GoogleCalendarEventLink {
         return googleEventId;
     }
 
+    public String getSourceId() {
+        return sourceId;
+    }
+
     public String getCalendarId() {
         return calendarId;
     }
