@@ -65,7 +65,7 @@ export function InviteVerificationGate({ children }: { children: ReactNode }) {
 
     const next = encodeURIComponent(pathname || routes.dashboard);
 
-    if (!sessionId || !isAuthenticated) {
+    if (!isAuthenticated) {
       router.replace(`${routes.login}?next=${next}`);
       return;
     }
@@ -75,7 +75,7 @@ export function InviteVerificationGate({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, isLoading, pathname, router, session, sessionId]);
 
-  if (isLoading || !sessionId || !isAuthenticated || !session?.inviteVerified) {
+  if (isLoading || !isAuthenticated || !session?.inviteVerified) {
     return (
       <main className="flex min-h-screen items-center bg-background px-5 py-10">
         <div className="mx-auto w-full max-w-sm">

@@ -1,5 +1,6 @@
 package com.somabiseo.domain.calendar.presentation;
 
+import com.somabiseo.domain.auth.presentation.GoogleAuthController;
 import com.somabiseo.domain.calendar.application.CalendarService;
 import com.somabiseo.domain.calendar.domain.CalendarConnectionResponse;
 import com.somabiseo.domain.calendar.domain.CalendarEventLinkResponse;
@@ -169,6 +170,25 @@ public class CalendarController {
             }
         }
 
+        String authSessionId = authSessionCookie(request);
+
+        if (authSessionId != null) {
+            return authSessionId;
+        }
+
         return calendarSessionId(request, response);
+    }
+
+    private String authSessionCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+
+        return Arrays.stream(request.getCookies())
+                .filter((cookie) -> GoogleAuthController.AUTH_SESSION_COOKIE.equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .filter((value) -> value != null && !value.isBlank())
+                .findFirst()
+                .orElse(null);
     }
 }
