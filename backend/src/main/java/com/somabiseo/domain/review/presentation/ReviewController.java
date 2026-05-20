@@ -48,12 +48,15 @@ public class ReviewController {
     ApiResponse<ReviewFeedPageResponse> getFeed(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String eventId,
+            @RequestParam(required = false) String mentorName,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             HttpServletRequest httpServletRequest
     ) {
         GoogleAuthSessionStore.GoogleAuthSession session = requireSession(httpServletRequest);
-        return ApiResponse.ok(reviewFeedQueryService.findFeed(session.userId(), q, eventId, page, size));
+        return ApiResponse.ok(
+                reviewFeedQueryService.findFeed(session.userId(), q, eventId, mentorName, page, size)
+        );
     }
 
     @GetMapping("/api/reviews/ended-events")

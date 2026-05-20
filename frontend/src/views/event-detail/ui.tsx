@@ -20,6 +20,7 @@ import { AddEventToCalendarButton } from "@/features/add-event-to-calendar/ui";
 import { CalendarConflictResult } from "@/features/check-calendar-conflict/ui";
 import { FavoriteEventButton } from "@/features/favorite-event/ui";
 import { AppShell } from "@/widgets/app-shell/ui";
+import { EventDetailMentorReviews } from "@/widgets/event-detail-mentor-reviews/ui";
 import { routes } from "@/shared/config/routes";
 import { formatOptionalDateTime, formatOptionalTimeRange } from "@/shared/lib/date";
 import { Button } from "@/shared/ui/button";
@@ -211,7 +212,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
         ) : null}
 
         {event ? (
-          <article className="space-y-8">
+          <article className="space-y-14">
             <section className="border-b border-border/80 pb-7">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -315,6 +316,8 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                 )}
               </div>
             </section>
+
+            <EventDetailMentorReviews mentorName={event.mentorName} />
 
             <section>
               <div className="flex items-center justify-between gap-3">
