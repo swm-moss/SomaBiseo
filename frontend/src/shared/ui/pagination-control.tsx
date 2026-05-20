@@ -63,10 +63,10 @@ export function PaginationControl({
 
   return (
     <nav aria-label="페이지" className="mt-5">
-      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+      <div className="flex items-center justify-center gap-1 sm:gap-2">
         <button
           aria-label="처음 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="sb-tap hidden size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35 sm:grid"
           disabled={page <= 1 || isDisabled}
           type="button"
           onClick={() => goToPage(1)}
@@ -75,7 +75,7 @@ export function PaginationControl({
         </button>
         <button
           aria-label="이전 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="sb-tap grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page <= 1 || isDisabled}
           type="button"
           onClick={() => goToPage(page - 1)}
@@ -101,7 +101,7 @@ export function PaginationControl({
         ))}
         <button
           aria-label="다음 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="sb-tap grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
           disabled={page >= safeTotalPages || isDisabled}
           type="button"
           onClick={() => goToPage(page + 1)}
@@ -110,7 +110,7 @@ export function PaginationControl({
         </button>
         <button
           aria-label="마지막 페이지"
-          className="sb-tap grid size-10 place-items-center rounded-full border border-border bg-white text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35"
+          className="sb-tap hidden size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:opacity-35 sm:grid"
           disabled={page >= safeTotalPages || isDisabled}
           type="button"
           onClick={() => goToPage(safeTotalPages)}
