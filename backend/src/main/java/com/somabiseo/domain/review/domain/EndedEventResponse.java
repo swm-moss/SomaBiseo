@@ -7,7 +7,6 @@ import java.time.OffsetDateTime;
 public record EndedEventResponse(
         String eventId,
         EventType type,
-        String title,
         String topic,
         String mentorName,
         OffsetDateTime startAt,

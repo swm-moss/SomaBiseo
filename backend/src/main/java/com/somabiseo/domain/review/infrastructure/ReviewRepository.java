@@ -27,7 +27,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query(
             value = """
                     select new com.somabiseo.domain.review.domain.ReviewFeedItem(
-                        r.id, e.sourceId, e.title, e.topic, e.type, e.mentorName, r.content, r.authorName,
+                        r.id, e.sourceId, coalesce(e.topic, e.title), e.type, e.mentorName, r.content, r.authorName,
                         case when r.authorUserId = :viewerUserId then true else false end,
                         r.createdAt
                     )

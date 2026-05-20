@@ -147,7 +147,6 @@ class EndedEventQueryServiceTest {
         assertThat(response.items()).hasSize(2);
         EndedEventResponse first = response.items().get(0);
         assertThat(first.eventId()).isEqualTo("soma-a");
-        assertThat(first.title()).isEqualTo("[멘토특강] AI 입문");
         assertThat(first.topic()).isEqualTo("AI 입문");
         assertThat(first.startAt()).isEqualTo(OffsetDateTime.parse("2026-05-20T15:00:00+09:00"));
         assertThat(first.endAt()).isEqualTo(OffsetDateTime.parse("2026-05-20T17:00:00+09:00"));
@@ -159,6 +158,21 @@ class EndedEventQueryServiceTest {
         assertThat(second.reviewCount()).isEqualTo(0L);
         assertThat(response.page()).isEqualTo(1);
         assertThat(response.totalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void find_topic이_null이면_title로_폴백() {
+        SomaEvent legacy = somaEventWith(99L, "soma-legacy", "레거시 강의 제목", null, "오멘토",
+                OffsetDateTime.parse("2026-05-15T10:00:00+09:00"),
+                OffsetDateTime.parse("2026-05-15T12:00:00+09:00"));
+        Page<SomaEvent> page = new PageImpl<>(List.of(legacy), PageRequest.of(0, 10), 1);
+        when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(page);
+        when(reviewRepository.findSummariesIn(List.of(99L))).thenReturn(List.of());
+
+        EndedEventPageResponse response = service.find(null, null, null, 1, 10);
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().get(0).topic()).isEqualTo("레거시 강의 제목");
     }
 
     private SomaEvent somaEventWith(

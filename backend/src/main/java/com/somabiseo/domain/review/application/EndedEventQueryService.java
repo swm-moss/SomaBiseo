@@ -73,8 +73,7 @@ public class EndedEventQueryService {
                 .map(event -> new EndedEventResponse(
                         event.getSourceId(),
                         event.getType(),
-                        event.getTitle(),
-                        event.getTopic(),
+                        event.getTopic() != null ? event.getTopic() : event.getTitle(),
                         event.getMentorName(),
                         event.getStartAt(),
                         event.getEndAt(),

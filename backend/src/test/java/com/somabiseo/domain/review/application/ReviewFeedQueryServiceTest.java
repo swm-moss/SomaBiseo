@@ -91,7 +91,6 @@ class ReviewFeedQueryServiceTest {
         ReviewFeedItem item = new ReviewFeedItem(
                 10L,
                 "soma-1",
-                "[멘토특강] AI 제품 만들기",
                 "AI 제품 만들기",
                 EventType.LECTURE,
                 "정다은 멘토",
