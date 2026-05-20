@@ -63,8 +63,14 @@ export function EventDetailMentorReviews({
         <EmptyState
           className="mt-3"
           title={`${mentorName} 멘토의 첫 후기를 남겨주세요`}
-          description="이 멘토의 끝난 강의에 대한 후기를 작성해 다른 연수생에게 도움을 줄 수 있어요."
-          action={<WriteReviewDialog triggerLabel="후기 작성하기" triggerSize="default" />}
+          description="멘토님의 강의에 대한 후기를 작성해 다른 연수생에게 도움을 줄 수 있어요."
+          action={
+            <WriteReviewDialog
+              defaultMentorName={mentorName ?? undefined}
+              triggerLabel="후기 작성하기"
+              triggerSize="default"
+            />
+          }
         />
       ) : null}
 
@@ -90,6 +96,22 @@ export function EventDetailMentorReviews({
               </p>
             </li>
           ))}
+          {items.length < VISIBLE_COUNT ? (
+            <li className="flex h-full flex-col items-start justify-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-5 py-5">
+              <p className="text-[15px] font-extrabold leading-[22px] text-foreground">
+                다음 후기를 남겨주세요
+              </p>
+              <p className="text-[13px] leading-[20px] text-muted-foreground">
+                {mentorName} 멘토의 강의가 좋았다면 후기를 남겨 다른 연수생에게
+                도움을 줄 수 있어요.
+              </p>
+              <WriteReviewDialog
+                defaultMentorName={mentorName ?? undefined}
+                triggerLabel="후기 작성하기"
+                triggerSize="default"
+              />
+            </li>
+          ) : null}
         </ul>
       ) : null}
     </section>

@@ -45,6 +45,7 @@ const TYPE_LABEL: Record<SomaEventType, string> = {
 type WriteReviewDialogProps = {
   eventId?: string;
   eventTopic?: string;
+  defaultMentorName?: string;
   triggerLabel?: string;
   triggerClassName?: string;
   triggerSize?: "default" | "sm" | "lg";
@@ -53,6 +54,7 @@ type WriteReviewDialogProps = {
 export function WriteReviewDialog({
   eventId,
   eventTopic,
+  defaultMentorName,
   triggerLabel = "후기 작성",
   triggerClassName,
   triggerSize = "sm",
@@ -79,7 +81,10 @@ export function WriteReviewDialog({
               onClose={() => setOpen(false)}
             />
           ) : (
-            <PickerFlow onClose={() => setOpen(false)} />
+            <PickerFlow
+              defaultMentorName={defaultMentorName}
+              onClose={() => setOpen(false)}
+            />
           )
         ) : null}
       </DialogContent>
@@ -117,7 +122,13 @@ function FixedEventFlow({
   );
 }
 
-function PickerFlow({ onClose }: { onClose: () => void }) {
+function PickerFlow({
+  defaultMentorName,
+  onClose,
+}: {
+  defaultMentorName?: string;
+  onClose: () => void;
+}) {
   const { session } = useAuthSessionQuery();
   const [selected, setSelected] = useState<EndedEvent | null>(null);
 
@@ -127,10 +138,15 @@ function PickerFlow({ onClose }: { onClose: () => void }) {
         <DialogHeader>
           <DialogTitle>어떤 강의의 후기인가요?</DialogTitle>
           <DialogDescription>
-            끝난 강의 중에서 후기를 남길 강의를 선택해 주세요.
+            {defaultMentorName
+              ? `${defaultMentorName} 멘토의 끝난 강의를 보여드릴게요. 검색어를 바꾸면 다른 강의도 찾을 수 있어요.`
+              : "끝난 강의 중에서 후기를 남길 강의를 선택해 주세요."}
           </DialogDescription>
         </DialogHeader>
-        <EventPicker onSelect={setSelected} />
+        <EventPicker
+          defaultMentorName={defaultMentorName}
+          onSelect={setSelected}
+        />
       </>
     );
   }
@@ -154,8 +170,14 @@ function PickerFlow({ onClose }: { onClose: () => void }) {
   );
 }
 
-function EventPicker({ onSelect }: { onSelect: (event: EndedEvent) => void }) {
-  const [searchInput, setSearchInput] = useState("");
+function EventPicker({
+  defaultMentorName,
+  onSelect,
+}: {
+  defaultMentorName?: string;
+  onSelect: (event: EndedEvent) => void;
+}) {
+  const [searchInput, setSearchInput] = useState(defaultMentorName ?? "");
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 300);
 
   const { data, isLoading, isError, refetch } = useQuery({
