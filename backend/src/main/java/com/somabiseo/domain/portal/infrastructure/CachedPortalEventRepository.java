@@ -22,10 +22,10 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             value = """
                     select event from CachedPortalEvent event
                     where (:type is null or event.type = :type)
-                      and (:q is null
-                        or lower(event.title) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.topic, '')) like lower(concat('%', :q, '%')))
+                      and (cast(:q as string) is null
+                        or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                     order by
                       case when event.startAt is null then 1 else 0 end,
                       event.startAt desc,
@@ -34,10 +34,10 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             countQuery = """
                     select count(event) from CachedPortalEvent event
                     where (:type is null or event.type = :type)
-                      and (:q is null
-                        or lower(event.title) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.topic, '')) like lower(concat('%', :q, '%')))
+                      and (cast(:q as string) is null
+                        or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByStartAtDesc(
@@ -50,10 +50,10 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             value = """
                     select event from CachedPortalEvent event
                     where (:type is null or event.type = :type)
-                      and (:q is null
-                        or lower(event.title) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.topic, '')) like lower(concat('%', :q, '%')))
+                      and (cast(:q as string) is null
+                        or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                     order by
                       case when event.startAt is null then 1 else 0 end,
                       event.startAt asc,
@@ -62,10 +62,10 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             countQuery = """
                     select count(event) from CachedPortalEvent event
                     where (:type is null or event.type = :type)
-                      and (:q is null
-                        or lower(event.title) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.topic, '')) like lower(concat('%', :q, '%')))
+                      and (cast(:q as string) is null
+                        or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByStartAtAsc(
@@ -78,10 +78,10 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             value = """
                     select event from CachedPortalEvent event
                     where (:type is null or event.type = :type)
-                      and (:q is null
-                        or lower(event.title) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.topic, '')) like lower(concat('%', :q, '%')))
+                      and (cast(:q as string) is null
+                        or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                     order by
                       case when event.registeredAt is null then 1 else 0 end,
                       event.registeredAt desc,
@@ -90,10 +90,10 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             countQuery = """
                     select count(event) from CachedPortalEvent event
                     where (:type is null or event.type = :type)
-                      and (:q is null
-                        or lower(event.title) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.topic, '')) like lower(concat('%', :q, '%')))
+                      and (cast(:q as string) is null
+                        or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByRegisteredAtDesc(
@@ -106,10 +106,10 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             value = """
                     select event from CachedPortalEvent event
                     where (:type is null or event.type = :type)
-                      and (:q is null
-                        or lower(event.title) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.topic, '')) like lower(concat('%', :q, '%')))
+                      and (cast(:q as string) is null
+                        or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                     order by
                       case when event.applicationEndAt is null then 1 else 0 end,
                       event.applicationEndAt asc,
@@ -120,10 +120,10 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             countQuery = """
                     select count(event) from CachedPortalEvent event
                     where (:type is null or event.type = :type)
-                      and (:q is null
-                        or lower(event.title) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', :q, '%'))
-                        or lower(coalesce(event.topic, '')) like lower(concat('%', :q, '%')))
+                      and (cast(:q as string) is null
+                        or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
+                        or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByApplicationEndAtAsc(
