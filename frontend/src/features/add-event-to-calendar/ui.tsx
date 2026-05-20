@@ -6,11 +6,15 @@ import { toast } from "sonner";
 
 import { addEventToGoogleCalendar, getGoogleCalendarEventLink } from "@/entities/calendar/api";
 import type { SomaEvent } from "@/entities/soma-event/model";
-import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
+import {
+  useGoogleCalendarConnectionSync,
+  useGoogleCalendarStore,
+} from "@/features/connect-google-calendar/model";
 import { Button } from "@/shared/ui/button";
 
 export function AddEventToCalendarButton({ event }: { event: SomaEvent }) {
   const queryClient = useQueryClient();
+  useGoogleCalendarConnectionSync();
   const connected = useGoogleCalendarStore((state) => state.connected);
   const linkQueryKey = ["google-calendar-event-link", event.id];
   const { data: eventLink } = useQuery({

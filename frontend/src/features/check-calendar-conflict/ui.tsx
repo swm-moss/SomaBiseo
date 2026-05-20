@@ -6,7 +6,10 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { getConflictForEvent } from "@/entities/calendar/api";
 import type { SomaEvent } from "@/entities/soma-event/model";
 import { useAuthStore } from "@/features/auth/model";
-import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
+import {
+  useGoogleCalendarConnectionSync,
+  useGoogleCalendarStore,
+} from "@/features/connect-google-calendar/model";
 import { ApiResponseError } from "@/shared/api/client";
 import { formatTimeRange } from "@/shared/lib/date";
 import { ErrorState } from "@/shared/ui/error-state";
@@ -14,6 +17,7 @@ import { LoadingState } from "@/shared/ui/loading-state";
 
 export function CalendarConflictResult({ event }: { event: SomaEvent }) {
   const sessionId = useAuthStore((state) => state.sessionId);
+  useGoogleCalendarConnectionSync();
   const connected = useGoogleCalendarStore((state) => state.connected);
   const { data, error, isError, isLoading, refetch } = useQuery({
     queryKey: ["calendar-conflict", event.id],

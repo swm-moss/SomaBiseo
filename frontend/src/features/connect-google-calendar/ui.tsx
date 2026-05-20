@@ -3,10 +3,14 @@
 import { CalendarCheck } from "lucide-react";
 
 import { useAuthSessionQuery } from "@/features/auth/model";
-import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
+import {
+  useGoogleCalendarConnectionSync,
+  useGoogleCalendarStore,
+} from "@/features/connect-google-calendar/model";
 
 export function ConnectGoogleCalendarPanel() {
   const { session } = useAuthSessionQuery();
+  useGoogleCalendarConnectionSync();
   const connected = useGoogleCalendarStore((state) => state.connected);
   const email = useGoogleCalendarStore((state) => state.googleAccountEmail) ?? session?.email;
 

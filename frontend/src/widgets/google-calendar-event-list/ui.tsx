@@ -5,7 +5,10 @@ import { CalendarDays } from "lucide-react";
 
 import { getGoogleCalendarEvents } from "@/entities/calendar/api";
 import { useAuthStore } from "@/features/auth/model";
-import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
+import {
+  useGoogleCalendarConnectionSync,
+  useGoogleCalendarStore,
+} from "@/features/connect-google-calendar/model";
 import { ApiResponseError } from "@/shared/api/client";
 import { formatDateTime, formatTimeRange } from "@/shared/lib/date";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -14,6 +17,7 @@ import { LoadingState } from "@/shared/ui/loading-state";
 
 export function GoogleCalendarEventList() {
   const sessionId = useAuthStore((state) => state.sessionId);
+  useGoogleCalendarConnectionSync();
   const connected = useGoogleCalendarStore((state) => state.connected);
   const eventsQuery = useQuery({
     queryKey: ["google-calendar-events", "upcoming", sessionId],
