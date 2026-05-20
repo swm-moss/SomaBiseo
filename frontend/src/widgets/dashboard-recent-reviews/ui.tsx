@@ -45,7 +45,7 @@ export function DashboardRecentReviews() {
               href={routes.reviewsForEvent(item.eventId)}
             >
               <p className="text-[17px] font-semibold leading-[25.5px]">
-                {item.eventTitle}
+                {item.eventTopic ?? item.eventTitle}
               </p>
               <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
                 {item.mentorName ?? "멘토 미정"}

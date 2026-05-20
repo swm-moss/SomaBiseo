@@ -222,7 +222,7 @@ function EventPicker({ onSelect }: { onSelect: (event: EndedEvent) => void }) {
                     {TYPE_LABEL[event.type]}
                   </StatusBadge>
                   <span className="text-[15px] font-bold leading-[22px] text-foreground">
-                    {event.title}
+                    {event.topic ?? event.title}
                   </span>
                   <span className="text-[13px] font-semibold text-muted-foreground">
                     {event.mentorName ?? "멘토 미정"}
@@ -252,7 +252,7 @@ function SelectedEventCard({
             {TYPE_LABEL[event.type]}
           </StatusBadge>
           <p className="mt-2 text-[15px] font-bold leading-[22px] text-foreground">
-            {event.title}
+            {event.topic ?? event.title}
           </p>
           <p className="mt-0.5 text-[13px] font-semibold text-muted-foreground">
             {event.mentorName ?? "멘토 미정"}

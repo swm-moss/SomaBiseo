@@ -4,6 +4,7 @@ export type ReviewFeedItem = {
   id: number;
   eventId: string;
   eventTitle: string;
+  eventTopic: string | null;
   eventType: SomaEventType;
   mentorName: string | null;
   content: string;
@@ -32,6 +33,7 @@ export type EndedEvent = {
   eventId: string;
   type: SomaEventType;
   title: string;
+  topic: string | null;
   mentorName: string | null;
   startAt: string;
   endAt: string;
