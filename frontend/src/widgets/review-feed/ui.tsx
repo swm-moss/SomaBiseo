@@ -128,8 +128,8 @@ export function ReviewFeed() {
         />
         <input
           aria-label="후기 검색"
-          className="sb-field h-11 w-full pl-10"
-          placeholder="멘토명·강의명·내용으로 검색"
+          className="sb-field mt-0 h-11 w-full pl-10"
+          placeholder="멘토명 · 강의명 · 내용으로 검색"
           type="search"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}

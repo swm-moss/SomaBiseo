@@ -172,8 +172,8 @@ function EventPicker({ onSelect }: { onSelect: (event: EndedEvent) => void }) {
         />
         <input
           aria-label="끝난 강의 검색"
-          className="sb-field h-11 w-full pl-10"
-          placeholder="강의명·멘토명으로 검색"
+          className="sb-field mt-0 h-11 w-full pl-10"
+          placeholder="강의명 · 멘토명으로 검색"
           type="search"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
