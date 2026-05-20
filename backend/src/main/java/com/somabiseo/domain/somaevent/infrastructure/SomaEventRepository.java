@@ -17,6 +17,8 @@ public interface SomaEventRepository extends JpaRepository<SomaEvent, Long> {
             value = """
                     select e from SomaEvent e
                     where e.endAt < :now
+                      and e.endAt >= :dayStart
+                      and e.endAt < :dayEnd
                       and (cast(:type as string) is null or cast(e.type as string) = cast(:type as string))
                       and (cast(:q as string) is null
                            or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
@@ -26,6 +28,8 @@ public interface SomaEventRepository extends JpaRepository<SomaEvent, Long> {
             countQuery = """
                     select count(e) from SomaEvent e
                     where e.endAt < :now
+                      and e.endAt >= :dayStart
+                      and e.endAt < :dayEnd
                       and (cast(:type as string) is null or cast(e.type as string) = cast(:type as string))
                       and (cast(:q as string) is null
                            or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
@@ -37,6 +41,8 @@ public interface SomaEventRepository extends JpaRepository<SomaEvent, Long> {
             @Param("now") OffsetDateTime now,
             @Param("type") String type,
             @Param("q") String q,
+            @Param("dayStart") OffsetDateTime dayStart,
+            @Param("dayEnd") OffsetDateTime dayEnd,
             Pageable pageable
     );
 }

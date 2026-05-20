@@ -14,8 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,11 @@ import java.util.Map;
 @Service
 public class EndedEventQueryService {
     private static final int MAX_PAGE_SIZE = 100;
+    private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
+    private static final OffsetDateTime EARLIEST =
+            OffsetDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    private static final OffsetDateTime LATEST =
+            OffsetDateTime.of(9999, 12, 31, 23, 59, 59, 0, ZoneOffset.UTC);
 
     private final SomaEventRepository somaEventRepository;
     private final ReviewRepository reviewRepository;
@@ -39,7 +46,7 @@ public class EndedEventQueryService {
     }
 
     @Transactional(readOnly = true)
-    public EndedEventPageResponse find(EventType type, String q, int page, int size) {
+    public EndedEventPageResponse find(EventType type, String q, LocalDate date, int page, int size) {
         String normalizedType = type == null ? null : type.name();
         String normalizedQ = normalize(q);
         int safePage = Math.max(page - 1, 0);
@@ -50,8 +57,15 @@ public class EndedEventQueryService {
                 Sort.by(Sort.Order.desc("endAt"))
         );
 
-        OffsetDateTime now = OffsetDateTime.now(clock.withZone(ZoneId.of("Asia/Seoul")));
-        Page<SomaEvent> result = somaEventRepository.findEndedEvents(now, normalizedType, normalizedQ, pageable);
+        OffsetDateTime now = OffsetDateTime.now(clock.withZone(SEOUL_ZONE));
+        OffsetDateTime dayStart = date == null
+                ? EARLIEST
+                : date.atStartOfDay(SEOUL_ZONE).toOffsetDateTime();
+        OffsetDateTime dayEnd = date == null
+                ? LATEST
+                : date.plusDays(1).atStartOfDay(SEOUL_ZONE).toOffsetDateTime();
+        Page<SomaEvent> result = somaEventRepository.findEndedEvents(
+                now, normalizedType, normalizedQ, dayStart, dayEnd, pageable);
 
         Map<Long, Long> countById = loadReviewCounts(result.getContent());
 

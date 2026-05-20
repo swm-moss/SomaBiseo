@@ -8,12 +8,15 @@ import com.somabiseo.domain.somaevent.domain.EventType;
 import com.somabiseo.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
 
 @RestController
 public class ReviewController {
@@ -45,10 +48,12 @@ public class ReviewController {
     ApiResponse<EndedEventPageResponse> getEndedEvents(
             @RequestParam(required = false) EventType type,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ApiResponse.ok(endedEventQueryService.find(type, q, page, size));
+        return ApiResponse.ok(endedEventQueryService.find(type, q, date, page, size));
     }
 
     @PostMapping("/api/events/{eventId}/reviews")

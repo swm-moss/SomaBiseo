@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 
 import java.lang.reflect.Field;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -47,34 +48,34 @@ class EndedEventQueryServiceTest {
 
     @Test
     void find_type가_null이면_null로_전달되고_q는_정규화된다() {
-        when(somaEventRepository.findEndedEvents(any(), any(), any(), any())).thenReturn(Page.empty());
+        when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        service.find(null, "  AI  ", 1, 10);
+        service.find(null, "  AI  ", null, 1, 10);
 
         ArgumentCaptor<String> typeCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> qCaptor = ArgumentCaptor.forClass(String.class);
-        verify(somaEventRepository).findEndedEvents(eq(NOW), typeCaptor.capture(), qCaptor.capture(), any());
+        verify(somaEventRepository).findEndedEvents(eq(NOW), typeCaptor.capture(), qCaptor.capture(), any(), any(), any());
         assertThat(typeCaptor.getValue()).isNull();
         assertThat(qCaptor.getValue()).isEqualTo("AI");
     }
 
     @Test
     void find_빈문자열_q는_null로_전달되고_type은_enum_name으로_변환() {
-        when(somaEventRepository.findEndedEvents(any(), any(), any(), any())).thenReturn(Page.empty());
+        when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        service.find(EventType.LECTURE, "   ", 1, 10);
+        service.find(EventType.LECTURE, "   ", null, 1, 10);
 
-        verify(somaEventRepository).findEndedEvents(any(), eq("LECTURE"), eq(null), any());
+        verify(somaEventRepository).findEndedEvents(any(), eq("LECTURE"), eq(null), any(), any(), any());
     }
 
     @Test
     void find_pageable은_1_기반을_0_기반으로_변환하고_endAt_desc_정렬을_전달() {
-        when(somaEventRepository.findEndedEvents(any(), any(), any(), any())).thenReturn(Page.empty());
+        when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        service.find(null, null, 3, 25);
+        service.find(null, null, null, 3, 25);
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(somaEventRepository).findEndedEvents(any(), any(), any(), captor.capture());
+        verify(somaEventRepository).findEndedEvents(any(), any(), any(), any(), any(), captor.capture());
         Pageable pageable = captor.getValue();
         assertThat(pageable.getPageNumber()).isEqualTo(2);
         assertThat(pageable.getPageSize()).isEqualTo(25);
@@ -85,16 +86,44 @@ class EndedEventQueryServiceTest {
 
     @Test
     void find_size는_1_이상_100_이하로_clamp() {
-        when(somaEventRepository.findEndedEvents(any(), any(), any(), any())).thenReturn(Page.empty());
+        when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
 
-        service.find(null, null, 1, 0);
-        service.find(null, null, 1, 999);
+        service.find(null, null, null, 1, 0);
+        service.find(null, null, null, 1, 999);
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
         verify(somaEventRepository, org.mockito.Mockito.times(2))
-                .findEndedEvents(any(), any(), any(), captor.capture());
+                .findEndedEvents(any(), any(), any(), any(), any(), captor.capture());
         assertThat(captor.getAllValues().get(0).getPageSize()).isEqualTo(1);
         assertThat(captor.getAllValues().get(1).getPageSize()).isEqualTo(100);
+    }
+
+    @Test
+    void find_date가_주어지면_그날_KST_경계로_dayStart와_dayEnd가_전달() {
+        when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
+
+        service.find(null, null, LocalDate.of(2026, 5, 20), 1, 10);
+
+        ArgumentCaptor<OffsetDateTime> startCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+        ArgumentCaptor<OffsetDateTime> endCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+        verify(somaEventRepository).findEndedEvents(
+                any(), any(), any(), startCaptor.capture(), endCaptor.capture(), any());
+        assertThat(startCaptor.getValue()).isEqualTo(OffsetDateTime.parse("2026-05-20T00:00:00+09:00"));
+        assertThat(endCaptor.getValue()).isEqualTo(OffsetDateTime.parse("2026-05-21T00:00:00+09:00"));
+    }
+
+    @Test
+    void find_date가_null이면_매우_넓은_경계로_dayStart와_dayEnd가_전달() {
+        when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(Page.empty());
+
+        service.find(null, null, null, 1, 10);
+
+        ArgumentCaptor<OffsetDateTime> startCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+        ArgumentCaptor<OffsetDateTime> endCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+        verify(somaEventRepository).findEndedEvents(
+                any(), any(), any(), startCaptor.capture(), endCaptor.capture(), any());
+        assertThat(startCaptor.getValue().getYear()).isEqualTo(1970);
+        assertThat(endCaptor.getValue().getYear()).isEqualTo(9999);
     }
 
     @Test
@@ -106,11 +135,11 @@ class EndedEventQueryServiceTest {
                 OffsetDateTime.parse("2026-05-19T10:00:00+09:00"),
                 OffsetDateTime.parse("2026-05-19T12:00:00+09:00"));
         Page<SomaEvent> page = new PageImpl<>(List.of(eventA, eventB), PageRequest.of(0, 10), 2);
-        when(somaEventRepository.findEndedEvents(any(), any(), any(), any())).thenReturn(page);
+        when(somaEventRepository.findEndedEvents(any(), any(), any(), any(), any(), any())).thenReturn(page);
         when(reviewRepository.findSummariesIn(List.of(11L, 22L)))
                 .thenReturn(List.of(new ReviewSummaryRow(11L, 4L, null)));
 
-        EndedEventPageResponse response = service.find(null, null, 1, 10);
+        EndedEventPageResponse response = service.find(null, null, null, 1, 10);
 
         assertThat(response.items()).hasSize(2);
         EndedEventResponse first = response.items().get(0);
