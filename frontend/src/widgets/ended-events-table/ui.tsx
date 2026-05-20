@@ -50,6 +50,17 @@ function formatTime(value: string) {
   return timeFormatter.format(new Date(value));
 }
 
+const isoDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function todayInSeoul() {
+  return isoDateFormatter.format(new Date());
+}
+
 export function EndedEventsTable() {
   const router = useRouter();
   const pathname = usePathname();
@@ -135,6 +146,7 @@ export function EndedEventsTable() {
 
   const totalElements = data?.totalElements ?? 0;
   const hasFilter = debouncedSearch.length > 0 || dateFilter !== "";
+  const maxDate = todayInSeoul();
 
   return (
     <section className="mt-6 lg:mt-8">
@@ -162,6 +174,7 @@ export function EndedEventsTable() {
               dateFilter ? "pr-10" : "pr-4",
             )}
             type="date"
+            max={maxDate}
             value={dateFilter}
             onChange={(event) => changeDateFilter(event.target.value)}
           />
