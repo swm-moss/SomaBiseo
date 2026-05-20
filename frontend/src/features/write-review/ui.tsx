@@ -44,7 +44,7 @@ const TYPE_LABEL: Record<SomaEventType, string> = {
 
 type WriteReviewDialogProps = {
   eventId?: string;
-  eventTitle?: string;
+  eventTopic?: string;
   triggerLabel?: string;
   triggerClassName?: string;
   triggerSize?: "default" | "sm" | "lg";
@@ -52,7 +52,7 @@ type WriteReviewDialogProps = {
 
 export function WriteReviewDialog({
   eventId,
-  eventTitle,
+  eventTopic,
   triggerLabel = "후기 작성",
   triggerClassName,
   triggerSize = "sm",
@@ -75,7 +75,7 @@ export function WriteReviewDialog({
           eventId ? (
             <FixedEventFlow
               eventId={eventId}
-              eventTitle={eventTitle}
+              eventTopic={eventTopic}
               onClose={() => setOpen(false)}
             />
           ) : (
@@ -89,11 +89,11 @@ export function WriteReviewDialog({
 
 function FixedEventFlow({
   eventId,
-  eventTitle,
+  eventTopic,
   onClose,
 }: {
   eventId: string;
-  eventTitle?: string;
+  eventTopic?: string;
   onClose: () => void;
 }) {
   const { session } = useAuthSessionQuery();
@@ -103,8 +103,8 @@ function FixedEventFlow({
       <DialogHeader>
         <DialogTitle>후기 작성</DialogTitle>
         <DialogDescription>
-          {eventTitle
-            ? `'${eventTitle}' 강의에 대한 후기를 남겨주세요.`
+          {eventTopic
+            ? `'${eventTopic}' 강의에 대한 후기를 남겨주세요.`
             : "직접 수강한 강의에 대해서만 솔직한 후기를 남겨주세요."}
         </DialogDescription>
       </DialogHeader>
@@ -222,7 +222,7 @@ function EventPicker({ onSelect }: { onSelect: (event: EndedEvent) => void }) {
                     {TYPE_LABEL[event.type]}
                   </StatusBadge>
                   <span className="text-[15px] font-bold leading-[22px] text-foreground">
-                    {event.topic ?? event.title}
+                    {event.topic}
                   </span>
                   <span className="text-[13px] font-semibold text-muted-foreground">
                     {event.mentorName ?? "멘토 미정"}
@@ -252,7 +252,7 @@ function SelectedEventCard({
             {TYPE_LABEL[event.type]}
           </StatusBadge>
           <p className="mt-2 text-[15px] font-bold leading-[22px] text-foreground">
-            {event.topic ?? event.title}
+            {event.topic}
           </p>
           <p className="mt-0.5 text-[13px] font-semibold text-muted-foreground">
             {event.mentorName ?? "멘토 미정"}
