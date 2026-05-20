@@ -113,3 +113,16 @@ jobs:
             --environment "$environment_name" \
             --ci \
             --message "GitHub Actions ${GITHUB_SHA}"
+
+      - name: Show Railway logs on failure
+        if: failure()
+        run: |
+          environment_name="${RAILWAY_ENVIRONMENT_NAME:-production}"
+          railway link \
+            --project "$RAILWAY_PROJECT_ID" \
+            --service "$RAILWAY_SERVICE_NAME" \
+            --environment "$environment_name"
+          echo "## Latest deployment logs"
+          railway logs --latest --deployment --lines 200 || true
+          echo "## Latest runtime logs"
+          railway logs --latest --lines 200 || true
