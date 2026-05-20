@@ -3,7 +3,7 @@ import type { User } from "@/entities/user/model";
 export const currentUserMock: User = {
   id: "user-1",
   email: "trainee@somabiseo.dev",
-  name: "주인님",
+  name: "소마비서 사용자",
   provider: "GOOGLE",
 };
 
