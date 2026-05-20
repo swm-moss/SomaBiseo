@@ -12,10 +12,6 @@ import java.util.Collection;
 import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-    Page<Review> findBySomaEventIdOrderByCreatedAtDesc(Long somaEventId, Pageable pageable);
-
-    long countBySomaEventId(Long somaEventId);
-
     boolean existsBySomaEventIdAndAuthorName(Long somaEventId, String authorName);
 
     @Query("""

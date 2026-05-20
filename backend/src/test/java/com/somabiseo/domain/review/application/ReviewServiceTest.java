@@ -14,15 +14,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 
 import java.lang.reflect.Field;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -156,27 +153,6 @@ class ReviewServiceTest {
         assertThat(response.eventId()).isEqualTo(EVENT_ID);
         assertThat(response.authorName()).isEqualTo("김연수");
         assertThat(response.id()).isEqualTo(100L);
-    }
-
-    @Test
-    void findReviews_페이지네이션_생성역순_정렬() {
-        SomaEvent event = somaEventWith(END_AT);
-        when(somaEventRepository.findBySourceId(EVENT_ID)).thenReturn(Optional.of(event));
-
-        Review first = Review.create(SOMA_EVENT_ID, "이연수", validContent(), "1.1.1.1");
-        Review second = Review.create(SOMA_EVENT_ID, "김연수", validContent(), "1.1.1.1");
-        setField(first, "id", 1L);
-        setField(first, "createdAt", Instant.parse("2026-05-22T01:00:00Z"));
-        setField(second, "id", 2L);
-        setField(second, "createdAt", Instant.parse("2026-05-22T02:00:00Z"));
-
-        when(reviewRepository.findBySomaEventIdOrderByCreatedAtDesc(any(), any()))
-                .thenReturn(new PageImpl<>(List.of(second, first)));
-
-        Page<ReviewResponse> result = service.findReviews(EVENT_ID, 1, 10);
-
-        assertThat(result.getContent()).extracting(ReviewResponse::id).containsExactly(2L, 1L);
-        assertThat(result.getContent()).allMatch(r -> r.eventId().equals(EVENT_ID));
     }
 
     private void stubEvent() {

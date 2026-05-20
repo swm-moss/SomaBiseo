@@ -8,7 +8,7 @@ import { PenSquare } from "lucide-react";
 import { useAuthSessionQuery } from "@/features/auth/model";
 import {
   useCreateReview,
-  useWritableEvents,
+  useWritableEventsForReview,
   writeReviewSchema,
   type WriteReviewFormValues,
 } from "@/features/write-review/model";
@@ -38,7 +38,7 @@ export function WriteReviewDialog({
   triggerClassName,
 }: WriteReviewDialogProps) {
   const [open, setOpen] = useState(false);
-  const { data: writableEvents, isLoading, isError, refetch } = useWritableEvents(open);
+  const { data: writableEvents, isLoading, isError, refetch } = useWritableEventsForReview(open);
   const { session } = useAuthSessionQuery();
 
   return (

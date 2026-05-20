@@ -10,8 +10,6 @@ import com.somabiseo.domain.somaevent.domain.SomaEvent;
 import com.somabiseo.domain.somaevent.infrastructure.SomaEventRepository;
 import com.somabiseo.global.exception.NotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,16 +36,6 @@ public class ReviewService {
         this.reviewRepository = reviewRepository;
         this.somaEventRepository = somaEventRepository;
         this.clock = clock;
-    }
-
-    @Transactional(readOnly = true)
-    public Page<ReviewResponse> findReviews(String eventId, int page, int size) {
-        SomaEvent event = requireEvent(eventId);
-        PageRequest pageable = PageRequest.of(Math.max(page - 1, 0), Math.max(size, 1));
-
-        return reviewRepository
-                .findBySomaEventIdOrderByCreatedAtDesc(event.getId(), pageable)
-                .map(review -> toResponse(review, eventId));
     }
 
     @Transactional

@@ -29,7 +29,7 @@ export const writeReviewSchema = z.object({
 
 export type WriteReviewFormValues = z.infer<typeof writeReviewSchema>;
 
-export function useWritableEvents(enabled: boolean) {
+export function useWritableEventsForReview(enabled: boolean) {
   return useQuery({
     queryKey: reviewKeys.recentEvents(WRITABLE_LIMIT),
     queryFn: () => getRecentEndedEvents(WRITABLE_LIMIT),

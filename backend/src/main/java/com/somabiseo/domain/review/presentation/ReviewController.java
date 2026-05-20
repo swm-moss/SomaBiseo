@@ -3,14 +3,11 @@ package com.somabiseo.domain.review.presentation;
 import com.somabiseo.domain.review.application.RecentEndedEventQueryService;
 import com.somabiseo.domain.review.application.ReviewFeedQueryService;
 import com.somabiseo.domain.review.application.ReviewService;
-import com.somabiseo.domain.review.application.ReviewSummaryQueryService;
 import com.somabiseo.domain.review.domain.RecentEndedEventResponse;
 import com.somabiseo.domain.review.domain.ReviewResponse;
-import com.somabiseo.domain.review.domain.ReviewSummaryResponse;
 import com.somabiseo.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,18 +21,15 @@ import java.util.List;
 public class ReviewController {
     private final ReviewService reviewService;
     private final RecentEndedEventQueryService recentEndedEventQueryService;
-    private final ReviewSummaryQueryService reviewSummaryQueryService;
     private final ReviewFeedQueryService reviewFeedQueryService;
 
     public ReviewController(
             ReviewService reviewService,
             RecentEndedEventQueryService recentEndedEventQueryService,
-            ReviewSummaryQueryService reviewSummaryQueryService,
             ReviewFeedQueryService reviewFeedQueryService
     ) {
         this.reviewService = reviewService;
         this.recentEndedEventQueryService = recentEndedEventQueryService;
-        this.reviewSummaryQueryService = reviewSummaryQueryService;
         this.reviewFeedQueryService = reviewFeedQueryService;
     }
 
@@ -54,28 +48,6 @@ public class ReviewController {
             @RequestParam(defaultValue = "3") int limit
     ) {
         return ApiResponse.ok(recentEndedEventQueryService.findRecent(limit));
-    }
-
-    @GetMapping("/api/reviews/summaries")
-    ApiResponse<List<ReviewSummaryResponse>> getSummaries(@RequestParam List<String> eventIds) {
-        return ApiResponse.ok(reviewSummaryQueryService.findSummaries(eventIds));
-    }
-
-    @GetMapping("/api/events/{eventId}/reviews")
-    ApiResponse<ReviewPageResponse> getReviews(
-            @PathVariable String eventId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        Page<ReviewResponse> result = reviewService.findReviews(eventId, page, size);
-
-        return ApiResponse.ok(new ReviewPageResponse(
-                result.getContent(),
-                result.getNumber() + 1,
-                result.getSize(),
-                result.getTotalPages(),
-                result.getTotalElements()
-        ));
     }
 
     @PostMapping("/api/events/{eventId}/reviews")
