@@ -143,10 +143,13 @@ async function getSomaEventsPages(maxPages: number, sort: SomaEventSort = DEFAUL
   return events;
 }
 
+export type SomaEventMode = "ONLINE" | "OFFLINE";
+
 export type GetSomaEventsPageOptions = {
   page?: number;
   sort?: SomaEventSort;
   type?: SomaEventType;
+  mode?: SomaEventMode;
   q?: string;
 };
 
@@ -154,12 +157,17 @@ export async function getSomaEventsPage({
   page = 1,
   sort = DEFAULT_SOMA_EVENT_SORT,
   type,
+  mode,
   q,
 }: GetSomaEventsPageOptions = {}) {
   const searchParams: Record<string, string | number> = { page, sort };
 
   if (type) {
     searchParams.type = type;
+  }
+
+  if (mode) {
+    searchParams.mode = mode;
   }
 
   const trimmedQ = q?.trim();

@@ -13,6 +13,7 @@ import com.somabiseo.domain.portal.domain.SomaPortalUnauthorizedException;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalClient;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalHtmlParser;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalProperties;
+import com.somabiseo.domain.somaevent.domain.EventMode;
 import com.somabiseo.domain.somaevent.domain.EventType;
 import org.springframework.stereotype.Service;
 
@@ -99,11 +100,12 @@ public class SomaPortalService {
             int page,
             SomaPortalEventSort sort,
             EventType type,
+            EventMode mode,
             String q
     ) {
         syncEventsIfNeeded();
 
-        return cacheService.getEvents(page, PAGE_SIZE, sort, type, q);
+        return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q);
     }
 
     public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(
@@ -111,6 +113,7 @@ public class SomaPortalService {
             int page,
             SomaPortalEventSort sort,
             EventType type,
+            EventMode mode,
             String q
     ) {
         SomaPortalSession session = sessionStore.get(sessionId);
@@ -118,7 +121,7 @@ public class SomaPortalService {
 
         cacheService.upsertEvents(response.items());
 
-        return cacheService.getEvents(page, PAGE_SIZE, sort, type, q);
+        return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q);
     }
 
     public SomaPortalEventResponse getPublicEventDetailBySourceId(String sourceId) {
