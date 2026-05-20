@@ -60,7 +60,6 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/calendar/google/status",
                         "/api/calendar/google/events",
                         "/api/calendar/google/connection",
-                        "/api/calendar/oauth/google/connect-url",
                         "/api/calendar/google/connect-url"
                 );
     }

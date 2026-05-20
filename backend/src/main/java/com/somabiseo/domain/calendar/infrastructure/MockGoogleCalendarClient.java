@@ -1,7 +1,6 @@
 package com.somabiseo.domain.calendar.infrastructure;
 
 import com.somabiseo.domain.calendar.domain.GoogleCalendarClient;
-import com.somabiseo.domain.calendar.domain.GoogleCalendarConnectionException;
 import com.somabiseo.domain.calendar.domain.GoogleCalendarEventResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -10,9 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.UUID;
 
 @Component
 @ConditionalOnProperty(name = "somabiseo.google-calendar.mock-enabled", havingValue = "true")
@@ -46,30 +43,11 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
                     null
             )
     );
-    private final Set<String> connectedSessionIds = ConcurrentHashMap.newKeySet();
-    private final Set<String> states = ConcurrentHashMap.newKeySet();
     private final Map<String, GoogleCalendarEventResponse> insertedEvents = new ConcurrentHashMap<>();
 
     @Override
-    public String buildAuthorizationUrl(String sessionId) {
-        String state = UUID.randomUUID().toString();
-        states.add(sessionId + ":" + state);
-
-        return "/api/calendar/oauth/google/callback?mock=true&state=" + state;
-    }
-
-    @Override
-    public void exchangeAuthorizationCode(String sessionId, String code, String state) {
-        if (!states.remove(sessionId + ":" + state)) {
-            throw new GoogleCalendarConnectionException("Google Calendar OAuth state가 올바르지 않습니다.");
-        }
-
-        connectedSessionIds.add(sessionId);
-    }
-
-    @Override
     public boolean isConnected(String sessionId) {
-        return connectedSessionIds.contains(sessionId);
+        return sessionId != null && !sessionId.isBlank();
     }
 
     @Override
@@ -84,7 +62,7 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
 
     @Override
     public void disconnect(String sessionId) {
-        connectedSessionIds.remove(sessionId);
+        insertedEvents.keySet().removeIf((key) -> key.startsWith(sessionId + ":"));
     }
 
     @Override

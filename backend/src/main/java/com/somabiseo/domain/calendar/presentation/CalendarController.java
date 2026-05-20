@@ -4,7 +4,6 @@ import com.somabiseo.domain.calendar.application.CalendarService;
 import com.somabiseo.domain.calendar.domain.CalendarConnectionResponse;
 import com.somabiseo.domain.calendar.domain.CalendarEventLinkResponse;
 import com.somabiseo.domain.calendar.domain.GoogleCalendarEventResponse;
-import com.somabiseo.domain.calendar.infrastructure.GoogleCalendarProperties;
 import com.somabiseo.domain.somaevent.domain.CalendarConflictResponse;
 import com.somabiseo.global.response.ApiResponse;
 import jakarta.servlet.http.Cookie;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.view.RedirectView;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -31,36 +29,9 @@ public class CalendarController {
     private static final String CALENDAR_SESSION_COOKIE = "somabiseo_calendar_session";
 
     private final CalendarService calendarService;
-    private final GoogleCalendarProperties googleCalendarProperties;
 
-    public CalendarController(CalendarService calendarService, GoogleCalendarProperties googleCalendarProperties) {
+    public CalendarController(CalendarService calendarService) {
         this.calendarService = calendarService;
-        this.googleCalendarProperties = googleCalendarProperties;
-    }
-
-    @GetMapping("/api/calendar/oauth/google/connect-url")
-    ApiResponse<ConnectUrlResponse> getConnectUrl(HttpServletRequest request, HttpServletResponse response) {
-        String calendarSessionId = calendarSessionId(request, response);
-
-        return ApiResponse.ok(new ConnectUrlResponse(calendarService.getConnectUrl(calendarSessionId)));
-    }
-
-    @GetMapping("/api/calendar/oauth/google/callback")
-    RedirectView callback(
-            @RequestParam(required = false) String code,
-            @RequestParam(required = false) String state,
-            @RequestParam(defaultValue = "false") boolean mock,
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) {
-        if (!mock && (code == null || code.isBlank())) {
-            return new RedirectView(googleCalendarProperties.frontendRedirectUriOrDefault());
-        }
-
-        String calendarSessionId = calendarSessionId(request, response);
-        calendarService.connect(calendarSessionId, mock ? "mock" : code, state);
-
-        return new RedirectView(googleCalendarProperties.frontendRedirectUriOrDefault());
     }
 
     @GetMapping("/api/calendar/google/status")
@@ -120,9 +91,6 @@ public class CalendarController {
             HttpServletResponse response
     ) {
         return ApiResponse.ok(calendarService.getEventLink(googleSessionId(authorization, request, response), eventId));
-    }
-
-    record ConnectUrlResponse(String url) {
     }
 
     private String calendarSessionId(HttpServletRequest request, HttpServletResponse response) {

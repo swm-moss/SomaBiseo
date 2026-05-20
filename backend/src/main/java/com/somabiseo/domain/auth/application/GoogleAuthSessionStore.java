@@ -121,18 +121,5 @@ public class GoogleAuthSessionStore {
             );
         }
 
-        GoogleAuthSession withToken(String newAccessToken, Instant newTokenExpiresAt) {
-            return new GoogleAuthSession(
-                    sessionId,
-                    googleSubject,
-                    email,
-                    name,
-                    profileImageUrl,
-                    newAccessToken,
-                    refreshToken,
-                    newTokenExpiresAt,
-                    sessionExpiresAt
-            );
-        }
     }
 }

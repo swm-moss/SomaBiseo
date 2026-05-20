@@ -37,20 +37,6 @@ export async function getGoogleCalendarConnection() {
   );
 }
 
-export async function getGoogleCalendarConnectUrl(returnTo?: string) {
-  return unwrapApiResponse(
-    apiClient
-      .get("calendar/oauth/google/connect-url", {
-        searchParams: returnTo
-          ? {
-              returnTo,
-            }
-          : undefined,
-      })
-      .json<ApiResponse<{ url: string }>>(),
-  );
-}
-
 export async function disconnectGoogleCalendar() {
   return unwrapApiResponse(
     apiClient

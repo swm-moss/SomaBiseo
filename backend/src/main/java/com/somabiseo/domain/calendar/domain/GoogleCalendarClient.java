@@ -5,10 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GoogleCalendarClient {
-    String buildAuthorizationUrl(String sessionId);
-
-    void exchangeAuthorizationCode(String sessionId, String code, String state);
-
     boolean isConnected(String sessionId);
 
     String googleAccountEmail(String sessionId);

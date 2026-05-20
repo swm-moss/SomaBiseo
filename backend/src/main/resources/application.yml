@@ -53,10 +53,6 @@ somabiseo:
     frontend-calendar-redirect-uri: ${GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI:http://localhost:3000/settings}
     session-ttl-minutes: ${GOOGLE_AUTH_SESSION_TTL_MINUTES:43200}
   google-calendar:
-    client-id: ${GOOGLE_CALENDAR_CLIENT_ID:}
-    client-secret: ${GOOGLE_CALENDAR_CLIENT_SECRET:}
-    redirect-uri: ${GOOGLE_CALENDAR_OAUTH_REDIRECT_URI:http://localhost:8080/api/calendar/oauth/google/callback}
-    frontend-redirect-uri: ${GOOGLE_CALENDAR_FRONTEND_REDIRECT_URI:http://localhost:3000/settings}
     mock-enabled: ${GOOGLE_CALENDAR_MOCK_ENABLED:false}
     calendar-id: ${GOOGLE_CALENDAR_ID:primary}
   invite:

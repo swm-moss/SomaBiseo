@@ -47,16 +47,6 @@ public class CalendarService {
         this.objectMapper = objectMapper;
     }
 
-    public String getConnectUrl(String calendarSessionId) {
-        return googleCalendarClient.buildAuthorizationUrl(calendarSessionId);
-    }
-
-    public CalendarConnectionResponse connect(String calendarSessionId, String code, String state) {
-        googleCalendarClient.exchangeAuthorizationCode(calendarSessionId, code, state);
-
-        return getConnection(calendarSessionId);
-    }
-
     public CalendarConnectionResponse getConnection(String calendarSessionId) {
         if (!googleCalendarClient.isConnected(calendarSessionId)) {
             return DISCONNECTED;
