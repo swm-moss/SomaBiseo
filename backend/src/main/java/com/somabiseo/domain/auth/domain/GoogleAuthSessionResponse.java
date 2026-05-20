@@ -6,6 +6,8 @@ public record GoogleAuthSessionResponse(
         String sessionId,
         String username,
         String email,
+        String profileImageUrl,
+        String provider,
         Instant expiresAt
 ) {
 }

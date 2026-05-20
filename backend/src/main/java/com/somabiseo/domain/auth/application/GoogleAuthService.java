@@ -3,6 +3,7 @@ package com.somabiseo.domain.auth.application;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.somabiseo.domain.auth.domain.GoogleAuthException;
 import com.somabiseo.domain.auth.domain.GoogleAuthSessionResponse;
+import com.somabiseo.domain.auth.domain.GoogleAuthUnauthorizedException;
 import com.somabiseo.domain.auth.infrastructure.GoogleOAuthProperties;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -23,11 +24,15 @@ public class GoogleAuthService {
     private static final String AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
     private static final String USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
-    private static final String SCOPES = String.join(
+    private static final String LOGIN_SCOPES = String.join(
             " ",
             "openid",
             "email",
-            "profile",
+            "profile"
+    );
+    private static final String CALENDAR_SCOPES = String.join(
+            " ",
+            LOGIN_SCOPES,
             "https://www.googleapis.com/auth/calendar"
     );
 
@@ -77,13 +82,24 @@ public class GoogleAuthService {
                 userInfo.subject(),
                 userInfo.email(),
                 userInfo.name(),
+                userInfo.profileImageUrl(),
                 token.accessToken(),
                 token.refreshToken(),
                 Instant.now().plusSeconds(token.expiresInSeconds()),
                 sessionExpiresAt
         );
 
-        return redirectWithSession(pendingState.returnTo(), session);
+        return redirectWithSession(pendingState.returnTo(), session, pendingState.flow() == GoogleAuthFlow.CALENDAR);
+    }
+
+    public GoogleAuthSessionResponse getCurrentSession(String authorization) {
+        return sessionStore.find(bearerSessionId(authorization))
+                .map(GoogleAuthSessionStore.GoogleAuthSession::toResponse)
+                .orElseThrow(() -> new GoogleAuthUnauthorizedException("로그인이 필요합니다."));
+    }
+
+    public void logout(String authorization) {
+        sessionStore.remove(bearerSessionId(authorization));
     }
 
     private String buildAuthorizationUrl(GoogleAuthFlow flow, String returnTo) {
@@ -100,10 +116,10 @@ public class GoogleAuthService {
                 .queryParam("client_id", properties.clientId())
                 .queryParam("redirect_uri", properties.redirectUri())
                 .queryParam("response_type", "code")
-                .queryParam("scope", SCOPES)
+                .queryParam("scope", flow == GoogleAuthFlow.CALENDAR ? CALENDAR_SCOPES : LOGIN_SCOPES)
                 .queryParam("access_type", "offline")
                 .queryParam("include_granted_scopes", "true")
-                .queryParam("prompt", "consent select_account")
+                .queryParam("prompt", flow == GoogleAuthFlow.CALENDAR ? "consent select_account" : "select_account")
                 .queryParam("state", state)
                 .build()
                 .toUriString();
@@ -168,17 +184,19 @@ public class GoogleAuthService {
         return new GoogleUserInfo(
                 response.path("sub").asText(email),
                 email,
-                name
+                name,
+                response.path("picture").asText(null)
         );
     }
 
-    private String redirectWithSession(String returnTo, GoogleAuthSessionResponse session) {
+    private String redirectWithSession(String returnTo, GoogleAuthSessionResponse session, boolean calendarConnected) {
         String fragment = toFragment(
                 "sessionId", session.sessionId(),
                 "username", session.username(),
                 "email", session.email(),
+                "profileImageUrl", session.profileImageUrl(),
                 "expiresAt", session.expiresAt().toString(),
-                "calendarConnected", "true"
+                "calendarConnected", Boolean.toString(calendarConnected)
         );
 
         return appendFragment(returnTo, fragment);
@@ -229,6 +247,20 @@ public class GoogleAuthService {
         }
     }
 
+    private String bearerSessionId(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new GoogleAuthUnauthorizedException("로그인이 필요합니다.");
+        }
+
+        String sessionId = authorization.substring("Bearer ".length()).trim();
+
+        if (sessionId.isBlank()) {
+            throw new GoogleAuthUnauthorizedException("로그인이 필요합니다.");
+        }
+
+        return sessionId;
+    }
+
     private enum GoogleAuthFlow {
         LOGIN,
         CALENDAR
@@ -251,7 +283,8 @@ public class GoogleAuthService {
     private record GoogleUserInfo(
             String subject,
             String email,
-            String name
+            String name,
+            String profileImageUrl
     ) {
     }
 }

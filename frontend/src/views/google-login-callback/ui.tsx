@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-import { usePortalAuthStore } from "@/features/auth/model";
+import type { AuthSession } from "@/features/auth/api";
+import { authKeys, useAuthStore } from "@/features/auth/model";
 import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
 import { PRODUCT_NAME } from "@/shared/constants/product";
 import { routes } from "@/shared/config/routes";
@@ -13,7 +15,8 @@ import { LoadingState } from "@/shared/ui/loading-state";
 
 export function GoogleLoginCallbackPage() {
   const router = useRouter();
-  const setSession = usePortalAuthStore((state) => state.setSession);
+  const queryClient = useQueryClient();
+  const setSessionId = useAuthStore((state) => state.setSessionId);
   const setConnection = useGoogleCalendarStore((state) => state.setConnection);
 
   useEffect(() => {
@@ -30,21 +33,27 @@ export function GoogleLoginCallbackPage() {
 
     const sessionId = fragment.get("sessionId");
     const username = fragment.get("username");
-    const email = fragment.get("email") ?? undefined;
+    const email = fragment.get("email");
+    const profileImageUrl = fragment.get("profileImageUrl");
     const expiresAt = fragment.get("expiresAt");
 
-    if (!sessionId || !username || !expiresAt) {
+    if (!sessionId || !username || !email || !expiresAt) {
       toast.error("Google 로그인 정보를 확인하지 못했어요.");
       router.replace(routes.login);
       return;
     }
 
-    setSession({
+    const session: AuthSession = {
       sessionId,
       username,
       email,
+      profileImageUrl: profileImageUrl || null,
+      provider: "GOOGLE",
       expiresAt,
-    });
+    };
+
+    setSessionId(sessionId);
+    queryClient.setQueryData(authKeys.me(sessionId), session);
 
     if (fragment.get("calendarConnected") === "true") {
       setConnection({
@@ -56,7 +65,7 @@ export function GoogleLoginCallbackPage() {
 
     toast.success("Google 계정으로 로그인했어요.");
     router.replace(next);
-  }, [router, setConnection, setSession]);
+  }, [queryClient, router, setConnection, setSessionId]);
 
   return (
     <main className="flex min-h-screen items-center bg-background px-5 py-10">

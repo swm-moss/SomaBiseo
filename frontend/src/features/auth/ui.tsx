@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 
-import { getGoogleLoginUrl, logoutSomaPortal } from "@/features/auth/api";
-import { isPortalSessionExpired, usePortalAuthStore } from "@/features/auth/model";
+import { getGoogleLoginUrl, logoutGoogleSession } from "@/features/auth/api";
+import { authKeys, useAuthSessionQuery, useAuthStore } from "@/features/auth/model";
+import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
+import { ApiResponseError } from "@/shared/api/client";
 import { routes } from "@/shared/config/routes";
 import { Button } from "@/shared/ui/button";
 
@@ -49,27 +52,62 @@ export function PortalLoginForm() {
 }
 
 export function PortalSessionStatus() {
-  const session = usePortalAuthStore((state) => state.session);
-  const clearSession = usePortalAuthStore((state) => state.clearSession);
+  const queryClient = useQueryClient();
+  const { error, session, sessionId, isLoading } = useAuthSessionQuery();
+  const clearSessionId = useAuthStore((state) => state.clearSessionId);
+  const calendarConnected = useGoogleCalendarStore((state) => state.connected);
+  const disconnectCalendar = useGoogleCalendarStore((state) => state.disconnect);
 
-  if (!session || isPortalSessionExpired(session)) {
+  useEffect(() => {
+    if (!sessionId && calendarConnected) {
+      disconnectCalendar();
+      return;
+    }
+
+    if (error instanceof ApiResponseError && error.status === 401) {
+      disconnectCalendar();
+      queryClient.removeQueries({ queryKey: authKeys.all });
+    }
+  }, [calendarConnected, disconnectCalendar, error, queryClient, sessionId]);
+
+  if (!sessionId) {
+    return null;
+  }
+
+  if (isLoading) {
+    return <div className="hidden h-8 w-28 rounded-full bg-muted sm:block" />;
+  }
+
+  if (!session) {
     return null;
   }
 
   return (
     <div className="flex items-center gap-2">
+      {session.profileImageUrl ? (
+        <span
+          aria-hidden="true"
+          className="hidden size-7 rounded-full bg-cover bg-center sm:block"
+          style={{ backgroundImage: `url(${session.profileImageUrl})` }}
+        />
+      ) : null}
       <span className="hidden max-w-44 truncate text-xs font-semibold text-muted-foreground sm:inline">
         {session.username}
       </span>
       <Button
         size="sm"
         variant="ghost"
-        onClick={() => {
-          const sessionId = session.sessionId;
-
-          clearSession();
-          void logoutSomaPortal(sessionId);
-          toast.success("로그아웃했어요.");
+        onClick={async () => {
+          try {
+            await logoutGoogleSession(session.sessionId);
+          } catch {
+            // 서버 세션이 이미 만료된 경우도 사용자 입장에서는 로그아웃 완료로 처리합니다.
+          } finally {
+            clearSessionId();
+            disconnectCalendar();
+            queryClient.removeQueries({ queryKey: authKeys.all });
+            toast.success("로그아웃했어요.");
+          }
         }}
       >
         <LogOut aria-hidden="true" />
@@ -77,4 +115,10 @@ export function PortalSessionStatus() {
       </Button>
     </div>
   );
+}
+
+export function DashboardGreeting() {
+  const { session } = useAuthSessionQuery();
+
+  return <>안녕하세요{session?.username ? `, ${session.username}님` : ""}</>;
 }

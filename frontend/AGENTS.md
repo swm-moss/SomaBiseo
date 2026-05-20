@@ -18,7 +18,8 @@ This version has breaking changes. Read the relevant guide in `node_modules/next
 - Use TanStack Query for server state, API loading/error states, and response caching.
 - Keep QueryClient defaults in `src/shared/api/query-client.ts`.
 - Include session ID, filters, and detail IDs in query keys when they affect the response.
-- Use Zustand only for client-local persisted state such as the temporary portal session and local toggles.
+- Store only the Google app `sessionId` in Zustand; fetch the current user/session from `/api/me` with TanStack Query.
+- Use Zustand only for client-local persisted state such as local toggles, interests, bookmarks, and calendar UI connection hints.
 
 ## Design Rules
 

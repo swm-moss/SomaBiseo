@@ -8,7 +8,7 @@
 - 공식 소마 앱처럼 보이지 않게 표현한다.
 - 사용자에게 SOMA 포털 아이디/비밀번호를 입력받지 않는다.
 - 서버가 사용자별 SOMA 포털 세션 쿠키를 보관하는 구조로 만들지 않는다.
-- 앱 로그인은 Google OAuth로 처리한다. Google OAuth는 추후 Google Calendar 연결 권한과 같은 승인 흐름을 공유한다.
+- 앱 로그인은 Google OAuth로 처리한다. 로그인은 `openid email profile`만 요청하고, Google Calendar 연결은 같은 OAuth client/callback을 쓰되 Calendar 권한을 별도 승인 플로우에서 추가 요청한다.
 - 읽기 전용 데이터 조회는 운영자 계정 환경변수로 서버에서 수행한다.
 - 신청/취소 기능 제거는 별도 팀원 작업으로 진행 중이므로 이 흐름을 수정하는 작업과 섞지 않는다.
 - 초기 핵심 가치는 공지, 멘토특강, 자유멘토링을 한곳에서 보기 좋게 정리하는 것이다.
@@ -27,7 +27,8 @@
 - 멘토링/특강 AI 요약은 상세 본문을 기준으로 백엔드에서 `contentHash`를 계산하고, 같은 `sourceId + contentHash`가 있으면 DB 캐시를 반환한다.
 - AI 요약은 상세 조회와 분리된 `POST /api/soma/events/summary`에서 생성한다. 프론트는 TanStack Query의 `event-ai-summary` key로 읽고, 백엔드 캐시가 비용 중복을 막는다.
 - 서버에 쓰기 API가 붙는 기능은 mutation 성공 후 관련 query key를 invalidate한다.
-- Zustand는 앱 로컬 Google 로그인 세션, 북마크, 읽음, 관심 저장, Google Calendar 연결 상태처럼 브라우저에 보관하는 클라이언트 상태에만 쓴다.
+- Google 로그인 상태는 Zustand에 `sessionId`만 저장하고, 사용자 정보와 만료 여부는 `/api/me`를 TanStack Query로 조회해 서버 세션을 기준으로 판단한다.
+- Zustand는 북마크, 읽음, 관심 저장, Google Calendar 연결 상태처럼 브라우저에 보관하는 클라이언트 상태에만 쓴다.
 - 관심사 설정은 `somabiseo-interest-preferences` 로컬 Zustand persist에 저장하고, 대시보드 추천 특강과 일정 목록 추천 강조에 사용한다.
 - 관심사가 비어 있으면 AppShell에서 관심사 온보딩 모달을 보여준다. 사용자가 현재 브라우저 세션에서 나중에 하기를 누르면 `sessionStorage`로 재노출을 막는다.
 - 관심사 기반 추천은 초기에는 AI 호출 없이 제목, 주제, 장소, 본문, rawText 키워드 매칭으로 점수화한다.

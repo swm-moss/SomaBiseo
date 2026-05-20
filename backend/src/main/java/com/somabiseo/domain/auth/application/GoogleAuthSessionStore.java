@@ -17,6 +17,7 @@ public class GoogleAuthSessionStore {
             String googleSubject,
             String email,
             String name,
+            String profileImageUrl,
             String accessToken,
             String refreshToken,
             Instant tokenExpiresAt,
@@ -28,6 +29,7 @@ public class GoogleAuthSessionStore {
                 googleSubject,
                 email,
                 name,
+                profileImageUrl,
                 accessToken,
                 refreshToken,
                 tokenExpiresAt,
@@ -68,6 +70,7 @@ public class GoogleAuthSessionStore {
             String googleSubject,
             String email,
             String name,
+            String profileImageUrl,
             String accessToken,
             String refreshToken,
             Instant tokenExpiresAt,
@@ -78,7 +81,7 @@ public class GoogleAuthSessionStore {
         }
 
         GoogleAuthSessionResponse toResponse() {
-            return new GoogleAuthSessionResponse(sessionId, name, email, sessionExpiresAt);
+            return new GoogleAuthSessionResponse(sessionId, name, email, profileImageUrl, "GOOGLE", sessionExpiresAt);
         }
     }
 }

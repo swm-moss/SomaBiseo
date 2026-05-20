@@ -89,11 +89,11 @@ frontend/src/features/auth/ui.tsx
 
 프론트 동작:
 
-1. `PortalLoginForm`이 React Hook Form과 Zod로 이메일과 이름을 검증한다.
-2. `loginSomaPortal`은 백엔드에 SOMA 계정을 보내지 않고 브라우저 로컬 앱 세션을 만든다.
-3. 성공하면 `usePortalAuthStore`에 `sessionId`, `username`, `expiresAt`을 저장한다.
-4. 로그인 성공 toast를 띄우고 `/dashboard`로 이동한다.
-5. 이 앱 세션은 사용자 표시, 관심사 등 SomaBiseo 개인화 UI를 위한 로컬 상태다.
+1. 로그인 화면은 `GET /api/auth/google/connect-url`로 Google OAuth 승인 URL을 받는다.
+2. Google callback에서 백엔드가 토큰과 userinfo를 확인하고 SomaBiseo 앱 세션을 만든다.
+3. 프론트 callback은 URL fragment의 `sessionId`만 Zustand persist에 저장한다.
+4. 사용자 이름, 이메일, 프로필, 세션 만료 여부는 `GET /api/me`를 TanStack Query로 조회해 캐싱한다.
+5. 로그아웃은 `DELETE /api/auth/logout` 호출 후 auth query와 로컬 `sessionId`를 정리한다.
 
 백엔드 읽기 전용 세션 동작:
 
