@@ -227,7 +227,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                     ) : null}
                   </div>
                   <h1 className="mt-4 max-w-4xl text-[28px] font-black leading-[38px] tracking-normal sm:text-[34px] sm:leading-[46px]">
-                    {event.title}
+                    {event.topic}
                   </h1>
                   <p className="mt-3 text-[15px] font-bold leading-[22px] text-muted-foreground">
                     {event.mentorName ?? event.author ?? "멘토 미정"}

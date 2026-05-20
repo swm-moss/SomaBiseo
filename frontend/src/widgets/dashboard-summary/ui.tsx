@@ -95,7 +95,7 @@ export function DashboardSummary() {
                     {formatOptionalDateTime(event.startAt)}
                   </span>
                 </div>
-                <p className="mt-3 text-[17px] font-semibold leading-[25.5px]">{event.title}</p>
+                <p className="mt-3 text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
                 <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
                   {event.mentorName ?? "멘토 미정"} · {event.location ?? "장소 미정"}
                 </p>
@@ -135,7 +135,7 @@ export function DashboardSummary() {
                 href={routes.eventDetail(event.id)}
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[17px] font-semibold leading-[25.5px]">{event.title}</p>
+                  <p className="text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
                   <span className="rounded-md bg-blue-50 px-2 text-[13px] font-bold leading-[24px] text-blue-700">
                     {recommendation.matchedTopics.map((topic) => topic.label).join(", ")}
                   </span>
@@ -161,7 +161,7 @@ export function DashboardSummary() {
                 className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
                 href={routes.eventDetail(event.id)}
               >
-                <p className="text-[17px] font-semibold leading-[25.5px]">{event.title}</p>
+                <p className="text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
                 <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
                   {event.status === "OPEN" ? "신청 가능" : event.status}
                 </p>
