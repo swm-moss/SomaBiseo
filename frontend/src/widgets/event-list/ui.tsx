@@ -8,6 +8,7 @@ import { ChevronDown, Search } from "lucide-react";
 import {
   DEFAULT_SOMA_EVENT_SORT,
   getSomaEventsPage,
+  type SomaEventMode,
   type SomaEventSort,
 } from "@/entities/soma-event/api";
 import type { SomaEventType } from "@/entities/soma-event/model";
@@ -19,17 +20,25 @@ import { UpcomingEventCard } from "@/widgets/upcoming-event-card/ui";
 import { useDebouncedValue } from "@/shared/lib/use-debounced-value";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
+import { FilterChips } from "@/shared/ui/filter-chips";
 import { LoadingState } from "@/shared/ui/loading-state";
 import { PaginationControl } from "@/shared/ui/pagination-control";
 import { SegmentControl } from "@/shared/ui/segment-control";
 
 type EventTab = "ALL" | SomaEventType;
+type ModeFilter = "ALL" | SomaEventMode;
 
 const options = [
   { label: "전체", value: "ALL" },
   { label: "멘토특강", value: "LECTURE" },
   { label: "자유멘토링", value: "MENTORING" },
 ] satisfies { label: string; value: EventTab }[];
+
+const modeOptions = [
+  { label: "전체", value: "ALL" },
+  { label: "온라인", value: "ONLINE" },
+  { label: "오프라인", value: "OFFLINE" },
+] satisfies { label: string; value: ModeFilter }[];
 
 const sortOptions = [
   { label: "최신 강의순", value: "LECTURE_DATE_DESC" },
@@ -39,6 +48,7 @@ const sortOptions = [
 ] satisfies { label: string; value: SomaEventSort }[];
 
 const EVENT_TABS = new Set<EventTab>(["ALL", "LECTURE", "MENTORING"]);
+const EVENT_MODES = new Set<ModeFilter>(["ALL", "ONLINE", "OFFLINE"]);
 const EVENT_SORTS = new Set<SomaEventSort>([
   "LECTURE_DATE_DESC",
   "LECTURE_DATE_ASC",
@@ -48,6 +58,10 @@ const EVENT_SORTS = new Set<SomaEventSort>([
 
 function parseTab(value: string | null): EventTab {
   return value && EVENT_TABS.has(value as EventTab) ? (value as EventTab) : "ALL";
+}
+
+function parseMode(value: string | null): ModeFilter {
+  return value && EVENT_MODES.has(value as ModeFilter) ? (value as ModeFilter) : "ALL";
 }
 
 function parseSort(value: string | null): SomaEventSort {
@@ -68,6 +82,7 @@ export function EventList() {
   const searchParams = useSearchParams();
 
   const tab = parseTab(searchParams.get("tab"));
+  const mode = parseMode(searchParams.get("mode"));
   const sort = parseSort(searchParams.get("sort"));
   const page = parsePage(searchParams.get("page"));
   const urlQ = searchParams.get("q") ?? "";
@@ -77,9 +92,10 @@ export function EventList() {
 
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
   const type = tab === "ALL" ? undefined : tab;
+  const modeFilter = mode === "ALL" ? undefined : mode;
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: ["events", tab, sort, debouncedSearch, page],
-    queryFn: () => getSomaEventsPage({ page, sort, type, q: debouncedSearch }),
+    queryKey: ["events", tab, mode, sort, debouncedSearch, page],
+    queryFn: () => getSomaEventsPage({ page, sort, type, mode: modeFilter, q: debouncedSearch }),
     placeholderData: keepPreviousData,
   });
 
@@ -128,6 +144,18 @@ export function EventList() {
     });
   };
 
+  const handleModeChange = (nextMode: ModeFilter) => {
+    updateSearchParams((params) => {
+      if (nextMode === "ALL") {
+        params.delete("mode");
+      } else {
+        params.set("mode", nextMode);
+      }
+
+      params.delete("page");
+    });
+  };
+
   const handleSortChange = (nextSort: SomaEventSort) => {
     updateSearchParams((params) => {
       if (nextSort === DEFAULT_SOMA_EVENT_SORT) {
@@ -153,10 +181,17 @@ export function EventList() {
   return (
     <section className="sb-section">
       <SegmentControl
-        className="mx-0 mb-3 min-w-0 px-0"
+        className="mx-0 mb-2 min-w-0 px-0"
         options={options}
         value={tab}
         onValueChange={handleTabChange}
+      />
+      <FilterChips
+        ariaLabel="진행 방식"
+        className="mx-0 mb-4 min-w-0 px-0"
+        options={modeOptions}
+        value={mode}
+        onValueChange={handleModeChange}
       />
       <div className="mb-4 flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
