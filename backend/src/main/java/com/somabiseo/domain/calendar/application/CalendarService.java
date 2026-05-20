@@ -91,10 +91,19 @@ public class CalendarService {
     public CalendarConflictResponse getConflict(String calendarSessionId, String eventId) {
         CalendarEvent event = findCalendarEvent(eventId);
 
-        return getConflict(calendarSessionId, event.startAt(), event.endAt());
+        return getConflict(calendarSessionId, eventId, event.startAt(), event.endAt());
     }
 
     public CalendarConflictResponse getConflict(String calendarSessionId, OffsetDateTime startAt, OffsetDateTime endAt) {
+        return getConflict(calendarSessionId, null, startAt, endAt);
+    }
+
+    private CalendarConflictResponse getConflict(
+            String calendarSessionId,
+            String eventId,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt
+    ) {
         if (startAt == null || endAt == null || !startAt.isBefore(endAt)) {
             return new CalendarConflictResponse(false, List.of());
         }
@@ -104,6 +113,7 @@ public class CalendarService {
         }
 
         List<BusyBlockResponse> busyBlocks = googleCalendarClient.findEvents(calendarSessionId, startAt, endAt).stream()
+                .filter((event) -> eventId == null || !hasEventIdMarker(event.description(), eventId))
                 .filter((event) -> overlaps(startAt, endAt, event.startAt(), event.endAt()))
                 .map((event) -> new BusyBlockResponse(
                         event.id(),

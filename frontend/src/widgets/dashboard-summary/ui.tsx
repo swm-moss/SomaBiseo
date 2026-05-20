@@ -10,6 +10,13 @@ import {
   getRecommendedEvents,
   useInterestPreferenceStore,
 } from "@/features/user-interests/model";
+import {
+  useUpcomingGoogleCalendarEvents,
+  useGoogleCalendarConnectionSync,
+  useGoogleCalendarStore,
+} from "@/features/connect-google-calendar/model";
+import { useAuthStore } from "@/features/auth/model";
+import { GoogleCalendarEventList } from "@/widgets/google-calendar-event-list/ui";
 import { routes } from "@/shared/config/routes";
 import { formatOptionalDateTime } from "@/shared/lib/date";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -22,7 +29,11 @@ const TYPE_LABEL = {
 } as const;
 
 export function DashboardSummary() {
+  const sessionId = useAuthStore((state) => state.sessionId);
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
+  useGoogleCalendarConnectionSync();
+  const calendarConnected = useGoogleCalendarStore((state) => state.connected);
+  const calendarEventsQuery = useUpcomingGoogleCalendarEvents();
   const eventsQuery = useQuery({
     queryKey: ["dashboard-events"],
     queryFn: () => getDashboardEvents(),
@@ -39,10 +50,17 @@ export function DashboardSummary() {
   const dashboard = eventsQuery.data;
   const notices = noticesQuery.data ?? [];
   const newNotices = notices.slice(0, 2);
-  const upcoming = dashboard?.upcomingEvents ?? [];
+  const upcomingSomaEvents = dashboard?.upcomingEvents ?? [];
   const recommendationCandidates = dashboard?.recommendationCandidates ?? [];
   const recommendedEvents = getRecommendedEvents(recommendationCandidates, selectedTopicIds, 3);
   const deadlineSoon = dashboard?.deadlineSoonEvents ?? [];
+  const calendarEventCount = calendarEventsQuery.data?.length ?? 0;
+  const calendarSummaryValue =
+    calendarConnected && sessionId
+      ? calendarEventsQuery.isLoading
+        ? "확인 중"
+        : `${calendarEventCount}개`
+      : "연결 필요";
 
   return (
     <div className="space-y-8">
@@ -50,13 +68,13 @@ export function DashboardSummary() {
         <div className="grid grid-cols-2 overflow-hidden rounded-xl bg-white">
           <Link
             className="min-h-24 border-r border-border/80 px-5 py-4 transition-colors hover:bg-muted/40"
-            href={routes.events}
+            href="#my-calendar-events"
           >
             <CalendarDays aria-hidden="true" className="size-5 text-primary" />
             <p className="mt-3 text-[14px] font-semibold leading-[21px] text-muted-foreground">
-              다가오는 일정
+              내 일정
             </p>
-            <p className="mt-1 text-[24px] font-bold leading-[32px]">{upcoming.length}개</p>
+            <p className="mt-1 text-[24px] font-bold leading-[32px]">{calendarSummaryValue}</p>
           </Link>
           <Link
             className="min-h-24 px-5 py-4 transition-colors hover:bg-muted/40"
@@ -71,16 +89,20 @@ export function DashboardSummary() {
         </div>
       </section>
 
+      <section id="my-calendar-events" className="sb-section scroll-mt-24">
+        <GoogleCalendarEventList />
+      </section>
+
       <section className="sb-section">
         <div className="flex items-center gap-2">
           <CalendarDays aria-hidden="true" className="size-5 text-primary" />
-          <h2 className="sb-section-title">다가오는 일정</h2>
+          <h2 className="sb-section-title">다가오는 소마 일정</h2>
         </div>
-        {upcoming.length === 0 ? (
-          <EmptyState className="mt-3" title="다가오는 일정이 없어요" />
+        {upcomingSomaEvents.length === 0 ? (
+          <EmptyState className="mt-3" title="다가오는 소마 일정이 없어요" />
         ) : (
           <div className="sb-list-surface">
-            {upcoming.map((event) => (
+            {upcomingSomaEvents.map((event) => (
               <Link
                 key={event.id}
                 className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"

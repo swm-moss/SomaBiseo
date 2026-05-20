@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { getGoogleCalendarConnection } from "@/entities/calendar/api";
+import { getGoogleCalendarConnection, getGoogleCalendarEvents } from "@/entities/calendar/api";
 import type { CalendarConnection } from "@/entities/calendar/model";
 import { useAuthStore } from "@/features/auth/model";
 
@@ -14,6 +14,12 @@ export const googleCalendarKeys = {
   connection: (sessionId: string | null) => [
     ...googleCalendarKeys.all,
     "connection",
+    sessionId ?? "guest",
+  ] as const,
+  upcomingEvents: (sessionId: string | null) => [
+    ...googleCalendarKeys.all,
+    "events",
+    "upcoming",
     sessionId ?? "guest",
   ] as const,
 };
@@ -84,4 +90,21 @@ export function useGoogleCalendarConnectionSync() {
   }, [disconnect, query.data, query.isError, sessionId, setConnection]);
 
   return query;
+}
+
+export function useUpcomingGoogleCalendarEvents() {
+  const sessionId = useAuthStore((state) => state.sessionId);
+  const connected = useGoogleCalendarStore((state) => state.connected);
+
+  return useQuery({
+    queryKey: googleCalendarKeys.upcomingEvents(sessionId),
+    queryFn: () => {
+      const now = new Date();
+      const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      return getGoogleCalendarEvents(now.toISOString(), sevenDaysLater.toISOString());
+    },
+    enabled: connected && Boolean(sessionId),
+    retry: 0,
+  });
 }
