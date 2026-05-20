@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
-import { ReviewsContent } from "@/views/reviews/content";
 import { AppShell } from "@/widgets/app-shell/ui";
+import { ReviewFeed } from "@/widgets/review-feed/ui";
 import { LoadingState } from "@/shared/ui/loading-state";
 
 export function ReviewsPage() {
@@ -14,12 +14,12 @@ export function ReviewsPage() {
               후기
             </h1>
             <p className="mt-2 text-[15px] leading-[22px] text-muted-foreground">
-              끝난 강의를 확인하고 들었던 강의의 후기를 남겨보세요
+              들었던 강의의 후기를 남기고, 다른 연수생의 후기를 확인해 보세요
             </p>
           </div>
         </header>
         <Suspense fallback={<LoadingState />}>
-          <ReviewsContent />
+          <ReviewFeed />
         </Suspense>
       </main>
     </AppShell>

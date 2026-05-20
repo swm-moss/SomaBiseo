@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-    boolean existsBySomaEventIdAndAuthorName(Long somaEventId, String authorName);
+    boolean existsBySomaEventIdAndAuthorUserId(Long somaEventId, Long authorUserId);
 
     @Query("""
             select new com.somabiseo.domain.review.infrastructure.ReviewSummaryRow(
@@ -27,15 +27,20 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query(
             value = """
                     select new com.somabiseo.domain.review.domain.ReviewFeedItem(
-                        r.id, e.sourceId, e.title, e.type, e.mentorName, r.content, r.authorName, r.createdAt
+                        r.id, e.sourceId, coalesce(e.topic, e.title), e.type, e.mentorName, r.content, r.authorName,
+                        case when r.authorUserId = :viewerUserId then true else false end,
+                        r.createdAt
                     )
                     from Review r
                     join SomaEvent e on e.id = r.somaEventId
                     where (cast(:q as string) is null
                            or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
+                           or (e.topic is not null and lower(e.topic) like lower(concat('%', cast(:q as string), '%')))
                            or (e.mentorName is not null and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%')))
                            or lower(r.content) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
+                      and (cast(:mentorName as string) is null
+                           or (e.mentorName is not null and e.mentorName = cast(:mentorName as string)))
                     order by r.createdAt desc, r.id desc
                     """,
             countQuery = """
@@ -44,10 +49,19 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                     join SomaEvent e on e.id = r.somaEventId
                     where (cast(:q as string) is null
                            or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
+                           or (e.topic is not null and lower(e.topic) like lower(concat('%', cast(:q as string), '%')))
                            or (e.mentorName is not null and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%')))
                            or lower(r.content) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:eventId as string) is null or e.sourceId = cast(:eventId as string))
+                      and (cast(:mentorName as string) is null
+                           or (e.mentorName is not null and e.mentorName = cast(:mentorName as string)))
                     """
     )
-    Page<ReviewFeedItem> findFeed(@Param("q") String q, @Param("eventId") String eventId, Pageable pageable);
+    Page<ReviewFeedItem> findFeed(
+            @Param("q") String q,
+            @Param("eventId") String eventId,
+            @Param("mentorName") String mentorName,
+            @Param("viewerUserId") Long viewerUserId,
+            Pageable pageable
+    );
 }

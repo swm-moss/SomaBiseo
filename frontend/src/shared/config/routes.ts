@@ -11,5 +11,7 @@ export const routes = {
   reviews: "/reviews",
   reviewsForEvent: (eventId: string) =>
     `/reviews?eventId=${encodeURIComponent(eventId)}`,
+  reviewsForMentor: (mentorName: string) =>
+    `/reviews?mentorName=${encodeURIComponent(mentorName)}`,
   settings: "/settings",
 } as const;

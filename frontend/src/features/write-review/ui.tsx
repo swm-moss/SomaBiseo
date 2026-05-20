@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuthSessionQuery } from "@/features/auth/model";
@@ -10,7 +12,14 @@ import {
   writeReviewSchema,
   type WriteReviewFormValues,
 } from "@/features/write-review/model";
-import { REVIEW_CONTENT_MAX, REVIEW_CONTENT_MIN } from "@/entities/review/model";
+import { getEndedEvents } from "@/entities/review/api";
+import { reviewKeys } from "@/entities/review/keys";
+import {
+  REVIEW_CONTENT_MAX,
+  REVIEW_CONTENT_MIN,
+  type EndedEvent,
+} from "@/entities/review/model";
+import type { SomaEventType } from "@/entities/soma-event/model";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,
@@ -21,52 +30,265 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/shared/ui/dialog";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { ErrorState } from "@/shared/ui/error-state";
+import { LoadingState } from "@/shared/ui/loading-state";
+import { StatusBadge } from "@/shared/ui/status-badge";
+import { useDebouncedValue } from "@/shared/lib/use-debounced-value";
 import { cn } from "@/shared/lib/utils";
 
+const TYPE_LABEL: Record<SomaEventType, string> = {
+  LECTURE: "멘토특강",
+  MENTORING: "자유멘토링",
+};
+
 type WriteReviewDialogProps = {
-  eventId: string;
-  eventTitle?: string;
+  eventId?: string;
+  eventTopic?: string;
+  defaultMentorName?: string;
   triggerLabel?: string;
   triggerClassName?: string;
+  triggerSize?: "default" | "sm" | "lg";
 };
 
 export function WriteReviewDialog({
   eventId,
-  eventTitle,
+  eventTopic,
+  defaultMentorName,
   triggerLabel = "후기 작성",
   triggerClassName,
+  triggerSize = "sm",
 }: WriteReviewDialogProps) {
   const [open, setOpen] = useState(false);
-  const { session } = useAuthSessionQuery();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           className={cn("whitespace-nowrap", triggerClassName)}
-          size="sm"
+          size={triggerSize}
           variant="default"
         >
           {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>후기 작성</DialogTitle>
-          <DialogDescription>
-            {eventTitle
-              ? `'${eventTitle}' 강의에 대한 후기를 남겨주세요.`
-              : "직접 수강한 강의에 대해서만 솔직한 후기를 남겨주세요."}
-          </DialogDescription>
-        </DialogHeader>
-
-        <WriteReviewForm
-          eventId={eventId}
-          sessionUsername={session?.username ?? null}
-          onClose={() => setOpen(false)}
-        />
+        {open ? (
+          eventId ? (
+            <FixedEventFlow
+              eventId={eventId}
+              eventTopic={eventTopic}
+              onClose={() => setOpen(false)}
+            />
+          ) : (
+            <PickerFlow
+              defaultMentorName={defaultMentorName}
+              onClose={() => setOpen(false)}
+            />
+          )
+        ) : null}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function FixedEventFlow({
+  eventId,
+  eventTopic,
+  onClose,
+}: {
+  eventId: string;
+  eventTopic?: string;
+  onClose: () => void;
+}) {
+  const { session } = useAuthSessionQuery();
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>후기 작성</DialogTitle>
+        <DialogDescription>
+          {eventTopic
+            ? `'${eventTopic}' 강의에 대한 후기를 남겨주세요.`
+            : "직접 수강한 강의에 대해서만 솔직한 후기를 남겨주세요."}
+        </DialogDescription>
+      </DialogHeader>
+      <WriteReviewForm
+        eventId={eventId}
+        sessionUsername={session?.username ?? null}
+        onClose={onClose}
+      />
+    </>
+  );
+}
+
+function PickerFlow({
+  defaultMentorName,
+  onClose,
+}: {
+  defaultMentorName?: string;
+  onClose: () => void;
+}) {
+  const { session } = useAuthSessionQuery();
+  const [selected, setSelected] = useState<EndedEvent | null>(null);
+
+  if (!selected) {
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>어떤 강의의 후기인가요?</DialogTitle>
+          <DialogDescription>
+            {defaultMentorName
+              ? `${defaultMentorName} 멘토의 끝난 강의를 보여드릴게요. 검색어를 바꾸면 다른 강의도 찾을 수 있어요.`
+              : "끝난 강의 중에서 후기를 남길 강의를 선택해 주세요."}
+          </DialogDescription>
+        </DialogHeader>
+        <EventPicker
+          defaultMentorName={defaultMentorName}
+          onSelect={setSelected}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>후기 작성</DialogTitle>
+        <DialogDescription>
+          선택한 강의에 대한 솔직한 후기를 남겨주세요.
+        </DialogDescription>
+      </DialogHeader>
+      <SelectedEventCard event={selected} onReset={() => setSelected(null)} />
+      <WriteReviewForm
+        key={selected.eventId}
+        eventId={selected.eventId}
+        sessionUsername={session?.username ?? null}
+        onClose={onClose}
+      />
+    </>
+  );
+}
+
+function EventPicker({
+  defaultMentorName,
+  onSelect,
+}: {
+  defaultMentorName?: string;
+  onSelect: (event: EndedEvent) => void;
+}) {
+  const [searchInput, setSearchInput] = useState(defaultMentorName ?? "");
+  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300);
+
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: reviewKeys.endedEvents(null, debouncedSearch, null, 1),
+    queryFn: () => getEndedEvents({ q: debouncedSearch, size: 8 }),
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          aria-label="끝난 강의 검색"
+          className="sb-field mt-0 h-11 w-full pl-10"
+          placeholder="강의명 · 멘토명으로 검색"
+          type="search"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+        />
+      </div>
+      <div className="max-h-[320px] overflow-y-auto rounded-xl border border-border/60 bg-white">
+        {isLoading ? (
+          <div className="p-6">
+            <LoadingState />
+          </div>
+        ) : null}
+        {isError ? (
+          <div className="p-6">
+            <ErrorState onRetry={() => void refetch()} />
+          </div>
+        ) : null}
+        {data && data.items.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              title={
+                debouncedSearch.length > 0
+                  ? "조건에 맞는 강의가 없어요"
+                  : "끝난 강의가 아직 없어요"
+              }
+              description={
+                debouncedSearch.length > 0
+                  ? "강의명이나 멘토명을 다시 입력해 보세요."
+                  : "강의가 종료되면 후기를 남길 수 있어요."
+              }
+            />
+          </div>
+        ) : null}
+        {data && data.items.length > 0 ? (
+          <ul>
+            {data.items.map((event, index) => (
+              <li
+                key={event.eventId}
+                className={cn(index === 0 ? null : "border-t border-border/40")}
+              >
+                <button
+                  type="button"
+                  className="flex w-full flex-col items-start gap-1.5 px-4 py-3 text-left transition-colors hover:bg-muted"
+                  onClick={() => onSelect(event)}
+                >
+                  <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
+                    {TYPE_LABEL[event.type]}
+                  </StatusBadge>
+                  <span className="text-[15px] font-bold leading-[22px] text-foreground">
+                    {event.topic}
+                  </span>
+                  <span className="text-[13px] font-semibold text-muted-foreground">
+                    {event.mentorName ?? "멘토 미정"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function SelectedEventCard({
+  event,
+  onReset,
+}: {
+  event: EndedEvent;
+  onReset: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
+            {TYPE_LABEL[event.type]}
+          </StatusBadge>
+          <p className="mt-2 text-[15px] font-bold leading-[22px] text-foreground">
+            {event.topic}
+          </p>
+          <p className="mt-0.5 text-[13px] font-semibold text-muted-foreground">
+            {event.mentorName ?? "멘토 미정"}
+          </p>
+        </div>
+        <button
+          type="button"
+          className="shrink-0 text-[13px] font-bold text-primary hover:underline"
+          onClick={onReset}
+        >
+          변경
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -175,7 +397,7 @@ function WriteReviewForm({
           rows={6}
           maxLength={REVIEW_CONTENT_MAX + 50}
           placeholder={`최소 ${REVIEW_CONTENT_MIN}자, 최대 ${REVIEW_CONTENT_MAX}자`}
-          className="sb-field mt-2 min-h-[140px] resize-y"
+          className="sb-field mt-3 min-h-[140px] resize-y py-3"
           {...register("content")}
         />
         {errors.content ? (

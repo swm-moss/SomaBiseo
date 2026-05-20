@@ -22,6 +22,8 @@ public interface SomaEventRepository extends JpaRepository<SomaEvent, Long> {
                       and (cast(:type as string) is null or cast(e.type as string) = cast(:type as string))
                       and (cast(:q as string) is null
                            or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
+                           or (e.topic is not null
+                               and lower(e.topic) like lower(concat('%', cast(:q as string), '%')))
                            or (e.mentorName is not null
                                and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%'))))
                     """,
@@ -33,6 +35,8 @@ public interface SomaEventRepository extends JpaRepository<SomaEvent, Long> {
                       and (cast(:type as string) is null or cast(e.type as string) = cast(:type as string))
                       and (cast(:q as string) is null
                            or lower(e.title) like lower(concat('%', cast(:q as string), '%'))
+                           or (e.topic is not null
+                               and lower(e.topic) like lower(concat('%', cast(:q as string), '%')))
                            or (e.mentorName is not null
                                and lower(e.mentorName) like lower(concat('%', cast(:q as string), '%'))))
                     """

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, Search, UserRound } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 
 import { getReviewFeed } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
+import { ManageReviewActions } from "@/features/manage-review/ui";
+import { WriteReviewDialog } from "@/features/write-review/ui";
 import { routes } from "@/shared/config/routes";
 import { getRelativePublishedAt } from "@/shared/lib/date";
 import { useDebouncedValue } from "@/shared/lib/use-debounced-value";
@@ -31,6 +33,7 @@ export function ReviewFeed() {
 
   const urlQ = searchParams.get("q") ?? "";
   const eventId = searchParams.get("eventId");
+  const mentorName = searchParams.get("mentorName");
   const pageParam = Number(searchParams.get("page") ?? "1");
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
 
@@ -64,10 +67,11 @@ export function ReviewFeed() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: reviewKeys.feed(debouncedSearch, eventId, page),
+    queryKey: reviewKeys.feed(debouncedSearch, eventId, mentorName, page, PAGE_SIZE),
     queryFn: () => getReviewFeed({
       q: debouncedSearch,
       eventId: eventId ?? undefined,
+      mentorName: mentorName ?? undefined,
       page,
       size: PAGE_SIZE,
     }),
@@ -94,19 +98,37 @@ export function ReviewFeed() {
     });
   };
 
-  const hasFilter = debouncedSearch.length > 0 || Boolean(eventId);
+  const hasFilter = debouncedSearch.length > 0 || Boolean(eventId) || Boolean(mentorName);
 
   return (
     <section className="sb-section">
-      {eventId ? (
-        <Link
-          href={routes.reviews}
-          className="mb-3 inline-flex items-center gap-1 text-[13px] font-bold text-primary hover:underline"
-        >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-          전체 강의로 돌아가기
-        </Link>
-      ) : null}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        {eventId || mentorName ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Link
+              href={routes.reviews}
+              className="inline-flex items-center gap-1 text-[13px] font-bold text-primary hover:underline"
+            >
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              전체 후기로 돌아가기
+            </Link>
+            {mentorName ? (
+              <span className="text-[13px] font-semibold text-muted-foreground">
+                {mentorName} 멘토의 후기
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-[13px] font-semibold text-muted-foreground">
+            {data ? `총 ${data.totalElements}개의 후기` : "후기를 불러오는 중"}
+          </p>
+        )}
+        <WriteReviewDialog
+          triggerLabel="후기 작성하기"
+          triggerSize="default"
+          triggerClassName="w-full sm:w-auto"
+        />
+      </div>
 
       <div className="relative">
         <Search
@@ -115,8 +137,8 @@ export function ReviewFeed() {
         />
         <input
           aria-label="후기 검색"
-          className="sb-field h-11 w-full pl-10"
-          placeholder="멘토명·강의명·내용으로 검색"
+          className="sb-field mt-0 h-11 w-full pl-10"
+          placeholder="멘토명 · 강의명 · 내용으로 검색"
           type="search"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
@@ -145,25 +167,30 @@ export function ReviewFeed() {
                 </StatusBadge>
                 <Link
                   href={routes.eventDetail(item.eventId)}
-                  className="mt-3 inline-block text-[17px] font-extrabold leading-[25px] hover:underline"
+                  className="mt-3 block text-[17px] font-extrabold leading-[26px] text-foreground hover:underline"
                 >
-                  {item.eventTitle}
+                  {item.eventTopic}
                 </Link>
-                <p className="mt-1 text-[13px] font-semibold text-muted-foreground">
+                <p className="mt-1.5 text-[13px] font-medium text-muted-foreground">
                   {item.mentorName ?? "멘토 미정"}
                 </p>
-                <p className="mt-3 whitespace-pre-wrap text-[15px] font-medium leading-[24px] text-[#4e5968]">
+                <p className="mt-4 whitespace-pre-wrap text-[15px] leading-[24px] text-foreground">
                   {item.content}
                 </p>
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <p className="inline-flex items-center gap-1.5 text-[13px] font-bold">
-                    <UserRound aria-hidden="true" className="size-4 text-muted-foreground" />
+                <div className="mt-5 flex items-center justify-between gap-3 border-t border-border/40 pt-3">
+                  <p className="text-[13px] font-medium text-muted-foreground">
                     {item.authorName}
-                  </p>
-                  <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted-foreground">
-                    <CalendarClock aria-hidden="true" className="size-3.5" />
+                    <span aria-hidden="true" className="mx-1.5">
+                      ·
+                    </span>
                     {getRelativePublishedAt(item.createdAt)}
-                  </span>
+                  </p>
+                  {item.isAuthor ? (
+                    <ManageReviewActions
+                      reviewId={item.id}
+                      initialContent={item.content}
+                    />
+                  ) : null}
                 </div>
               </li>
             ))}

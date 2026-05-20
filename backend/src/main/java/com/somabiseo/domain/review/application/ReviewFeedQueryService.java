@@ -17,12 +17,26 @@ public class ReviewFeedQueryService {
     }
 
     @Transactional(readOnly = true)
-    public ReviewFeedPageResponse findFeed(String q, String eventId, int page, int size) {
+    public ReviewFeedPageResponse findFeed(
+            Long viewerUserId,
+            String q,
+            String eventId,
+            String mentorName,
+            int page,
+            int size
+    ) {
         String normalizedQ = normalize(q);
         String normalizedEventId = normalize(eventId);
+        String normalizedMentorName = normalize(mentorName);
         PageRequest pageable = PageRequest.of(Math.max(page - 1, 0), Math.max(size, 1));
 
-        Page<ReviewFeedItem> result = reviewRepository.findFeed(normalizedQ, normalizedEventId, pageable);
+        Page<ReviewFeedItem> result = reviewRepository.findFeed(
+                normalizedQ,
+                normalizedEventId,
+                normalizedMentorName,
+                viewerUserId,
+                pageable
+        );
 
         return new ReviewFeedPageResponse(
                 result.getContent(),

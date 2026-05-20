@@ -37,7 +37,39 @@ public class ReviewService {
     }
 
     @Transactional
-    public ReviewResponse create(String eventId, String authorName, String content, String authorIp) {
+    public void update(Long reviewId, Long sessionUserId, String content) {
+        validateContent(content);
+
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new NotFoundException("후기를 찾을 수 없어요."));
+
+        if (!review.getAuthorUserId().equals(sessionUserId)) {
+            throw new ReviewForbiddenException("본인이 작성한 후기만 수정할 수 있어요.");
+        }
+
+        review.updateContent(content.trim());
+    }
+
+    @Transactional
+    public void delete(Long reviewId, Long sessionUserId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new NotFoundException("후기를 찾을 수 없어요."));
+
+        if (!review.getAuthorUserId().equals(sessionUserId)) {
+            throw new ReviewForbiddenException("본인이 작성한 후기만 삭제할 수 있어요.");
+        }
+
+        reviewRepository.delete(review);
+    }
+
+    @Transactional
+    public ReviewResponse create(
+            String eventId,
+            Long authorUserId,
+            String authorName,
+            String content,
+            String authorIp
+    ) {
         validateContent(content);
 
         String trimmedAuthor = trimAuthor(authorName);
@@ -46,11 +78,11 @@ public class ReviewService {
 
         validateWindow(event, now);
 
-        if (reviewRepository.existsBySomaEventIdAndAuthorName(event.getId(), trimmedAuthor)) {
+        if (reviewRepository.existsBySomaEventIdAndAuthorUserId(event.getId(), authorUserId)) {
             throw new ReviewConflictException("이미 후기를 작성하셨어요.");
         }
 
-        Review review = Review.create(event.getId(), trimmedAuthor, content.trim(), authorIp);
+        Review review = Review.create(event.getId(), authorUserId, trimmedAuthor, content.trim(), authorIp);
 
         try {
             Review saved = reviewRepository.save(review);

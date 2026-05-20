@@ -28,6 +28,9 @@ public class SomaEvent {
     @Column(name = "title", nullable = false, length = 255)
     private String title;
 
+    @Column(name = "topic", length = 255)
+    private String topic;
+
     @Column(name = "mentor_name", length = 100)
     private String mentorName;
 
@@ -57,6 +60,10 @@ public class SomaEvent {
 
     public String getTitle() {
         return title;
+    }
+
+    public String getTopic() {
+        return topic;
     }
 
     public String getMentorName() {

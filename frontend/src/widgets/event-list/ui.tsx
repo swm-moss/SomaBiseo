@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 
 import {
   DEFAULT_SOMA_EVENT_SORT,
@@ -67,14 +68,17 @@ export function EventList() {
 
   return (
     <section className="sb-section">
-      <div className="space-y-3">
-        <SegmentControl options={options} value={tab} onValueChange={handleTabChange} />
-        <label className="block">
-          <span className="mb-2 block text-[13px] font-semibold leading-[18px] text-muted-foreground">
-            정렬
-          </span>
+      <div className="mb-6 flex items-center gap-3">
+        <SegmentControl
+          className="mx-0 min-w-0 flex-1 px-0"
+          options={options}
+          value={tab}
+          onValueChange={handleTabChange}
+        />
+        <div className="relative shrink-0">
           <select
-            className="h-12 w-full rounded-lg border border-border bg-white px-4 text-[15px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-primary/15 sm:w-52"
+            aria-label="정렬"
+            className="h-12 w-32 appearance-none rounded-lg border border-border bg-white pl-3 pr-9 text-[14px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-3 focus:ring-primary/15 sm:w-40"
             value={sort}
             onChange={(event) => handleSortChange(event.target.value as SomaEventSort)}
           >
@@ -84,7 +88,11 @@ export function EventList() {
               </option>
             ))}
           </select>
-        </label>
+          <ChevronDown
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+        </div>
       </div>
       {isLoading ? <LoadingState /> : null}
       {isError ? <ErrorState onRetry={() => void refetch()} /> : null}

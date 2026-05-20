@@ -3,11 +3,12 @@ import type { SomaEventType } from "@/entities/soma-event/model";
 export type ReviewFeedItem = {
   id: number;
   eventId: string;
-  eventTitle: string;
+  eventTopic: string;
   eventType: SomaEventType;
   mentorName: string | null;
   content: string;
   authorName: string;
+  isAuthor: boolean;
   createdAt: string;
 };
 
@@ -30,7 +31,7 @@ export type Review = {
 export type EndedEvent = {
   eventId: string;
   type: SomaEventType;
-  title: string;
+  topic: string;
   mentorName: string | null;
   startAt: string;
   endAt: string;

@@ -45,6 +45,7 @@ export async function getEndedEvents({
 export type GetReviewFeedParams = {
   q?: string;
   eventId?: string;
+  mentorName?: string;
   page?: number;
   size?: number;
 };
@@ -52,6 +53,7 @@ export type GetReviewFeedParams = {
 export async function getReviewFeed({
   q,
   eventId,
+  mentorName,
   page = 1,
   size = 10,
 }: GetReviewFeedParams = {}) {
@@ -63,6 +65,10 @@ export async function getReviewFeed({
 
   if (eventId && eventId.trim() !== "") {
     searchParams.eventId = eventId.trim();
+  }
+
+  if (mentorName && mentorName.trim() !== "") {
+    searchParams.mentorName = mentorName.trim();
   }
 
   return unwrapApiResponse(
@@ -81,5 +87,17 @@ export async function createReview(eventId: string, input: CreateReviewInput) {
     apiClient
       .post(`events/${encodeURIComponent(eventId)}/reviews`, { json: input })
       .json<ApiResponse<Review>>(),
+  );
+}
+
+export async function updateReview(reviewId: number, content: string) {
+  await unwrapApiResponse(
+    apiClient.put(`reviews/${reviewId}`, { json: { content } }).json<ApiResponse<null>>(),
+  );
+}
+
+export async function deleteReview(reviewId: number) {
+  await unwrapApiResponse(
+    apiClient.delete(`reviews/${reviewId}`).json<ApiResponse<null>>(),
   );
 }

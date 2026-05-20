@@ -43,7 +43,7 @@ export function UpcomingEventCard({
           )}
         </div>
         <h3 className="mt-2 line-clamp-2 text-[17px] font-extrabold leading-[25.5px]">
-          {event.title}
+          {event.topic}
         </h3>
         <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
           {event.mentorName ?? "멘토 미정"} · {formatOptionalDateTime(event.startAt)}

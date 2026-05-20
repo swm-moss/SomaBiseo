@@ -182,6 +182,16 @@ public class GoogleAuthService {
         return session;
     }
 
+    public GoogleAuthSessionStore.GoogleAuthSession requireVerifiedAuthor(String authorization, String sessionCookie) {
+        GoogleAuthSessionStore.GoogleAuthSession session = requireSession(authorization, sessionCookie);
+
+        if (!session.inviteVerified()) {
+            throw new InviteVerificationException("초대 코드 인증이 필요합니다.");
+        }
+
+        return session;
+    }
+
     public void logout(String authorization) {
         logout(authorization, null);
     }
