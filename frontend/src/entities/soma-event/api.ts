@@ -125,33 +125,52 @@ export async function getSomaEvents(
   page = 1,
   sort: SomaEventSort = DEFAULT_SOMA_EVENT_SORT,
 ) {
-  const eventsPage = await getSomaEventsPage(page, sort);
+  const eventsPage = await getSomaEventsPage({ page, sort });
 
   return eventsPage.items.filter((event) => matchesFilter(event, filter));
 }
 
 async function getSomaEventsPages(maxPages: number, sort: SomaEventSort = DEFAULT_SOMA_EVENT_SORT) {
-  const firstPage = await getSomaEventsPage(1, sort);
+  const firstPage = await getSomaEventsPage({ page: 1, sort });
   const events = [...firstPage.items];
   let currentPage = firstPage;
 
   for (let page = 2; page <= maxPages && currentPage.hasNextPage; page += 1) {
-    currentPage = await getSomaEventsPage(page, sort);
+    currentPage = await getSomaEventsPage({ page, sort });
     events.push(...currentPage.items);
   }
 
   return events;
 }
 
-export async function getSomaEventsPage(page = 1, sort: SomaEventSort = DEFAULT_SOMA_EVENT_SORT) {
+export type GetSomaEventsPageOptions = {
+  page?: number;
+  sort?: SomaEventSort;
+  type?: SomaEventType;
+  q?: string;
+};
+
+export async function getSomaEventsPage({
+  page = 1,
+  sort = DEFAULT_SOMA_EVENT_SORT,
+  type,
+  q,
+}: GetSomaEventsPageOptions = {}) {
+  const searchParams: Record<string, string | number> = { page, sort };
+
+  if (type) {
+    searchParams.type = type;
+  }
+
+  const trimmedQ = q?.trim();
+
+  if (trimmedQ) {
+    searchParams.q = trimmedQ;
+  }
+
   const response = await unwrapApiResponse(
     apiClient
-      .get("soma/events", {
-        searchParams: {
-          page,
-          sort,
-        },
-      })
+      .get("soma/events", { searchParams })
       .json<ApiResponse<PortalEventResponse[] | PortalPage<PortalEventResponse>>>(),
   );
   const pageResponse = normalizePortalPage(response, page);

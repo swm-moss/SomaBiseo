@@ -41,19 +41,14 @@ export function EventList() {
   const [sort, setSort] = useState<SomaEventSort>(DEFAULT_SOMA_EVENT_SORT);
   const [page, setPage] = useState(1);
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
+  const type = tab === "ALL" ? undefined : tab;
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: ["events", page, sort],
-    queryFn: () => getSomaEventsPage(page, sort),
+    queryKey: ["events", tab, sort, page],
+    queryFn: () => getSomaEventsPage({ page, sort, type }),
     placeholderData: keepPreviousData,
   });
 
-  const events = (data?.items ?? []).filter((event) => {
-    if (tab === "ALL") {
-      return true;
-    }
-
-    return event.type === tab;
-  });
+  const events = data?.items ?? [];
   const totalPages = data?.totalPages ?? page;
 
   const handleTabChange = (nextTab: EventTab) => {
