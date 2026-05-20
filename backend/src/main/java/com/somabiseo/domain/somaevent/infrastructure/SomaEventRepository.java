@@ -8,13 +8,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 
 public interface SomaEventRepository extends JpaRepository<SomaEvent, Long> {
     Optional<SomaEvent> findBySourceId(String sourceId);
-
-    List<SomaEvent> findByEndAtBetween(OffsetDateTime from, OffsetDateTime to);
 
     @Query(
             value = """
