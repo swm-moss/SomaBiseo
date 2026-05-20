@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CalendarClock, Search, UserRound } from "lucide-react";
+import { ArrowLeft, Search, UserRound } from "lucide-react";
 
 import { getReviewFeed } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
@@ -174,8 +174,7 @@ export function ReviewFeed() {
                     {item.authorName}
                   </p>
                   <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted-foreground">
-                      <CalendarClock aria-hidden="true" className="size-3.5" />
+                    <span className="text-[12px] font-semibold text-muted-foreground">
                       {getRelativePublishedAt(item.createdAt)}
                     </span>
                     {item.isAuthor ? (
