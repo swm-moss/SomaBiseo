@@ -54,7 +54,7 @@ public class EndedEventQueryService {
         PageRequest pageable = PageRequest.of(
                 safePage,
                 safeSize,
-                Sort.by(Sort.Order.desc("endAt"))
+                Sort.by(Sort.Order.desc("endAt"), Sort.Order.desc("id"))
         );
 
         OffsetDateTime now = OffsetDateTime.now(clock.withZone(SEOUL_ZONE));
