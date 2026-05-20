@@ -11,6 +11,7 @@ import com.somabiseo.domain.portal.domain.SomaPortalMentoLecApplicationResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalNoticeResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalPageResponse;
 import com.somabiseo.domain.portal.domain.SomaPortalUnauthorizedException;
+import com.somabiseo.domain.somaevent.domain.EventMode;
 import com.somabiseo.domain.somaevent.domain.EventType;
 import com.somabiseo.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -64,13 +65,14 @@ public class SomaPortalController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "LECTURE_DATE_DESC") SomaPortalEventSort sort,
             @RequestParam(required = false) EventType type,
+            @RequestParam(required = false) EventMode mode,
             @RequestParam(required = false) String q
     ) {
         if (!hasText(sessionId)) {
-            return ApiResponse.ok(portalService.getPublicEvents(page, sort, type, q));
+            return ApiResponse.ok(portalService.getPublicEvents(page, sort, type, mode, q));
         }
 
-        return ApiResponse.ok(portalService.getEvents(sessionId, page, sort, type, q));
+        return ApiResponse.ok(portalService.getEvents(sessionId, page, sort, type, mode, q));
     }
 
     @GetMapping("/api/soma/events/detail")

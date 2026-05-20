@@ -22,6 +22,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             value = """
                     select event from CachedPortalEvent event
                     where (:type is null or event.type = :type)
+                      and (cast(:mode as string) is null
+                        or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
@@ -34,6 +36,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             countQuery = """
                     select count(event) from CachedPortalEvent event
                     where (:type is null or event.type = :type)
+                      and (cast(:mode as string) is null
+                        or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
@@ -42,6 +46,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     )
     Page<CachedPortalEvent> findPageOrderByStartAtDesc(
             @Param("type") EventType type,
+            @Param("mode") String mode,
             @Param("q") String q,
             Pageable pageable
     );
@@ -50,6 +55,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             value = """
                     select event from CachedPortalEvent event
                     where (:type is null or event.type = :type)
+                      and (cast(:mode as string) is null
+                        or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
@@ -62,6 +69,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             countQuery = """
                     select count(event) from CachedPortalEvent event
                     where (:type is null or event.type = :type)
+                      and (cast(:mode as string) is null
+                        or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
@@ -70,6 +79,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     )
     Page<CachedPortalEvent> findPageOrderByStartAtAsc(
             @Param("type") EventType type,
+            @Param("mode") String mode,
             @Param("q") String q,
             Pageable pageable
     );
@@ -78,6 +88,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             value = """
                     select event from CachedPortalEvent event
                     where (:type is null or event.type = :type)
+                      and (cast(:mode as string) is null
+                        or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
@@ -90,6 +102,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             countQuery = """
                     select count(event) from CachedPortalEvent event
                     where (:type is null or event.type = :type)
+                      and (cast(:mode as string) is null
+                        or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
@@ -98,6 +112,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     )
     Page<CachedPortalEvent> findPageOrderByRegisteredAtDesc(
             @Param("type") EventType type,
+            @Param("mode") String mode,
             @Param("q") String q,
             Pageable pageable
     );
@@ -106,6 +121,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             value = """
                     select event from CachedPortalEvent event
                     where (:type is null or event.type = :type)
+                      and (cast(:mode as string) is null
+                        or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
@@ -120,6 +137,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             countQuery = """
                     select count(event) from CachedPortalEvent event
                     where (:type is null or event.type = :type)
+                      and (cast(:mode as string) is null
+                        or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
@@ -128,6 +147,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     )
     Page<CachedPortalEvent> findPageOrderByApplicationEndAtAsc(
             @Param("type") EventType type,
+            @Param("mode") String mode,
             @Param("q") String q,
             Pageable pageable
     );
