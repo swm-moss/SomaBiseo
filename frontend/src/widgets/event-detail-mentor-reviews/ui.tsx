@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { getReviewFeed } from "@/entities/review/api";
 import { reviewKeys } from "@/entities/review/keys";
+import { WriteReviewDialog } from "@/features/write-review/ui";
 import { routes } from "@/shared/config/routes";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
@@ -61,8 +62,9 @@ export function EventDetailMentorReviews({
       {enabled && data && items.length === 0 ? (
         <EmptyState
           className="mt-3"
-          title="아직 등록된 후기가 없어요"
-          description="이 멘토의 강의가 끝나면 연수생들이 후기를 남길 수 있어요."
+          title={`${mentorName} 멘토의 첫 후기를 남겨주세요`}
+          description="이 멘토의 끝난 강의에 대한 후기를 작성해 다른 연수생에게 도움을 줄 수 있어요."
+          action={<WriteReviewDialog triggerLabel="후기 작성하기" triggerSize="default" />}
         />
       ) : null}
 
