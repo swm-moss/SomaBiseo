@@ -21,7 +21,7 @@ public class GoogleAuthController {
         this.googleAuthService = googleAuthService;
     }
 
-    @GetMapping("/api/auth/google/connect-url")
+    @GetMapping({"/api/auth/google/connect-url", "/api/auth/google/login-url"})
     ApiResponse<ConnectUrlResponse> getLoginUrl(@RequestParam(required = false) String returnTo) {
         return ApiResponse.ok(new ConnectUrlResponse(googleAuthService.buildLoginUrl(returnTo)));
     }
