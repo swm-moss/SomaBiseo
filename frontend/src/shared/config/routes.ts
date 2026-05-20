@@ -9,6 +9,5 @@ export const routes = {
   events: "/events",
   eventDetail: (eventId: string) => `/events/${eventId}`,
   reviews: "/reviews",
-  reviewDetail: (eventId: string) => `/reviews/${eventId}`,
   settings: "/settings",
 } as const;

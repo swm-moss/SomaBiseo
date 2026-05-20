@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { PenSquare } from "lucide-react";
@@ -8,11 +8,11 @@ import { PenSquare } from "lucide-react";
 import { useAuthSessionQuery } from "@/features/auth/model";
 import {
   useCreateReview,
-  useWritableEvents,
+  useWritableEventsForReview,
   writeReviewSchema,
   type WriteReviewFormValues,
 } from "@/features/write-review/model";
-import type { WritableEvent } from "@/entities/review/model";
+import type { RecentEndedEvent } from "@/entities/review/model";
 import { REVIEW_CONTENT_MAX, REVIEW_CONTENT_MIN } from "@/entities/review/model";
 import { Button } from "@/shared/ui/button";
 import {
@@ -38,7 +38,7 @@ export function WriteReviewDialog({
   triggerClassName,
 }: WriteReviewDialogProps) {
   const [open, setOpen] = useState(false);
-  const { data: writableEvents, isLoading, isError, refetch } = useWritableEvents(open);
+  const { data: writableEvents, isLoading, isError, refetch } = useWritableEventsForReview(open);
   const { session } = useAuthSessionQuery();
 
   return (
@@ -53,7 +53,7 @@ export function WriteReviewDialog({
         <DialogHeader>
           <DialogTitle>후기 작성</DialogTitle>
           <DialogDescription>
-            종료 후 3일 이내의 강의에만 후기를 남길 수 있어요. 신청자 명단에서 본인 이름을 골라주세요.
+            종료 후 3일 이내의 강의에만 후기를 남길 수 있어요. 직접 수강한 강의에 대해서만 솔직한 후기를 남겨주세요.
           </DialogDescription>
         </DialogHeader>
 
@@ -95,7 +95,7 @@ function WriteReviewForm({
   sessionUsername,
   onClose,
 }: {
-  events: WritableEvent[];
+  events: RecentEndedEvent[];
   preselectedEventId?: string;
   sessionUsername: string | null;
   onClose: () => void;
@@ -108,45 +108,27 @@ function WriteReviewForm({
     return events[0]?.eventId ?? "";
   }, [events, preselectedEventId]);
 
-  const initialAuthor = useMemo(
-    () => pickInitialAuthor(events, initialEventId, sessionUsername),
-    [events, initialEventId, sessionUsername],
-  );
-
   const {
     register,
     handleSubmit,
     watch,
-    setValue,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<WriteReviewFormValues>({
     defaultValues: {
       eventId: initialEventId,
-      authorName: initialAuthor,
+      authorName: sessionUsername ?? "",
       content: "",
+      attended: false,
     },
   });
 
-  const selectedEventId = watch("eventId");
-  const selectedEvent = events.find((event) => event.eventId === selectedEventId);
-  const applicants = selectedEvent?.applicants ?? [];
   const contentValue = watch("content") ?? "";
   const contentLength = contentValue.length;
+  const authorName = watch("authorName") ?? "";
+  const attended = watch("attended");
 
   const createMutation = useCreateReview();
-
-  useEffect(() => {
-    if (!selectedEvent) {
-      return;
-    }
-
-    const matched = sessionUsername && selectedEvent.applicants.includes(sessionUsername)
-      ? sessionUsername
-      : selectedEvent.applicants[0] ?? "";
-
-    setValue("authorName", matched);
-  }, [selectedEventId, selectedEvent, sessionUsername, setValue]);
 
   return (
     <form
@@ -172,6 +154,7 @@ function WriteReviewForm({
             input: {
               authorName: parsed.data.authorName,
               content: parsed.data.content.trim(),
+              attended: true,
             },
           });
           toast.success("후기를 등록했어요.");
@@ -206,20 +189,16 @@ function WriteReviewForm({
 
       <div>
         <label className="text-[14px] font-bold leading-[20px]" htmlFor="review-author">
-          이름 (신청자 명단)
+          이름
         </label>
-        <select
+        <input
           id="review-author"
+          type="text"
           className="sb-field mt-2"
+          placeholder="실명을 입력해 주세요"
+          maxLength={100}
           {...register("authorName")}
-        >
-          {applicants.length === 0 ? <option value="">명단이 비어 있어요</option> : null}
-          {applicants.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
+        />
         {errors.authorName ? (
           <p className="mt-1 text-[13px] text-destructive">{errors.authorName.message}</p>
         ) : null}
@@ -254,6 +233,23 @@ function WriteReviewForm({
         ) : null}
       </div>
 
+      <label className="flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-3 text-[13px] leading-[19px] text-foreground">
+        <input
+          type="checkbox"
+          className="mt-0.5 size-4 accent-primary"
+          {...register("attended")}
+        />
+        <span>
+          이 강의를 직접 들었습니다.
+          <span className="block text-[12px] font-semibold text-muted-foreground">
+            허위 작성 시 책임은 본인에게 있어요.
+          </span>
+        </span>
+      </label>
+      {errors.attended ? (
+        <p className="mt-1 text-[13px] text-destructive">{errors.attended.message}</p>
+      ) : null}
+
       <DialogFooter>
         <Button type="button" variant="ghost" onClick={onClose}>
           취소
@@ -265,7 +261,8 @@ function WriteReviewForm({
             createMutation.isPending ||
             contentLength < REVIEW_CONTENT_MIN ||
             contentLength > REVIEW_CONTENT_MAX ||
-            applicants.length === 0
+            authorName.trim() === "" ||
+            !attended
           }
         >
           {isSubmitting || createMutation.isPending ? "등록 중" : "등록"}
@@ -273,22 +270,4 @@ function WriteReviewForm({
       </DialogFooter>
     </form>
   );
-}
-
-function pickInitialAuthor(
-  events: WritableEvent[],
-  eventId: string,
-  sessionUsername: string | null,
-) {
-  const event = events.find((item) => item.eventId === eventId);
-
-  if (!event) {
-    return "";
-  }
-
-  if (sessionUsername && event.applicants.includes(sessionUsername)) {
-    return sessionUsername;
-  }
-
-  return event.applicants[0] ?? "";
 }

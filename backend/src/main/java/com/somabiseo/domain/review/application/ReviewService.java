@@ -5,14 +5,11 @@ import com.somabiseo.domain.review.domain.ReviewConflictException;
 import com.somabiseo.domain.review.domain.ReviewException;
 import com.somabiseo.domain.review.domain.ReviewForbiddenException;
 import com.somabiseo.domain.review.domain.ReviewResponse;
-import com.somabiseo.domain.review.infrastructure.EventApplicantSnapshotRepository;
 import com.somabiseo.domain.review.infrastructure.ReviewRepository;
 import com.somabiseo.domain.somaevent.domain.SomaEvent;
 import com.somabiseo.domain.somaevent.infrastructure.SomaEventRepository;
 import com.somabiseo.global.exception.NotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,30 +25,17 @@ public class ReviewService {
     static final int MAX_CONTENT_LENGTH = 500;
 
     private final ReviewRepository reviewRepository;
-    private final EventApplicantSnapshotRepository applicantRepository;
     private final SomaEventRepository somaEventRepository;
     private final Clock clock;
 
     public ReviewService(
             ReviewRepository reviewRepository,
-            EventApplicantSnapshotRepository applicantRepository,
             SomaEventRepository somaEventRepository,
             Clock clock
     ) {
         this.reviewRepository = reviewRepository;
-        this.applicantRepository = applicantRepository;
         this.somaEventRepository = somaEventRepository;
         this.clock = clock;
-    }
-
-    @Transactional(readOnly = true)
-    public Page<ReviewResponse> findReviews(String eventId, int page, int size) {
-        SomaEvent event = requireEvent(eventId);
-        PageRequest pageable = PageRequest.of(Math.max(page - 1, 0), Math.max(size, 1));
-
-        return reviewRepository
-                .findBySomaEventIdOrderByCreatedAtDesc(event.getId(), pageable)
-                .map(review -> toResponse(review, eventId));
     }
 
     @Transactional
@@ -63,10 +47,6 @@ public class ReviewService {
         OffsetDateTime now = OffsetDateTime.now(clock.withZone(ZoneId.of("Asia/Seoul")));
 
         validateWindow(event, now);
-
-        if (!applicantRepository.existsBySomaEventIdAndTraineeName(event.getId(), trimmedAuthor)) {
-            throw new ReviewForbiddenException("신청자 명단에서 이름을 찾지 못했어요.");
-        }
 
         if (reviewRepository.existsBySomaEventIdAndAuthorName(event.getId(), trimmedAuthor)) {
             throw new ReviewConflictException("이미 후기를 작성하셨어요.");

@@ -1,17 +1,9 @@
 import type {
   RecentEndedEvent,
   Review,
-  ReviewPage,
-  ReviewSummary,
-  WritableEvent,
+  ReviewFeedPage,
 } from "@/entities/review/model";
 import { apiClient, type ApiResponse, unwrapApiResponse } from "@/shared/api/client";
-
-export async function getWritableEvents() {
-  return unwrapApiResponse(
-    apiClient.get("reviews/writable").json<ApiResponse<WritableEvent[]>>(),
-  );
-}
 
 export async function getRecentEndedEvents(limit = 3) {
   return unwrapApiResponse(
@@ -21,31 +13,38 @@ export async function getRecentEndedEvents(limit = 3) {
   );
 }
 
-export async function getReviewSummaries(eventIds: string[]) {
-  if (eventIds.length === 0) {
-    return [] as ReviewSummary[];
+export type GetReviewFeedParams = {
+  q?: string;
+  eventId?: string;
+  page?: number;
+  size?: number;
+};
+
+export async function getReviewFeed({
+  q,
+  eventId,
+  page = 1,
+  size = 10,
+}: GetReviewFeedParams = {}) {
+  const searchParams: Record<string, string | number> = { page, size };
+
+  if (q && q.trim() !== "") {
+    searchParams.q = q.trim();
+  }
+
+  if (eventId && eventId.trim() !== "") {
+    searchParams.eventId = eventId.trim();
   }
 
   return unwrapApiResponse(
-    apiClient
-      .get("reviews/summaries", { searchParams: { eventIds: eventIds.join(",") } })
-      .json<ApiResponse<ReviewSummary[]>>(),
-  );
-}
-
-export async function getReviewsPage(eventId: string, page = 1, size = 10) {
-  return unwrapApiResponse(
-    apiClient
-      .get(`events/${encodeURIComponent(eventId)}/reviews`, {
-        searchParams: { page, size },
-      })
-      .json<ApiResponse<ReviewPage>>(),
+    apiClient.get("reviews", { searchParams }).json<ApiResponse<ReviewFeedPage>>(),
   );
 }
 
 export type CreateReviewInput = {
   authorName: string;
   content: string;
+  attended: boolean;
 };
 
 export async function createReview(eventId: string, input: CreateReviewInput) {

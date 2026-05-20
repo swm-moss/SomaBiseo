@@ -5,7 +5,6 @@ import com.somabiseo.domain.review.domain.ReviewConflictException;
 import com.somabiseo.domain.review.domain.ReviewException;
 import com.somabiseo.domain.review.domain.ReviewForbiddenException;
 import com.somabiseo.domain.review.domain.ReviewResponse;
-import com.somabiseo.domain.review.infrastructure.EventApplicantSnapshotRepository;
 import com.somabiseo.domain.review.infrastructure.ReviewRepository;
 import com.somabiseo.domain.somaevent.domain.EventType;
 import com.somabiseo.domain.somaevent.domain.SomaEvent;
@@ -15,15 +14,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 
 import java.lang.reflect.Field;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,18 +37,16 @@ class ReviewServiceTest {
     private static final OffsetDateTime END_AT = OffsetDateTime.parse("2026-05-20T17:00:00+09:00");
 
     private ReviewRepository reviewRepository;
-    private EventApplicantSnapshotRepository applicantRepository;
     private SomaEventRepository somaEventRepository;
     private ReviewService service;
 
     @BeforeEach
     void setUp() {
         reviewRepository = mock(ReviewRepository.class);
-        applicantRepository = mock(EventApplicantSnapshotRepository.class);
         somaEventRepository = mock(SomaEventRepository.class);
         Clock clock = Clock.fixed(NOW.toInstant(), ZoneId.of("Asia/Seoul"));
 
-        service = new ReviewService(reviewRepository, applicantRepository, somaEventRepository, clock);
+        service = new ReviewService(reviewRepository, somaEventRepository, clock);
     }
 
     @Test
@@ -95,19 +89,26 @@ class ReviewServiceTest {
     }
 
     @Test
-    void create_명단에_없는_이름이면_ReviewForbiddenException() {
+    void create_명단_검증_없이_freeform_이름으로_저장() {
         stubEvent();
-        when(applicantRepository.existsBySomaEventIdAndTraineeName(SOMA_EVENT_ID, "낯선이름")).thenReturn(false);
+        when(reviewRepository.existsBySomaEventIdAndAuthorName(SOMA_EVENT_ID, "낯선이름")).thenReturn(false);
+        Review saved = Review.create(SOMA_EVENT_ID, "낯선이름", validContent(), "1.1.1.1");
+        setField(saved, "id", 200L);
+        setField(saved, "createdAt", Instant.parse("2026-05-22T01:00:00Z"));
+        when(reviewRepository.save(any(Review.class))).thenReturn(saved);
 
-        assertThatThrownBy(() -> service.create(EVENT_ID, "낯선이름", validContent(), "1.1.1.1"))
-                .isInstanceOf(ReviewForbiddenException.class)
-                .hasMessageContaining("명단");
+        ReviewResponse response = service.create(EVENT_ID, "낯선이름", validContent(), "1.1.1.1");
+
+        ArgumentCaptor<Review> captor = ArgumentCaptor.forClass(Review.class);
+        verify(reviewRepository).save(captor.capture());
+        assertThat(captor.getValue().getAuthorName()).isEqualTo("낯선이름");
+        assertThat(response.authorName()).isEqualTo("낯선이름");
+        assertThat(response.id()).isEqualTo(200L);
     }
 
     @Test
     void create_이미_같은_이름으로_작성됐으면_ReviewConflictException() {
         stubEvent();
-        when(applicantRepository.existsBySomaEventIdAndTraineeName(SOMA_EVENT_ID, "김연수")).thenReturn(true);
         when(reviewRepository.existsBySomaEventIdAndAuthorName(SOMA_EVENT_ID, "김연수")).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(EVENT_ID, "김연수", validContent(), "1.1.1.1"))
@@ -118,7 +119,6 @@ class ReviewServiceTest {
     @Test
     void create_DB_UNIQUE_위반이면_ReviewConflictException으로_변환() {
         stubEvent();
-        when(applicantRepository.existsBySomaEventIdAndTraineeName(SOMA_EVENT_ID, "김연수")).thenReturn(true);
         when(reviewRepository.existsBySomaEventIdAndAuthorName(SOMA_EVENT_ID, "김연수")).thenReturn(false);
         when(reviewRepository.save(any(Review.class)))
                 .thenThrow(new DataIntegrityViolationException("uk_review_event_author"));
@@ -138,7 +138,6 @@ class ReviewServiceTest {
     @Test
     void create_정상_케이스는_저장하고_응답_반환() {
         stubEvent();
-        when(applicantRepository.existsBySomaEventIdAndTraineeName(SOMA_EVENT_ID, "김연수")).thenReturn(true);
         when(reviewRepository.existsBySomaEventIdAndAuthorName(SOMA_EVENT_ID, "김연수")).thenReturn(false);
         Review saved = Review.create(SOMA_EVENT_ID, "김연수", validContent(), "1.1.1.1");
         setField(saved, "id", 100L);
@@ -154,27 +153,6 @@ class ReviewServiceTest {
         assertThat(response.eventId()).isEqualTo(EVENT_ID);
         assertThat(response.authorName()).isEqualTo("김연수");
         assertThat(response.id()).isEqualTo(100L);
-    }
-
-    @Test
-    void findReviews_페이지네이션_생성역순_정렬() {
-        SomaEvent event = somaEventWith(END_AT);
-        when(somaEventRepository.findBySourceId(EVENT_ID)).thenReturn(Optional.of(event));
-
-        Review first = Review.create(SOMA_EVENT_ID, "이연수", validContent(), "1.1.1.1");
-        Review second = Review.create(SOMA_EVENT_ID, "김연수", validContent(), "1.1.1.1");
-        setField(first, "id", 1L);
-        setField(first, "createdAt", Instant.parse("2026-05-22T01:00:00Z"));
-        setField(second, "id", 2L);
-        setField(second, "createdAt", Instant.parse("2026-05-22T02:00:00Z"));
-
-        when(reviewRepository.findBySomaEventIdOrderByCreatedAtDesc(any(), any()))
-                .thenReturn(new PageImpl<>(List.of(second, first)));
-
-        Page<ReviewResponse> result = service.findReviews(EVENT_ID, 1, 10);
-
-        assertThat(result.getContent()).extracting(ReviewResponse::id).containsExactly(2L, 1L);
-        assertThat(result.getContent()).allMatch(r -> r.eventId().equals(EVENT_ID));
     }
 
     private void stubEvent() {

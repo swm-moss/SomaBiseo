@@ -1,11 +1,11 @@
 package com.somabiseo.domain.review.presentation;
 
-import com.somabiseo.domain.review.domain.ReviewResponse;
+import com.somabiseo.domain.review.domain.ReviewFeedItem;
 
 import java.util.List;
 
-public record ReviewPageResponse(
-        List<ReviewResponse> items,
+public record ReviewFeedPageResponse(
+        List<ReviewFeedItem> items,
         int page,
         int size,
         int totalPages,
