@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -59,6 +59,29 @@ export function ReviewFeed() {
 
     router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
   }, [debouncedSearch, urlQ, searchParams, router, pathname]);
+
+  const filterSignature = `${eventId ?? ""}|${mentorName ?? ""}`;
+  const previousFilterSignature = useRef(filterSignature);
+
+  useEffect(() => {
+    if (filterSignature === previousFilterSignature.current) {
+      return;
+    }
+
+    previousFilterSignature.current = filterSignature;
+
+    if (page <= 1) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+
+    params.delete("page");
+
+    const queryString = params.toString();
+
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  }, [filterSignature, page, searchParams, router, pathname]);
 
   const {
     data,
