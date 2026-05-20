@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 
 import {
   DEFAULT_SOMA_EVENT_SORT,
@@ -15,6 +16,7 @@ import {
   useInterestPreferenceStore,
 } from "@/features/user-interests/model";
 import { UpcomingEventCard } from "@/widgets/upcoming-event-card/ui";
+import { useDebouncedValue } from "@/shared/lib/use-debounced-value";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
 import { LoadingState } from "@/shared/ui/loading-state";
@@ -68,12 +70,16 @@ export function EventList() {
   const tab = parseTab(searchParams.get("tab"));
   const sort = parseSort(searchParams.get("sort"));
   const page = parsePage(searchParams.get("page"));
+  const urlQ = searchParams.get("q") ?? "";
+
+  const [searchInput, setSearchInput] = useState(urlQ);
+  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300);
 
   const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
   const type = tab === "ALL" ? undefined : tab;
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: ["events", tab, sort, page],
-    queryFn: () => getSomaEventsPage({ page, sort, type }),
+    queryKey: ["events", tab, sort, debouncedSearch, page],
+    queryFn: () => getSomaEventsPage({ page, sort, type, q: debouncedSearch }),
     placeholderData: keepPreviousData,
   });
 
@@ -89,6 +95,26 @@ export function EventList() {
 
     router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
   };
+
+  useEffect(() => {
+    if (debouncedSearch === urlQ) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (debouncedSearch === "") {
+      params.delete("q");
+    } else {
+      params.set("q", debouncedSearch);
+    }
+
+    params.delete("page");
+
+    const queryString = params.toString();
+
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  }, [debouncedSearch, urlQ, searchParams, router, pathname]);
 
   const handleTabChange = (nextTab: EventTab) => {
     updateSearchParams((params) => {
@@ -126,7 +152,7 @@ export function EventList() {
 
   return (
     <section className="sb-section">
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-3">
         <SegmentControl
           className="mx-0 min-w-0 flex-1 px-0"
           options={options}
@@ -151,6 +177,20 @@ export function EventList() {
             className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
           />
         </div>
+      </div>
+      <div className="relative mb-4">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          aria-label="특강 검색"
+          className="sb-field mt-0 h-11 w-full pl-10"
+          placeholder="제목 · 멘토 · 주제로 검색"
+          type="search"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+        />
       </div>
       {isLoading ? <LoadingState /> : null}
       {isError ? <ErrorState onRetry={() => void refetch()} /> : null}
