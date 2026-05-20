@@ -65,6 +65,13 @@ public class GoogleAuthSessionStore {
         sessions.remove(sessionId);
     }
 
+    public void updateToken(String sessionId, String accessToken, Instant tokenExpiresAt) {
+        find(sessionId).ifPresent((session) -> sessions.put(
+                sessionId,
+                session.withToken(accessToken, tokenExpiresAt)
+        ));
+    }
+
     public record GoogleAuthSession(
             String sessionId,
             String googleSubject,
@@ -82,6 +89,20 @@ public class GoogleAuthSessionStore {
 
         GoogleAuthSessionResponse toResponse() {
             return new GoogleAuthSessionResponse(sessionId, name, email, profileImageUrl, "GOOGLE", sessionExpiresAt);
+        }
+
+        GoogleAuthSession withToken(String newAccessToken, Instant newTokenExpiresAt) {
+            return new GoogleAuthSession(
+                    sessionId,
+                    googleSubject,
+                    email,
+                    name,
+                    profileImageUrl,
+                    newAccessToken,
+                    refreshToken,
+                    newTokenExpiresAt,
+                    sessionExpiresAt
+            );
         }
     }
 }

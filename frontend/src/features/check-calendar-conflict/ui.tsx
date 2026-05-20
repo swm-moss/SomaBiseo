@@ -5,28 +5,47 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 import { getConflictForEvent } from "@/entities/calendar/api";
 import type { SomaEvent } from "@/entities/soma-event/model";
+import { useAuthStore } from "@/features/auth/model";
 import { useGoogleCalendarStore } from "@/features/connect-google-calendar/model";
+import { ApiResponseError } from "@/shared/api/client";
 import { formatTimeRange } from "@/shared/lib/date";
+import { ErrorState } from "@/shared/ui/error-state";
 import { LoadingState } from "@/shared/ui/loading-state";
 
 export function CalendarConflictResult({ event }: { event: SomaEvent }) {
+  const sessionId = useAuthStore((state) => state.sessionId);
   const connected = useGoogleCalendarStore((state) => state.connected);
-  const { data, isLoading } = useQuery({
+  const { data, error, isError, isLoading, refetch } = useQuery({
     queryKey: ["calendar-conflict", event.id],
     queryFn: () => getConflictForEvent(event),
-    enabled: connected,
+    enabled: connected && Boolean(sessionId),
+    retry: 0,
   });
 
-  if (!connected) {
+  if (!connected || !sessionId) {
     return (
       <div className="rounded-lg border border-dashed bg-white p-4 text-sm leading-6 text-muted-foreground">
-        캘린더를 연결하면 이 일정의 충돌 여부를 확인합니다.
+        Google로 로그인하면 이 일정의 충돌 여부를 확인합니다.
       </div>
     );
   }
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return <LoadingState className="min-h-24 rounded-lg border bg-white" label="충돌 확인 중" />;
+  }
+
+  if (isError || !data) {
+    return (
+      <ErrorState
+        title="충돌 여부를 확인하지 못했어요"
+        description={
+          error instanceof ApiResponseError
+            ? error.message
+            : "Google Calendar 연결 상태를 확인한 뒤 다시 시도해 주세요."
+        }
+        onRetry={() => void refetch()}
+      />
+    );
   }
 
   if (!data.hasConflict) {

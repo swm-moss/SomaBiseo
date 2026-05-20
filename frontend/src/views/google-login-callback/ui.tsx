@@ -59,7 +59,7 @@ export function GoogleLoginCallbackPage() {
       setConnection({
         connected: true,
         googleAccountEmail: email,
-        selectedCalendarId: "primary",
+        calendarId: "primary",
       });
     }
 
