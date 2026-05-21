@@ -96,8 +96,18 @@ export function getRemainingSeats(event: SomaEvent): number | null {
   return event.capacity - event.applicantCount;
 }
 
-export function isEventClosed(event: SomaEvent): boolean {
-  const remaining = getRemainingSeats(event);
+const CLOSED_STATUS_KEYWORDS = ["마감", "종료", "취소"];
 
-  return remaining !== null && remaining <= 0;
+export function isEventClosed(event: SomaEvent): boolean {
+  const statusItem = event.detailItems.find(
+    (item) => item.label.replace(/\s+/g, "") === "상태",
+  );
+
+  if (statusItem) {
+    return CLOSED_STATUS_KEYWORDS.some((keyword) =>
+      statusItem.value.includes(keyword),
+    );
+  }
+
+  return event.status === "CLOSED" || event.status === "FULL" || event.status === "CANCELED";
 }
