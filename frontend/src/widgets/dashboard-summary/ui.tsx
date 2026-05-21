@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, CalendarDays, Star } from "lucide-react";
+import { Bell, CalendarDays, Flame, Star } from "lucide-react";
 
 import { getNotices } from "@/entities/notice/api";
 import { getDashboardEvents } from "@/entities/soma-event/api";
@@ -138,7 +138,10 @@ export function DashboardSummary() {
       </section>
 
       <section className="sb-section">
-        <h2 className="sb-section-title">마감 임박</h2>
+        <div className="flex items-center gap-2">
+          <Flame aria-hidden="true" className="size-5 text-primary" />
+          <h2 className="sb-section-title">마감 임박</h2>
+        </div>
         {almostFull.length === 0 ? (
           <EmptyState className="mt-3" title="마감 임박 일정이 없어요" />
         ) : (
