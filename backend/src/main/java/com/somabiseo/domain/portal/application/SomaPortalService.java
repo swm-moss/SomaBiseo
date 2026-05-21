@@ -17,8 +17,10 @@ import com.somabiseo.domain.somaevent.domain.EventMode;
 import com.somabiseo.domain.somaevent.domain.EventType;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -28,12 +30,15 @@ import java.util.function.Function;
 public class SomaPortalService {
     private static final String OPERATOR_SESSION_ID = "operator-readonly";
     private static final int PAGE_SIZE = 10;
+    private static final Duration DEADLINE_SOON_WINDOW = Duration.ofDays(7);
+    private static final int DEADLINE_SOON_LIMIT = 3;
 
     private final SomaPortalClient portalClient;
     private final SomaPortalHtmlParser htmlParser;
     private final SomaPortalSessionStore sessionStore;
     private final SomaPortalProperties properties;
     private final SomaPortalCacheService cacheService;
+    private final Clock clock;
     private final Object operatorSessionLock = new Object();
     private final Object noticeSyncLock = new Object();
     private final Object eventSyncLock = new Object();
@@ -44,13 +49,15 @@ public class SomaPortalService {
             SomaPortalHtmlParser htmlParser,
             SomaPortalSessionStore sessionStore,
             SomaPortalProperties properties,
-            SomaPortalCacheService cacheService
+            SomaPortalCacheService cacheService,
+            Clock clock
     ) {
         this.portalClient = portalClient;
         this.htmlParser = htmlParser;
         this.sessionStore = sessionStore;
         this.properties = properties;
         this.cacheService = cacheService;
+        this.clock = clock;
     }
 
     public SomaPortalLoginResponse login(String username, String password) {
@@ -106,6 +113,14 @@ public class SomaPortalService {
         syncEventsIfNeeded();
 
         return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q);
+    }
+
+    public List<SomaPortalEventResponse> getDeadlineSoonEvents() {
+        syncEventsIfNeeded();
+
+        OffsetDateTime now = OffsetDateTime.now(clock);
+
+        return cacheService.findDeadlineSoonEvents(now, now.plus(DEADLINE_SOON_WINDOW), DEADLINE_SOON_LIMIT);
     }
 
     public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(

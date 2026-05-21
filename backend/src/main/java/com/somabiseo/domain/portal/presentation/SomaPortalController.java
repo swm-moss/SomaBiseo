@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 public class SomaPortalController {
     private final SomaPortalService portalService;
@@ -73,6 +75,11 @@ public class SomaPortalController {
         }
 
         return ApiResponse.ok(portalService.getEvents(sessionId, page, sort, type, mode, q));
+    }
+
+    @GetMapping("/api/soma/events/deadline-soon")
+    ApiResponse<List<SomaPortalEventResponse>> getDeadlineSoonEvents() {
+        return ApiResponse.ok(portalService.getDeadlineSoonEvents());
     }
 
     @GetMapping("/api/soma/events/detail")
