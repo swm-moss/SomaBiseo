@@ -424,7 +424,7 @@ class SomaPortalHtmlParserTest {
         assertThat(event.operationType()).isEqualTo("오프라인");
         assertThat(event.location()).isEqualTo("하이텐 - 23호실(8인)");
         assertThat(event.capacity()).isEqualTo(8);
-        assertThat(event.applicantCount()).isEqualTo(8);
+        assertThat(event.applicantCount()).isEqualTo(1);
         assertThat(event.startAt()).isNotNull();
         assertThat(event.endAt()).isNotNull();
         assertThat(event.applicationStartAt()).isNotNull();
@@ -435,6 +435,53 @@ class SomaPortalHtmlParserTest {
         assertThat(event.applicants().getFirst().traineeName()).isEqualTo("박보라");
         assertThat(event.applicants().getFirst().status()).isEqualTo("신청완료");
         assertThat(event.applicants().get(1).canceledAt()).isEqualTo("2026.05.12 21:58");
+    }
+
+    @Test
+    void excludesCanceledApplicantsFromDetailApplicantCount() {
+        String html = """
+                <html>
+                  <body>
+                    <table>
+                      <tbody>
+                        <tr>
+                          <th>모집 명</th>
+                          <td>[멘토 특강] 테스트 특강</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <h4>신청자 리스트 [7 명]</h4>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>NO.</th>
+                          <th>연수생</th>
+                          <th>신청일</th>
+                          <th>취소일</th>
+                          <th>상태</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr><td>1</td><td>김하나</td><td>2026.05.12 10:00</td><td>-</td><td>[신청완료]</td></tr>
+                        <tr><td>2</td><td>이두나</td><td>2026.05.12 10:01</td><td>-</td><td>[신청완료]</td></tr>
+                        <tr><td>3</td><td>박세준</td><td>2026.05.12 10:02</td><td>-</td><td>[신청완료]</td></tr>
+                        <tr><td>4</td><td>최네오</td><td>2026.05.12 10:03</td><td>-</td><td>[신청완료]</td></tr>
+                        <tr><td>취소</td><td>정취소</td><td>2026.05.12 10:04</td><td>2026.05.12 10:20</td><td>[신청취소]</td></tr>
+                        <tr><td>취소</td><td>강취소</td><td>2026.05.12 10:05</td><td>2026.05.12 10:21</td><td>[신청취소]</td></tr>
+                        <tr><td>취소</td><td>윤취소</td><td>2026.05.12 10:06</td><td>2026.05.12 10:22</td><td>[신청취소]</td></tr>
+                      </tbody>
+                    </table>
+                  </body>
+                </html>
+                """;
+
+        SomaPortalEventResponse event = parser.parseEventDetail(
+                html,
+                "https://www.swmaestro.ai",
+                "/busan/sw/mypage/mentoLec/view.do?qustnrSn=338"
+        );
+
+        assertThat(event.applicantCount()).isEqualTo(4);
     }
 
     @Test
@@ -702,7 +749,7 @@ class SomaPortalHtmlParserTest {
         assertThat(event.location()).isEqualTo("온라인(webex)");
         assertThat(event.location()).doesNotContain("모집인원", "작성자", "WebEX");
         assertThat(event.capacity()).isEqualTo(9);
-        assertThat(event.applicantCount()).isEqualTo(9);
+        assertThat(event.applicantCount()).isEqualTo(1);
         assertThat(event.contentText()).contains("금융 서비스는 어렵다고 느껴지시나요?", "WebEX URL");
         assertThat(event.contentText()).doesNotContain("메뉴 건너띄기", "공지사항", "신청자 리스트", "개인정보처리방침");
         assertThat(event.rawText()).doesNotContain("메뉴 건너띄기", "개인정보처리방침");

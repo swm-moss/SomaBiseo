@@ -48,6 +48,7 @@ type PortalEventResponse = {
   detailItems?: SomaEventDetailItem[] | null;
   contentText?: string | null;
   applicants?: SomaEventApplicant[] | null;
+  detailSyncedAt?: string | null;
   rawText: string;
 };
 
@@ -83,7 +84,7 @@ function toSomaEvent(event: PortalEventResponse): SomaEvent {
     mentorName: event.mentorName,
     topic: event.topic ?? event.title,
     description: event.rawText,
-    location: event.location,
+    location: event.location ?? detailItemValue(event.detailItems, "장소"),
     startAt: event.startAt,
     endAt: event.endAt,
     applicationStartAt: event.applicationStartAt ?? null,
@@ -99,9 +100,26 @@ function toSomaEvent(event: PortalEventResponse): SomaEvent {
     detailItems: event.detailItems ?? [],
     contentText: event.contentText ?? null,
     applicants: event.applicants ?? [],
+    detailSyncedAt: event.detailSyncedAt ?? null,
     rawText: event.rawText,
     conflict: { hasConflict: false, busyBlocks: [] },
   };
+}
+
+function detailItemValue(
+  detailItems: SomaEventDetailItem[] | null | undefined,
+  label: string,
+) {
+  const normalizedLabel = normalizeDetailLabel(label);
+
+  return (
+    detailItems?.find((item) => normalizeDetailLabel(item.label) === normalizedLabel)?.value ??
+    null
+  );
+}
+
+function normalizeDetailLabel(label: string) {
+  return label.replace(/\s+/g, "");
 }
 
 function matchesFilter(event: SomaEvent, filter: SomaEventFilter) {
@@ -197,14 +215,18 @@ export async function getSomaEventsPage({
   };
 }
 
-export async function getSomaEventById(eventId: string) {
+export async function getSomaEventById(eventId: string, options: { refresh?: boolean } = {}) {
+  const searchParams: Record<string, string | boolean> = {
+    sourceId: eventId,
+  };
+
+  if (options.refresh) {
+    searchParams.refresh = true;
+  }
+
   const detail = await unwrapApiResponse(
     apiClient
-      .get("soma/events/detail", {
-        searchParams: {
-          sourceId: eventId,
-        },
-      })
+      .get("soma/events/detail", { searchParams })
       .json<ApiResponse<PortalEventResponse>>(),
   );
 

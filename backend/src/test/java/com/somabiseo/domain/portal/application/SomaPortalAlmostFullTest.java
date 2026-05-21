@@ -8,6 +8,7 @@ import com.somabiseo.domain.somaevent.domain.EventType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -44,6 +45,7 @@ class SomaPortalAlmostFullTest {
                 "pw",
                 60,
                 10,
+                120,
                 5
         );
 
@@ -86,6 +88,7 @@ class SomaPortalAlmostFullTest {
                 List.of(),
                 "",
                 List.of(),
+                Instant.parse("2026-05-21T01:00:00Z"),
                 ""
         );
     }

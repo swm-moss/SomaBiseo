@@ -85,6 +85,7 @@ railway up backend --path-as-root
 | `SOMA_PORTAL_OPERATOR_USERNAME` | `********` | 읽기 전용 포털 조회용 운영자 SOMA 계정 |
 | `SOMA_PORTAL_OPERATOR_PASSWORD` | `********` | 읽기 전용 포털 조회용 운영자 SOMA 비밀번호 |
 | `SOMA_PORTAL_CACHE_TTL_MINUTES` | `30` | 공지/멘토링 DB 캐시 재동기화 주기 |
+| `SOMA_PORTAL_DETAIL_CACHE_TTL_SECONDS` | `120` | 멘토링 상세/신청자 리스트 캐시 재확인 주기 |
 | `SOMA_PORTAL_SYNC_PAGE_LIMIT` | `60` | 한 번에 동기화할 포털 목록 최대 페이지 수 |
 | `OPENAI_API_KEY` | `sk-...` | 멘토링/특강 AI 요약 생성용 OpenAI API 키 |
 | `OPENAI_SUMMARY_MODEL` | `gpt-5.4-mini` | AI 요약 모델. 비우면 기본값 사용 |

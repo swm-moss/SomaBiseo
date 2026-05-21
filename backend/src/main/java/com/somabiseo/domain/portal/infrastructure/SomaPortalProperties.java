@@ -17,6 +17,7 @@ public record SomaPortalProperties(
         String operatorPassword,
         long sessionTtlMinutes,
         long cacheTtlMinutes,
+        long detailCacheTtlSeconds,
         int syncPageLimit
 ) {
 }

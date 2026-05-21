@@ -93,6 +93,17 @@ public class SomaPortalCacheService {
     }
 
     @Transactional
+    public SomaPortalEventResponse upsertEventDetail(SomaPortalEventResponse event) {
+        CachedPortalEvent entity = eventRepository.findBySourceId(event.sourceId())
+                .or(() -> eventRepository.findBySourceUrl(event.sourceUrl()))
+                .orElseGet(() -> new CachedPortalEvent(event, objectMapper, true));
+
+        entity.update(event, objectMapper, true);
+
+        return eventRepository.save(entity).toResponse(objectMapper);
+    }
+
+    @Transactional
     public void markNoticeSyncSuccess(int totalPages) {
         syncLogRepository.save(CachedPortalSyncLog.success(
                 NOTICE_SOURCE_TYPE,
@@ -199,6 +210,15 @@ public class SomaPortalCacheService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<SomaPortalEventResponse> findFreshEventDetail(String sourceUrl, Duration ttl) {
+        Instant now = Instant.now();
+
+        return eventRepository.findBySourceUrl(sourceUrl)
+                .filter((event) -> event.detailFresh(ttl, now))
+                .map((event) -> event.toResponse(objectMapper));
+    }
+
+    @Transactional(readOnly = true)
     public Optional<SomaPortalEventResponse> findEventBySourceId(String sourceId) {
         return eventRepository.findBySourceId(sourceId)
                 .map((event) -> event.toResponse(objectMapper));
@@ -208,6 +228,25 @@ public class SomaPortalCacheService {
     public Optional<SomaPortalEventResponse> findEventDetailBySourceId(String sourceId) {
         return eventRepository.findBySourceId(sourceId)
                 .filter(CachedPortalEvent::hasDetail)
+                .map((event) -> event.toResponse(objectMapper));
+    }
+
+    @Transactional(readOnly = true)
+    public List<SomaPortalEventResponse> findDisplayDetailHydrationCandidates(int limit) {
+        int safeLimit = Math.max(limit, 1);
+
+        return eventRepository.findDisplayDetailHydrationCandidates(PageRequest.of(0, safeLimit)).stream()
+                .map((event) -> event.toResponse(objectMapper))
+                .filter((event) -> event.location() == null || event.location().isBlank())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<SomaPortalEventResponse> findFreshEventDetailBySourceId(String sourceId, Duration ttl) {
+        Instant now = Instant.now();
+
+        return eventRepository.findBySourceId(sourceId)
+                .filter((event) -> event.detailFresh(ttl, now))
                 .map((event) -> event.toResponse(objectMapper));
     }
 }

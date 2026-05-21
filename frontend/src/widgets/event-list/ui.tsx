@@ -305,6 +305,11 @@ export function EventList() {
           description="이 페이지에는 조건에 맞는 일정이 없습니다."
         />
       ) : null}
+      {calendarConnected && conflictStatusesQuery.isError && events.length > 0 ? (
+        <p className="mb-3 text-[14px] font-semibold leading-[21px] text-muted-foreground">
+          캘린더 충돌 확인을 잠시 못 했어요. 일정 정보는 정상입니다.
+        </p>
+      ) : null}
       {events.length > 0 ? (
         <div className="sb-list-surface">
           {events.map((event) => (
