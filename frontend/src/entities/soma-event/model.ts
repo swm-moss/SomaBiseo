@@ -113,7 +113,7 @@ export function isEventClosed(event: SomaEvent): boolean {
 }
 
 export function isEventEnded(event: SomaEvent, now: Date = new Date()): boolean {
-  const reference = event.endAt ?? event.startAt;
+  const reference = event.startAt ?? event.endAt;
 
   if (!reference) {
     return false;
