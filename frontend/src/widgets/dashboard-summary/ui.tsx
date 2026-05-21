@@ -155,12 +155,10 @@ export function DashboardSummary() {
                   className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
                   href={routes.eventDetail(event.id)}
                 >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
-                      {eventTypeLabel[event.type]}
-                    </StatusBadge>
-                    <p className="text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
-                  </div>
+                  <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
+                    {eventTypeLabel[event.type]}
+                  </StatusBadge>
+                  <p className="mt-2 text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
                   <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
                     {event.mentorName ?? "멘토 미정"} · {formatOptionalDateTime(event.startAt)}
                   </p>
