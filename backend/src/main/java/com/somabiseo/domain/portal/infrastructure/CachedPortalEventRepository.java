@@ -95,8 +95,13 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
-                      case when event.startAt is null then 1 else 0 end,
-                      event.startAt asc,
+                      case
+                        when event.startAt is null then 2
+                        when event.startAt >= :now then 0
+                        else 1
+                      end asc,
+                      case when event.startAt is not null and event.startAt >= :now then event.startAt else null end asc,
+                      case when event.startAt is not null and event.startAt < :now then event.startAt else null end desc,
                       event.id asc
                     """,
             countQuery = """
@@ -122,6 +127,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("dateFrom") OffsetDateTime dateFrom,
             @Param("dateTo") OffsetDateTime dateTo,
             @Param("activeAt") OffsetDateTime activeAt,
+            @Param("now") OffsetDateTime now,
             Pageable pageable
     );
 
@@ -174,11 +180,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     @Query(
             value = """
                     select event from CachedPortalEvent event
-                    where upper(event.status) = 'OPEN'
-                      and event.capacity is not null
-                      and event.applicantCount is not null
-                      and event.capacity - event.applicantCount > 0
-                      and (:type is null or event.type = :type)
+                    where (:type is null or event.type = :type)
                       and (cast(:mode as string) is null
                         or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
@@ -191,16 +193,19 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
-                      (event.capacity - event.applicantCount) asc,
+                      case
+                        when upper(event.status) = 'OPEN'
+                          and event.capacity is not null
+                          and event.applicantCount is not null
+                          and event.capacity - event.applicantCount > 0
+                        then (event.capacity - event.applicantCount)
+                        else 1000000000
+                      end asc,
                       event.id asc
                     """,
             countQuery = """
                     select count(event) from CachedPortalEvent event
-                    where upper(event.status) = 'OPEN'
-                      and event.capacity is not null
-                      and event.applicantCount is not null
-                      and event.capacity - event.applicantCount > 0
-                      and (:type is null or event.type = :type)
+                    where (:type is null or event.type = :type)
                       and (cast(:mode as string) is null
                         or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
