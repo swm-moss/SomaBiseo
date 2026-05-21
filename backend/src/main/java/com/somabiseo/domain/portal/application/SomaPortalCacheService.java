@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -153,11 +152,11 @@ public class SomaPortalCacheService {
     }
 
     @Transactional(readOnly = true)
-    public List<SomaPortalEventResponse> findDeadlineSoonEvents(OffsetDateTime from, OffsetDateTime to, int limit) {
+    public List<SomaPortalEventResponse> findAlmostFullEvents(int limit) {
         int safeLimit = Math.max(limit, 1);
 
         return eventRepository
-                .findDeadlineSoonOpenEvents(from, to, PageRequest.of(0, safeLimit))
+                .findAlmostFullOpenEvents(PageRequest.of(0, safeLimit))
                 .stream()
                 .map((event) -> event.toResponse(objectMapper))
                 .toList();

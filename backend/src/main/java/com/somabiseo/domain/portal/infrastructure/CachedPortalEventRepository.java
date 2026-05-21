@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -157,14 +156,10 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     @Query("""
             select event from CachedPortalEvent event
             where upper(event.status) = 'OPEN'
-              and event.applicationEndAt is not null
-              and event.applicationEndAt >= :from
-              and event.applicationEndAt <= :to
-            order by event.applicationEndAt asc, event.id asc
+              and event.capacity is not null
+              and event.applicantCount is not null
+              and event.capacity - event.applicantCount > 0
+            order by (event.capacity - event.applicantCount) asc, event.id asc
             """)
-    List<CachedPortalEvent> findDeadlineSoonOpenEvents(
-            @Param("from") OffsetDateTime from,
-            @Param("to") OffsetDateTime to,
-            Pageable pageable
-    );
+    List<CachedPortalEvent> findAlmostFullOpenEvents(Pageable pageable);
 }

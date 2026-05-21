@@ -77,9 +77,9 @@ public class SomaPortalController {
         return ApiResponse.ok(portalService.getEvents(sessionId, page, sort, type, mode, q));
     }
 
-    @GetMapping("/api/soma/events/deadline-soon")
-    ApiResponse<List<SomaPortalEventResponse>> getDeadlineSoonEvents() {
-        return ApiResponse.ok(portalService.getDeadlineSoonEvents());
+    @GetMapping("/api/soma/events/almost-full")
+    ApiResponse<List<SomaPortalEventResponse>> getAlmostFullEvents() {
+        return ApiResponse.ok(portalService.getAlmostFullEvents());
     }
 
     @GetMapping("/api/soma/events/detail")
