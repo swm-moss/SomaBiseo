@@ -163,6 +163,17 @@ public class SomaPortalCacheService {
     }
 
     @Transactional(readOnly = true)
+    public List<SomaPortalEventResponse> findAlmostFullEvents(int limit) {
+        int safeLimit = Math.max(limit, 1);
+
+        return eventRepository
+                .findAlmostFullOpenEvents(PageRequest.of(0, safeLimit))
+                .stream()
+                .map((event) -> event.toResponse(objectMapper))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public Optional<SomaPortalEventResponse> findEventDetail(String sourceUrl) {
         return eventRepository.findBySourceUrl(sourceUrl)
                 .filter(CachedPortalEvent::hasDetail)

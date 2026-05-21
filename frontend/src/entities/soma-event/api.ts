@@ -277,8 +277,21 @@ function normalizePortalPage<T>(
   return response;
 }
 
+export async function getAlmostFullEvents() {
+  const response = await unwrapApiResponse(
+    apiClient
+      .get("soma/events/almost-full")
+      .json<ApiResponse<PortalEventResponse[]>>(),
+  );
+
+  return response.map(toSomaEvent);
+}
+
 export async function getDashboardEvents() {
-  const events = await getSomaEventsPages(MAX_DASHBOARD_EVENT_PAGES, "LECTURE_DATE_ASC");
+  const [events, almostFullEvents] = await Promise.all([
+    getSomaEventsPages(MAX_DASHBOARD_EVENT_PAGES, "LECTURE_DATE_ASC"),
+    getAlmostFullEvents(),
+  ]);
   const today = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Seoul",
     year: "numeric",
@@ -290,7 +303,7 @@ export async function getDashboardEvents() {
     todayEvents: events.filter((event) => event.startAt?.startsWith(today)),
     upcomingEvents: events.slice(0, 3),
     recommendationCandidates: events,
-    deadlineSoonEvents: events.filter((event) => event.status === "OPEN").slice(0, 3),
+    almostFullEvents,
     conflictedEvents: events.filter((event) => event.conflict.hasConflict),
   };
 }

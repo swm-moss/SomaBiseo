@@ -28,6 +28,7 @@ import java.util.function.Function;
 public class SomaPortalService {
     private static final String OPERATOR_SESSION_ID = "operator-readonly";
     private static final int PAGE_SIZE = 10;
+    private static final int ALMOST_FULL_LIMIT = 3;
 
     private final SomaPortalClient portalClient;
     private final SomaPortalHtmlParser htmlParser;
@@ -110,6 +111,12 @@ public class SomaPortalService {
                 cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q),
                 this::fetchAndCachePublicEventDetail
         );
+    }
+
+    public List<SomaPortalEventResponse> getAlmostFullEvents() {
+        syncEventsIfNeeded();
+
+        return cacheService.findAlmostFullEvents(ALMOST_FULL_LIMIT);
     }
 
     public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(
