@@ -145,7 +145,9 @@ export function DashboardSummary() {
               >
                 <p className="text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
                 <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-                  {event.status === "OPEN" ? "신청 가능" : event.status}
+                  {event.applicationEndAt
+                    ? `${formatOptionalDateTime(event.applicationEndAt)} 마감`
+                    : "신청 가능"}
                 </p>
               </Link>
             ))}
