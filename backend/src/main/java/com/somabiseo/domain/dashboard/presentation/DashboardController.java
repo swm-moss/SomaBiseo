@@ -37,6 +37,9 @@ public class DashboardController {
 
         OffsetDateTime now = OffsetDateTime.now(clock);
         OffsetDateTime windowEnd = now.plus(DEADLINE_WINDOW);
+        List<SomaEventResponse> activeEvents = events.stream()
+                .filter((event) -> isActiveAt(event, now))
+                .toList();
         List<SomaEventResponse> deadlineSoonEvents = events.stream()
                 .filter(event -> event.status() == EventStatus.OPEN)
                 .filter(event -> event.applicationEndAt() != null)
@@ -48,13 +51,21 @@ public class DashboardController {
 
         return ApiResponse.ok(new DashboardResponse(
                 List.of(),
-                events.stream().limit(3).toList(),
+                activeEvents.stream().limit(3).toList(),
                 notices.stream().limit(3).toList(),
                 deadlineSoonEvents,
                 events.stream()
                         .filter(event -> event.conflict().hasConflict())
                         .toList()
         ));
+    }
+
+    private static boolean isActiveAt(SomaEventResponse event, OffsetDateTime now) {
+        if (event.endAt() != null) {
+            return !event.endAt().isBefore(now);
+        }
+
+        return event.startAt() != null && !event.startAt().isBefore(now);
     }
 
     record DashboardResponse(

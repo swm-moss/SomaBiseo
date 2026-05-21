@@ -91,7 +91,49 @@ class DashboardControllerTest {
                 .containsExactly("in");
     }
 
+    @Test
+    void upcomingEvents는_종료되지_않은_이벤트만_반환한다() {
+        SomaEventResponse ended = event(
+                "ended",
+                EventStatus.OPEN,
+                NOW.plusDays(1),
+                NOW.minusDays(1),
+                NOW.minusHours(1)
+        );
+        SomaEventResponse ongoing = event(
+                "ongoing",
+                EventStatus.OPEN,
+                NOW.plusDays(1),
+                NOW.minusHours(1),
+                NOW.plusHours(1)
+        );
+        SomaEventResponse future = event(
+                "future",
+                EventStatus.OPEN,
+                NOW.plusDays(1),
+                NOW.plusDays(2),
+                NOW.plusDays(2).plusHours(1)
+        );
+        when(somaEventService.findAll(null)).thenReturn(List.of(ended, ongoing, future));
+
+        ApiResponse<DashboardController.DashboardResponse> response = controller.getDashboard();
+
+        assertThat(response.data().upcomingEvents())
+                .extracting(SomaEventResponse::id)
+                .containsExactly("ongoing", "future");
+    }
+
     private SomaEventResponse event(String id, EventStatus status, OffsetDateTime applicationEndAt) {
+        return event(id, status, applicationEndAt, NOW.plusDays(10), NOW.plusDays(10).plusHours(1));
+    }
+
+    private SomaEventResponse event(
+            String id,
+            EventStatus status,
+            OffsetDateTime applicationEndAt,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt
+    ) {
         return new SomaEventResponse(
                 id,
                 "source-" + id,
@@ -101,8 +143,8 @@ class DashboardControllerTest {
                 "topic",
                 "description",
                 "location",
-                NOW.plusDays(10),
-                NOW.plusDays(10).plusHours(1),
+                startAt,
+                endAt,
                 NOW.minusDays(1),
                 applicationEndAt,
                 10,

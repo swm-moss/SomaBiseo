@@ -39,13 +39,13 @@ class SomaPortalCacheServiceSortTest {
 
         Page<com.somabiseo.domain.portal.infrastructure.CachedPortalEvent> emptyPage =
                 new PageImpl<>(List.of());
-        when(eventRepository.findPageOrderByStartAtAsc(any(), any(), any(), any(), any(), any(), any()))
+        when(eventRepository.findPageOrderByStartAtAsc(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(emptyPage);
-        when(eventRepository.findPageOrderByStartAtDesc(any(), any(), any(), any(), any(), any()))
+        when(eventRepository.findPageOrderByStartAtDesc(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(emptyPage);
-        when(eventRepository.findPageOrderByRegisteredAtDesc(any(), any(), any(), any(), any(), any()))
+        when(eventRepository.findPageOrderByRegisteredAtDesc(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(emptyPage);
-        when(eventRepository.findPageOrderByRemainingSeatsAsc(any(), any(), any(), any(), any(), any()))
+        when(eventRepository.findPageOrderByRemainingSeatsAsc(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(emptyPage);
 
         cacheService = new SomaPortalCacheService(
@@ -59,30 +59,30 @@ class SomaPortalCacheServiceSortTest {
 
     @Test
     void LECTURE_DATE_ASC는_Clock_기반_now를_리포지토리에_전달한다() {
-        cacheService.getEvents(1, 10, SomaPortalEventSort.LECTURE_DATE_ASC, null, null, null, null);
+        cacheService.getEvents(1, 10, SomaPortalEventSort.LECTURE_DATE_ASC, null, null, null, null, null);
 
         ArgumentCaptor<OffsetDateTime> nowCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
         verify(eventRepository).findPageOrderByStartAtAsc(
-                eq(null), eq(null), eq(null), eq(null), eq(null), nowCaptor.capture(), any(Pageable.class)
+                eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), nowCaptor.capture(), any(Pageable.class)
         );
         assertThat(nowCaptor.getValue()).isEqualTo(NOW);
     }
 
     @Test
     void REMAINING_SEATS_ASC는_findPageOrderByRemainingSeatsAsc를_호출한다() {
-        cacheService.getEvents(1, 10, SomaPortalEventSort.REMAINING_SEATS_ASC, null, null, null, null);
+        cacheService.getEvents(1, 10, SomaPortalEventSort.REMAINING_SEATS_ASC, null, null, null, null, null);
 
         verify(eventRepository).findPageOrderByRemainingSeatsAsc(
-                eq(null), eq(null), eq(null), eq(null), eq(null), any(Pageable.class)
+                eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), any(Pageable.class)
         );
     }
 
     @Test
     void LECTURE_DATE_DESC는_now_없이_findPageOrderByStartAtDesc를_호출한다() {
-        cacheService.getEvents(1, 10, SomaPortalEventSort.LECTURE_DATE_DESC, null, null, null, null);
+        cacheService.getEvents(1, 10, SomaPortalEventSort.LECTURE_DATE_DESC, null, null, null, null, null);
 
         verify(eventRepository).findPageOrderByStartAtDesc(
-                eq(null), eq(null), eq(null), eq(null), eq(null), any(Pageable.class)
+                eq(null), eq(null), eq(null), eq(null), eq(null), eq(null), any(Pageable.class)
         );
     }
 }

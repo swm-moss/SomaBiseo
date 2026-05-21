@@ -33,9 +33,17 @@ export type GoogleCalendarEvent = {
 };
 
 export const SOMA_BISEO_EVENT_MARKER_PREFIX = "SomaBiseo Event ID: ";
+export const SOMA_BISEO_EVENT_TYPE_MARKER_PREFIX = "SomaBiseo Event Type: ";
 
 export function isSomaBiseoCalendarEvent(event: GoogleCalendarEvent) {
+  return Boolean(getSomaBiseoEventId(event));
+}
+
+export function getSomaBiseoEventId(event: GoogleCalendarEvent) {
   return event.description
     ?.split("\n")
-    .some((line) => line.trim().startsWith(SOMA_BISEO_EVENT_MARKER_PREFIX)) ?? false;
+    .map((line) => line.trim())
+    .find((line) => line.startsWith(SOMA_BISEO_EVENT_MARKER_PREFIX))
+    ?.slice(SOMA_BISEO_EVENT_MARKER_PREFIX.length)
+    .trim() ?? null;
 }

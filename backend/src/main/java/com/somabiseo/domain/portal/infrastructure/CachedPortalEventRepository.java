@@ -1,9 +1,9 @@
 package com.somabiseo.domain.portal.infrastructure;
 
 import com.somabiseo.domain.somaevent.domain.EventType;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -45,6 +45,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
+                        or (event.endAt is not null and event.endAt >= :activeAt)
+                        or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
                       case when event.startAt is null then 1 else 0 end,
                       event.startAt desc,
@@ -61,6 +64,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
+                        or (event.endAt is not null and event.endAt >= :activeAt)
+                        or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByStartAtDesc(
@@ -69,6 +75,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("q") String q,
             @Param("dateFrom") OffsetDateTime dateFrom,
             @Param("dateTo") OffsetDateTime dateTo,
+            @Param("activeAt") OffsetDateTime activeAt,
             Pageable pageable
     );
 
@@ -84,6 +91,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
+                        or (event.endAt is not null and event.endAt >= :activeAt)
+                        or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
                       case
                         when event.startAt is null then 2
@@ -105,6 +115,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
+                        or (event.endAt is not null and event.endAt >= :activeAt)
+                        or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByStartAtAsc(
@@ -113,6 +126,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("q") String q,
             @Param("dateFrom") OffsetDateTime dateFrom,
             @Param("dateTo") OffsetDateTime dateTo,
+            @Param("activeAt") OffsetDateTime activeAt,
             @Param("now") OffsetDateTime now,
             Pageable pageable
     );
@@ -129,6 +143,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
+                        or (event.endAt is not null and event.endAt >= :activeAt)
+                        or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
                       case when event.registeredAt is null then 1 else 0 end,
                       event.registeredAt desc,
@@ -145,6 +162,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
+                        or (event.endAt is not null and event.endAt >= :activeAt)
+                        or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByRegisteredAtDesc(
@@ -153,6 +173,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("q") String q,
             @Param("dateFrom") OffsetDateTime dateFrom,
             @Param("dateTo") OffsetDateTime dateTo,
+            @Param("activeAt") OffsetDateTime activeAt,
             Pageable pageable
     );
 
@@ -168,6 +189,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
+                        or (event.endAt is not null and event.endAt >= :activeAt)
+                        or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
                       case
                         when upper(event.status) = 'OPEN'
@@ -190,6 +214,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
+                        or (event.endAt is not null and event.endAt >= :activeAt)
+                        or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByRemainingSeatsAsc(
@@ -198,6 +225,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("q") String q,
             @Param("dateFrom") OffsetDateTime dateFrom,
             @Param("dateTo") OffsetDateTime dateTo,
+            @Param("activeAt") OffsetDateTime activeAt,
             Pageable pageable
     );
 
