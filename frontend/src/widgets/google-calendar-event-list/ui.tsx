@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, MapPin } from "lucide-react";
 
 import type { GoogleCalendarEvent } from "@/entities/calendar/model";
 import {
@@ -232,8 +232,9 @@ function CalendarEventRow({ event }: { event: GoogleCalendarEvent }) {
         {formatDateTime(event.startAt)} · {formatTimeRange(event.startAt, event.endAt)}
       </p>
       {event.location ? (
-        <p className="mt-1 truncate text-[14px] font-medium leading-[21px] text-muted-foreground">
-          {event.location}
+        <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
+          <MapPin aria-hidden="true" className="size-4 shrink-0" />
+          <span className="truncate">{event.location}</span>
         </p>
       ) : null}
     </>
