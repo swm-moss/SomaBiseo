@@ -36,15 +36,17 @@ export function DashboardSummary() {
   const { start: weekStart, end: weekEnd } = getWeekRange();
   const calendarEventsQuery = useGoogleCalendarEventsInRange(weekStart, weekEnd);
   const eventsQuery = useQuery({
-    queryKey: ["dashboard-events"],
+    queryKey: ["dashboard-events", sessionId],
     queryFn: () => getDashboardEvents(),
+    enabled: Boolean(sessionId),
   });
   const noticesQuery = useQuery({
-    queryKey: ["dashboard-notices"],
+    queryKey: ["dashboard-notices", sessionId],
     queryFn: () => getNotices(),
+    enabled: Boolean(sessionId),
   });
 
-  if (eventsQuery.isLoading || noticesQuery.isLoading) {
+  if (!sessionId || eventsQuery.isLoading || noticesQuery.isLoading) {
     return <LoadingState />;
   }
 

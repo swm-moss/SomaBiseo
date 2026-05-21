@@ -63,6 +63,11 @@ public class SomaPortalCacheService {
                 .orElse(false);
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasEvents() {
+        return eventRepository.count() > 0;
+    }
+
     @Transactional
     public void upsertNotices(List<SomaPortalNoticeResponse> notices) {
         notices.forEach((notice) -> {
