@@ -52,8 +52,6 @@ export function UpcomingEventCard({
             <StatusBadge tone="green">충돌 없음</StatusBadge>
           ) : calendarCheckState === "loading" ? (
             <StatusBadge tone="neutral">확인 중</StatusBadge>
-          ) : calendarCheckState === "error" ? (
-            <StatusBadge tone="red">확인 실패</StatusBadge>
           ) : null}
         </div>
         <h3 className="mt-2 line-clamp-2 text-[17px] font-extrabold leading-[25.5px]">
@@ -62,10 +60,12 @@ export function UpcomingEventCard({
         <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
           {event.mentorName ?? "멘토 미정"} · {formatOptionalDateTime(event.startAt)}
         </p>
-        <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-          <MapPin aria-hidden="true" className="size-4" />
-          {event.location ?? "장소 미정"}
-        </p>
+        {event.location ? (
+          <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
+            <MapPin aria-hidden="true" className="size-4" />
+            {event.location}
+          </p>
+        ) : null}
       </Link>
       <FavoriteEventButton eventId={event.id} />
     </article>

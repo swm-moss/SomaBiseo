@@ -20,6 +20,19 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     Optional<Instant> findLatestUpdatedAt();
 
     @Query(
+            """
+                    select event from CachedPortalEvent event
+                    where (event.location is null or trim(event.location) = '')
+                      and event.detailSyncedAt is null
+                    order by
+                      case when event.startAt is null then 1 else 0 end,
+                      event.startAt desc,
+                      event.id desc
+                    """
+    )
+    List<CachedPortalEvent> findDisplayDetailHydrationCandidates(Pageable pageable);
+
+    @Query(
             value = """
                     select event from CachedPortalEvent event
                     where (:type is null or event.type = :type)

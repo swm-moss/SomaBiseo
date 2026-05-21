@@ -19,6 +19,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -102,6 +103,9 @@ public class CachedPortalEvent {
     @Column(name = "applicants_json", nullable = false, columnDefinition = "text")
     private String applicantsJson = "[]";
 
+    @Column(name = "detail_synced_at")
+    private Instant detailSyncedAt;
+
     @Column(name = "raw_text", nullable = false, columnDefinition = "text")
     private String rawText = "";
 
@@ -115,17 +119,29 @@ public class CachedPortalEvent {
     }
 
     public CachedPortalEvent(SomaPortalEventResponse response, ObjectMapper objectMapper) {
+        this(response, objectMapper, false);
+    }
+
+    public CachedPortalEvent(SomaPortalEventResponse response, ObjectMapper objectMapper, boolean detailFetched) {
         this.sourceId = response.sourceId();
-        update(response, objectMapper);
+        update(response, objectMapper, detailFetched);
     }
 
     public void update(SomaPortalEventResponse response, ObjectMapper objectMapper) {
+        update(response, objectMapper, false);
+    }
+
+    public void update(SomaPortalEventResponse response, ObjectMapper objectMapper, boolean detailFetched) {
         this.type = response.type();
         this.title = response.title();
         this.mentorName = response.mentorName();
         this.topic = response.topic();
         this.description = response.rawText();
-        this.location = response.location();
+        this.location = nextDetailAwareValue(
+                this.location,
+                firstNonBlank(response.location(), detailItemValue(response.detailItems(), "장소")),
+                detailFetched
+        );
         this.startAt = response.startAt();
         this.endAt = response.endAt();
         this.applicationStartAt = response.applicationStartAt();
@@ -140,27 +156,32 @@ public class CachedPortalEvent {
         this.sourceUrl = response.sourceUrl();
         this.rawText = response.rawText() == null ? "" : response.rawText();
 
-        if (response.detailItems() != null && !response.detailItems().isEmpty()) {
+        if (detailFetched) {
+            this.detailItemsJson = writeJson(objectMapper, response.detailItems() == null ? List.of() : response.detailItems());
+            this.contentText = response.contentText() == null || response.contentText().isBlank()
+                    ? null
+                    : response.contentText();
+            this.applicantsJson = writeJson(objectMapper, response.applicants() == null ? List.of() : response.applicants());
+            this.detailSyncedAt = Instant.now();
+        } else if (response.detailItems() != null && !response.detailItems().isEmpty()) {
             this.detailItemsJson = writeJson(objectMapper, response.detailItems());
-        }
-
-        if (response.contentText() != null && !response.contentText().isBlank()) {
             this.contentText = response.contentText();
-        }
-
-        if (response.applicants() != null && !response.applicants().isEmpty()) {
-            this.applicantsJson = writeJson(objectMapper, response.applicants());
+            this.applicantsJson = writeJson(objectMapper, response.applicants() == null ? List.of() : response.applicants());
+            this.detailSyncedAt = response.detailSyncedAt() == null ? Instant.now() : response.detailSyncedAt();
         }
     }
 
     public SomaPortalEventResponse toResponse(ObjectMapper objectMapper) {
+        List<SomaPortalEventDetailItem> detailItems = readJson(objectMapper, detailItemsJson, DETAIL_ITEMS_TYPE);
+        List<SomaPortalEventApplicantResponse> applicants = readJson(objectMapper, applicantsJson, APPLICANTS_TYPE);
+
         return new SomaPortalEventResponse(
                 sourceId,
                 type,
                 title,
                 mentorName,
                 topic,
-                location,
+                firstNonBlank(location, detailItemValue(detailItems, "장소")),
                 startAt,
                 endAt,
                 applicationStartAt,
@@ -173,9 +194,10 @@ public class CachedPortalEvent {
                 author,
                 registeredAt,
                 sourceUrl,
-                readJson(objectMapper, detailItemsJson, DETAIL_ITEMS_TYPE),
+                detailItems,
                 contentText,
-                readJson(objectMapper, applicantsJson, APPLICANTS_TYPE),
+                applicants,
+                detailSyncedAt,
                 rawText
         );
     }
@@ -188,6 +210,12 @@ public class CachedPortalEvent {
 
     public Instant updatedAt() {
         return updatedAt;
+    }
+
+    public boolean detailFresh(Duration ttl, Instant now) {
+        return hasDetail()
+                && detailSyncedAt != null
+                && detailSyncedAt.isAfter(now.minus(ttl));
     }
 
     @PrePersist
@@ -216,5 +244,46 @@ public class CachedPortalEvent {
         } catch (JsonProcessingException exception) {
             throw new SomaPortalException("포털 캐시 JSON 읽기에 실패했습니다.", exception);
         }
+    }
+
+    private static String nextDetailAwareValue(String currentValue, String nextValue, boolean detailFetched) {
+        if (detailFetched) {
+            return nextValue;
+        }
+
+        if (nextValue == null || nextValue.isBlank()) {
+            return currentValue;
+        }
+
+        return nextValue;
+    }
+
+    private static String detailItemValue(List<SomaPortalEventDetailItem> detailItems, String label) {
+        if (detailItems == null || detailItems.isEmpty()) {
+            return null;
+        }
+
+        String normalizedLabel = normalizeLabel(label);
+
+        return detailItems.stream()
+                .filter((item) -> normalizeLabel(item.label()).equals(normalizedLabel))
+                .map(SomaPortalEventDetailItem::value)
+                .filter((value) -> value != null && !value.isBlank())
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String normalizeLabel(String label) {
+        return label == null ? "" : label.replaceAll("\\s+", "");
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+
+        return null;
     }
 }
