@@ -92,6 +92,14 @@ function applicantTone(applicant: SomaEventApplicant) {
   return applicant.status.includes("취소") ? "text-destructive" : "text-primary";
 }
 
+function isActiveApplicant(applicant: SomaEventApplicant) {
+  return !applicant.canceledAt && !applicant.status.includes("취소");
+}
+
+function displayApplicantCount(event: SomaEvent) {
+  return event.applicantCount ?? event.applicants.filter(isActiveApplicant).length;
+}
+
 function AiSummarySection({
   isError,
   isLoading,
@@ -210,6 +218,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
     },
   });
   const eventContentLines = event ? contentLines(event) : [];
+  const applicantCount = event ? displayApplicantCount(event) : 0;
   const hasLocation = Boolean(event?.location);
 
   return (
@@ -285,7 +294,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                   <div className="min-w-0">
                     <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">신청</p>
                     <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
-                      {event.applicantCount ?? event.applicants.length}
+                      {applicantCount}
                       {event.capacity ? ` / ${event.capacity}` : ""}명
                     </p>
                   </div>
@@ -345,7 +354,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                     <h2 className="text-[20px] font-black leading-[29px]">신청자 리스트</h2>
                     <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-primary">
                       <CheckCircle2 aria-hidden="true" className="size-4" />
-                      {event.applicantCount ?? event.applicants.length}명
+                      {applicantCount}명
                     </span>
                   </div>
                   <p className="mt-1 text-[13px] font-semibold leading-[19px] text-muted-foreground">

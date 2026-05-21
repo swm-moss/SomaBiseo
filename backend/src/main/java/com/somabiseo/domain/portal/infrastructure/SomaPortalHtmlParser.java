@@ -246,7 +246,9 @@ public class SomaPortalHtmlParser {
                 applicationRange.startAt(),
                 applicationRange.endAt(),
                 parseCapacity(detailMap.get("모집인원")).orElse(null),
-                parseApplicantCount(rawText).orElse(applicants.isEmpty() ? null : applicants.size()),
+                applicantTable == null
+                        ? parseApplicantCount(rawText).orElse(null)
+                        : activeApplicantCount(applicants),
                 inferStatus(firstNonBlank(detailMap.get("상태"), rawText)),
                 detailMap.get("개설승인"),
                 detailMap.get("진행방식"),
@@ -575,6 +577,17 @@ public class SomaPortalHtmlParser {
         }
 
         return applicants;
+    }
+
+    private int activeApplicantCount(List<SomaPortalEventApplicantResponse> applicants) {
+        return (int) applicants.stream()
+                .filter(applicant -> !isCanceledApplicant(applicant))
+                .count();
+    }
+
+    private boolean isCanceledApplicant(SomaPortalEventApplicantResponse applicant) {
+        return applicant.canceledAt() != null
+                || applicant.status().contains("취소");
     }
 
     private String cellText(Elements cells, int index) {
