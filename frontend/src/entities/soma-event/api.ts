@@ -84,7 +84,7 @@ function toSomaEvent(event: PortalEventResponse): SomaEvent {
     mentorName: event.mentorName,
     topic: event.topic ?? event.title,
     description: event.rawText,
-    location: event.location,
+    location: event.location ?? detailItemValue(event.detailItems, "장소"),
     startAt: event.startAt,
     endAt: event.endAt,
     applicationStartAt: event.applicationStartAt ?? null,
@@ -104,6 +104,22 @@ function toSomaEvent(event: PortalEventResponse): SomaEvent {
     rawText: event.rawText,
     conflict: { hasConflict: false, busyBlocks: [] },
   };
+}
+
+function detailItemValue(
+  detailItems: SomaEventDetailItem[] | null | undefined,
+  label: string,
+) {
+  const normalizedLabel = normalizeDetailLabel(label);
+
+  return (
+    detailItems?.find((item) => normalizeDetailLabel(item.label) === normalizedLabel)?.value ??
+    null
+  );
+}
+
+function normalizeDetailLabel(label: string) {
+  return label.replace(/\s+/g, "");
 }
 
 function matchesFilter(event: SomaEvent, filter: SomaEventFilter) {

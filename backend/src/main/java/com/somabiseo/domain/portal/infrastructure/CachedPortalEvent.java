@@ -137,7 +137,11 @@ public class CachedPortalEvent {
         this.mentorName = response.mentorName();
         this.topic = response.topic();
         this.description = response.rawText();
-        this.location = response.location();
+        this.location = nextDetailAwareValue(
+                this.location,
+                firstNonBlank(response.location(), detailItemValue(response.detailItems(), "장소")),
+                detailFetched
+        );
         this.startAt = response.startAt();
         this.endAt = response.endAt();
         this.applicationStartAt = response.applicationStartAt();
@@ -237,5 +241,46 @@ public class CachedPortalEvent {
         } catch (JsonProcessingException exception) {
             throw new SomaPortalException("포털 캐시 JSON 읽기에 실패했습니다.", exception);
         }
+    }
+
+    private static String nextDetailAwareValue(String currentValue, String nextValue, boolean detailFetched) {
+        if (detailFetched) {
+            return nextValue;
+        }
+
+        if (nextValue == null || nextValue.isBlank()) {
+            return currentValue;
+        }
+
+        return nextValue;
+    }
+
+    private static String detailItemValue(List<SomaPortalEventDetailItem> detailItems, String label) {
+        if (detailItems == null || detailItems.isEmpty()) {
+            return null;
+        }
+
+        String normalizedLabel = normalizeLabel(label);
+
+        return detailItems.stream()
+                .filter((item) -> normalizeLabel(item.label()).equals(normalizedLabel))
+                .map(SomaPortalEventDetailItem::value)
+                .filter((value) -> value != null && !value.isBlank())
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String normalizeLabel(String label) {
+        return label == null ? "" : label.replaceAll("\\s+", "");
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+
+        return null;
     }
 }
