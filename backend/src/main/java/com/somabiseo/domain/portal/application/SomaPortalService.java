@@ -102,13 +102,14 @@ public class SomaPortalService {
             SomaPortalEventSort sort,
             EventType type,
             EventMode mode,
-            String q
+            String q,
+            String date
     ) {
         syncEventsIfNeeded();
         hydrateCachedEventsMissingDisplayDetailsIfNeeded();
 
         return hydrateEventPageDisplayDetails(
-                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q),
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date),
                 this::fetchAndCachePublicEventDetail
         );
     }
@@ -125,7 +126,8 @@ public class SomaPortalService {
             SomaPortalEventSort sort,
             EventType type,
             EventMode mode,
-            String q
+            String q,
+            String date
     ) {
         SomaPortalSession session = sessionStore.get(sessionId);
         SomaPortalPageResponse<SomaPortalEventResponse> response = fetchEvents(session, page);
@@ -133,7 +135,7 @@ public class SomaPortalService {
         cacheService.upsertEvents(response.items());
 
         return hydrateEventPageDisplayDetails(
-                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q),
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date),
                 (sourceUrl) -> fetchAndCacheEventDetail(session, sourceUrl)
         );
     }

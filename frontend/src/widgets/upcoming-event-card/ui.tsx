@@ -3,6 +3,7 @@ import { AlertTriangle, CalendarCheck, MapPin } from "lucide-react";
 
 import type { CalendarConflictStatus } from "@/entities/calendar/model";
 import type { SomaEvent } from "@/entities/soma-event/model";
+import { isEventClosed } from "@/entities/soma-event/model";
 import type { EventRecommendation } from "@/features/user-interests/model";
 import { FavoriteEventButton } from "@/features/favorite-event/ui";
 import { routes } from "@/shared/config/routes";
@@ -26,6 +27,8 @@ export function UpcomingEventCard({
   calendarStatus?: CalendarConflictStatus;
   recommendation?: EventRecommendation;
 }) {
+  const closed = isEventClosed(event);
+
   return (
     <article className={cn("sb-list-row", recommendation?.isRecommended && "sb-recommended-row")}>
       <Link className="min-w-0 flex-1" href={routes.eventDetail(event.id)}>
@@ -38,6 +41,7 @@ export function UpcomingEventCard({
               추천 {recommendation.matchedTopics.map((topic) => topic.label).join(", ")}
             </StatusBadge>
           ) : null}
+          {closed ? <StatusBadge tone="red">마감</StatusBadge> : null}
           {calendarStatus?.alreadyAdded ? (
             <StatusBadge tone="green">
               <CalendarCheck aria-hidden="true" className="mr-1 size-3" />

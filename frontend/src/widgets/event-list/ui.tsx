@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ChevronDown, Search } from "lucide-react";
 
+import { DatePicker } from "@/shared/ui/date-picker";
 import {
   DEFAULT_SOMA_EVENT_SORT,
   getSomaEventsPage,
@@ -48,7 +49,7 @@ const sortOptions = [
   { label: "최신 강의순", value: "LECTURE_DATE_DESC" },
   { label: "빠른 강의순", value: "LECTURE_DATE_ASC" },
   { label: "최근 등록순", value: "REGISTERED_AT_DESC" },
-  { label: "마감 임박순", value: "APPLICATION_DEADLINE_ASC" },
+  { label: "마감 임박순", value: "REMAINING_SEATS_ASC" },
 ] satisfies { label: string; value: SomaEventSort }[];
 
 const EVENT_TABS = new Set<EventTab>(["ALL", "LECTURE", "MENTORING"]);
@@ -57,7 +58,7 @@ const EVENT_SORTS = new Set<SomaEventSort>([
   "LECTURE_DATE_DESC",
   "LECTURE_DATE_ASC",
   "REGISTERED_AT_DESC",
-  "APPLICATION_DEADLINE_ASC",
+  "REMAINING_SEATS_ASC",
 ]);
 
 function parseTab(value: string | null): EventTab {
@@ -84,6 +85,16 @@ function parsePage(value: string | null): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseDate(value: string | null): string {
+  if (!value) {
+    return "";
+  }
+
+  return ISO_DATE_PATTERN.test(value) ? value : "";
+}
+
 export function EventList() {
   const router = useRouter();
   const pathname = usePathname();
@@ -93,6 +104,7 @@ export function EventList() {
   const mode = parseMode(searchParams.get("mode"));
   const sort = parseSort(searchParams.get("sort"));
   const page = parsePage(searchParams.get("page"));
+  const date = parseDate(searchParams.get("date"));
   const urlQ = searchParams.get("q") ?? "";
 
   const [searchInput, setSearchInput] = useState(urlQ);
@@ -106,7 +118,7 @@ export function EventList() {
   const type = tab === "ALL" ? undefined : tab;
   const modeFilter = mode === "ALL" ? undefined : mode;
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: ["events", tab, mode, sort, debouncedSearch, page],
+    queryKey: ["events", tab, mode, sort, debouncedSearch, date, page],
     queryFn: () =>
       getSomaEventsPage({
         page,
@@ -114,6 +126,7 @@ export function EventList() {
         type,
         mode: modeFilter,
         q: debouncedSearch,
+        date: date || undefined,
       }),
     placeholderData: keepPreviousData,
   });
@@ -209,6 +222,18 @@ export function EventList() {
     });
   };
 
+  const handleDateChange = (nextDate: string) => {
+    updateSearchParams((params) => {
+      if (!nextDate) {
+        params.delete("date");
+      } else {
+        params.set("date", nextDate);
+      }
+
+      params.delete("page");
+    });
+  };
+
   return (
     <section className="sb-section">
       <div className="mb-4 space-y-2">
@@ -227,7 +252,7 @@ export function EventList() {
           onValueChange={handleModeChange}
         />
       </div>
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Search
             aria-hidden="true"
@@ -242,25 +267,34 @@ export function EventList() {
             onChange={(event) => setSearchInput(event.target.value)}
           />
         </div>
-        <div className="relative shrink-0">
-          <select
-            aria-label="정렬"
-            className="h-12 w-32 appearance-none rounded-lg border border-border bg-white pl-3 pr-9 text-[14px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 sm:w-40"
-            value={sort}
-            onChange={(event) =>
-              handleSortChange(event.target.value as SomaEventSort)
-            }
-          >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            aria-hidden="true"
-            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        <div className="flex items-center gap-2">
+          <DatePicker
+            ariaLabel="강의 날짜"
+            className="w-36 sm:w-40"
+            placeholder="날짜 선택"
+            value={date}
+            onChange={handleDateChange}
           />
+          <div className="relative shrink-0">
+            <select
+              aria-label="정렬"
+              className="h-12 w-32 appearance-none rounded-lg border border-border bg-white pl-3 pr-9 text-[14px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 sm:w-40"
+              value={sort}
+              onChange={(event) =>
+                handleSortChange(event.target.value as SomaEventSort)
+              }
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              aria-hidden="true"
+              className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+          </div>
         </div>
       </div>
       {isLoading ? <LoadingState /> : null}

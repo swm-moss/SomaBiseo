@@ -15,7 +15,7 @@ export type SomaEventSort =
   | "LECTURE_DATE_DESC"
   | "LECTURE_DATE_ASC"
   | "REGISTERED_AT_DESC"
-  | "APPLICATION_DEADLINE_ASC";
+  | "REMAINING_SEATS_ASC";
 
 export const DEFAULT_SOMA_EVENT_SORT: SomaEventSort = "LECTURE_DATE_DESC";
 
@@ -169,6 +169,7 @@ export type GetSomaEventsPageOptions = {
   type?: SomaEventType;
   mode?: SomaEventMode;
   q?: string;
+  date?: string;
 };
 
 export async function getSomaEventsPage({
@@ -177,6 +178,7 @@ export async function getSomaEventsPage({
   type,
   mode,
   q,
+  date,
 }: GetSomaEventsPageOptions = {}) {
   const searchParams: Record<string, string | number> = { page, sort };
 
@@ -192,6 +194,12 @@ export async function getSomaEventsPage({
 
   if (trimmedQ) {
     searchParams.q = trimmedQ;
+  }
+
+  const trimmedDate = date?.trim();
+
+  if (trimmedDate) {
+    searchParams.date = trimmedDate;
   }
 
   const response = await unwrapApiResponse(
