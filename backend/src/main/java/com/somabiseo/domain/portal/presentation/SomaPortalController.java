@@ -68,13 +68,14 @@ public class SomaPortalController {
             @RequestParam(defaultValue = "LECTURE_DATE_DESC") SomaPortalEventSort sort,
             @RequestParam(required = false) EventType type,
             @RequestParam(required = false) EventMode mode,
-            @RequestParam(required = false) String q
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String date
     ) {
         if (!hasText(sessionId)) {
-            return ApiResponse.ok(portalService.getPublicEvents(page, sort, type, mode, q));
+            return ApiResponse.ok(portalService.getPublicEvents(page, sort, type, mode, q, date));
         }
 
-        return ApiResponse.ok(portalService.getEvents(sessionId, page, sort, type, mode, q));
+        return ApiResponse.ok(portalService.getEvents(sessionId, page, sort, type, mode, q, date));
     }
 
     @GetMapping("/api/soma/events/almost-full")

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +30,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
+                      and (:dateFrom is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
                       case when event.startAt is null then 1 else 0 end,
                       event.startAt desc,
@@ -43,12 +46,16 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
+                      and (:dateFrom is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByStartAtDesc(
             @Param("type") EventType type,
             @Param("mode") String mode,
             @Param("q") String q,
+            @Param("dateFrom") OffsetDateTime dateFrom,
+            @Param("dateTo") OffsetDateTime dateTo,
             Pageable pageable
     );
 
@@ -62,6 +69,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
+                      and (:dateFrom is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
                       case when event.startAt is null then 1 else 0 end,
                       event.startAt asc,
@@ -76,12 +85,16 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
+                      and (:dateFrom is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByStartAtAsc(
             @Param("type") EventType type,
             @Param("mode") String mode,
             @Param("q") String q,
+            @Param("dateFrom") OffsetDateTime dateFrom,
+            @Param("dateTo") OffsetDateTime dateTo,
             Pageable pageable
     );
 
@@ -95,6 +108,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
+                      and (:dateFrom is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
                       case when event.registeredAt is null then 1 else 0 end,
                       event.registeredAt desc,
@@ -109,12 +124,16 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
+                      and (:dateFrom is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByRegisteredAtDesc(
             @Param("type") EventType type,
             @Param("mode") String mode,
             @Param("q") String q,
+            @Param("dateFrom") OffsetDateTime dateFrom,
+            @Param("dateTo") OffsetDateTime dateTo,
             Pageable pageable
     );
 
@@ -128,6 +147,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
+                      and (:dateFrom is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
                       case when event.applicationEndAt is null then 1 else 0 end,
                       event.applicationEndAt asc,
@@ -144,12 +165,16 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
+                      and (:dateFrom is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     """
     )
     Page<CachedPortalEvent> findPageOrderByApplicationEndAtAsc(
             @Param("type") EventType type,
             @Param("mode") String mode,
             @Param("q") String q,
+            @Param("dateFrom") OffsetDateTime dateFrom,
+            @Param("dateTo") OffsetDateTime dateTo,
             Pageable pageable
     );
 

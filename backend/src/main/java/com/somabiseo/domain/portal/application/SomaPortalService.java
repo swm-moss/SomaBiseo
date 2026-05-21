@@ -102,11 +102,12 @@ public class SomaPortalService {
             SomaPortalEventSort sort,
             EventType type,
             EventMode mode,
-            String q
+            String q,
+            String date
     ) {
         syncEventsIfNeeded();
 
-        return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q);
+        return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date);
     }
 
     public List<SomaPortalEventResponse> getAlmostFullEvents() {
@@ -121,14 +122,15 @@ public class SomaPortalService {
             SomaPortalEventSort sort,
             EventType type,
             EventMode mode,
-            String q
+            String q,
+            String date
     ) {
         SomaPortalSession session = sessionStore.get(sessionId);
         SomaPortalPageResponse<SomaPortalEventResponse> response = fetchEvents(session, page);
 
         cacheService.upsertEvents(response.items());
 
-        return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q);
+        return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date);
     }
 
     public SomaPortalEventResponse getPublicEventDetailBySourceId(String sourceId) {
