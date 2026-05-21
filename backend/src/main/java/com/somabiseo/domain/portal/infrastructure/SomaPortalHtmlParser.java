@@ -579,7 +579,7 @@ public class SomaPortalHtmlParser {
         return applicants;
     }
 
-    private int activeApplicantCount(List<SomaPortalEventApplicantResponse> applicants) {
+    private Integer activeApplicantCount(List<SomaPortalEventApplicantResponse> applicants) {
         return (int) applicants.stream()
                 .filter(applicant -> !isCanceledApplicant(applicant))
                 .count();
