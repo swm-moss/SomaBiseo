@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ChevronDown, Search } from "lucide-react";
+import { CalendarDays, ChevronDown, Search, X } from "lucide-react";
 
 import {
   DEFAULT_SOMA_EVENT_SORT,
@@ -84,6 +84,16 @@ function parsePage(value: string | null): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseDate(value: string | null): string {
+  if (!value) {
+    return "";
+  }
+
+  return ISO_DATE_PATTERN.test(value) ? value : "";
+}
+
 export function EventList() {
   const router = useRouter();
   const pathname = usePathname();
@@ -93,6 +103,7 @@ export function EventList() {
   const mode = parseMode(searchParams.get("mode"));
   const sort = parseSort(searchParams.get("sort"));
   const page = parsePage(searchParams.get("page"));
+  const date = parseDate(searchParams.get("date"));
   const urlQ = searchParams.get("q") ?? "";
 
   const [searchInput, setSearchInput] = useState(urlQ);
@@ -106,7 +117,7 @@ export function EventList() {
   const type = tab === "ALL" ? undefined : tab;
   const modeFilter = mode === "ALL" ? undefined : mode;
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    queryKey: ["events", tab, mode, sort, debouncedSearch, page],
+    queryKey: ["events", tab, mode, sort, debouncedSearch, date, page],
     queryFn: () =>
       getSomaEventsPage({
         page,
@@ -114,6 +125,7 @@ export function EventList() {
         type,
         mode: modeFilter,
         q: debouncedSearch,
+        date: date || undefined,
       }),
     placeholderData: keepPreviousData,
   });
@@ -209,6 +221,18 @@ export function EventList() {
     });
   };
 
+  const handleDateChange = (nextDate: string) => {
+    updateSearchParams((params) => {
+      if (!nextDate) {
+        params.delete("date");
+      } else {
+        params.set("date", nextDate);
+      }
+
+      params.delete("page");
+    });
+  };
+
   return (
     <section className="sb-section">
       <div className="mb-4 space-y-2">
@@ -227,7 +251,7 @@ export function EventList() {
           onValueChange={handleModeChange}
         />
       </div>
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Search
             aria-hidden="true"
@@ -241,6 +265,30 @@ export function EventList() {
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
           />
+        </div>
+        <div className="flex items-center gap-2">
+        <div className="relative shrink-0">
+          <CalendarDays
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            aria-label="강의 날짜"
+            className="h-12 w-40 rounded-lg border border-border bg-white pl-9 pr-9 text-[14px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
+            type="date"
+            value={date}
+            onChange={(event) => handleDateChange(event.target.value)}
+          />
+          {date ? (
+            <button
+              aria-label="날짜 필터 해제"
+              className="absolute right-2 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              type="button"
+              onClick={() => handleDateChange("")}
+            >
+              <X aria-hidden="true" className="size-3.5" />
+            </button>
+          ) : null}
         </div>
         <div className="relative shrink-0">
           <select
@@ -261,6 +309,7 @@ export function EventList() {
             aria-hidden="true"
             className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
           />
+        </div>
         </div>
       </div>
       {isLoading ? <LoadingState /> : null}

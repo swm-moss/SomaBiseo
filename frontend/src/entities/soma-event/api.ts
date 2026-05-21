@@ -151,6 +151,7 @@ export type GetSomaEventsPageOptions = {
   type?: SomaEventType;
   mode?: SomaEventMode;
   q?: string;
+  date?: string;
 };
 
 export async function getSomaEventsPage({
@@ -159,6 +160,7 @@ export async function getSomaEventsPage({
   type,
   mode,
   q,
+  date,
 }: GetSomaEventsPageOptions = {}) {
   const searchParams: Record<string, string | number> = { page, sort };
 
@@ -174,6 +176,12 @@ export async function getSomaEventsPage({
 
   if (trimmedQ) {
     searchParams.q = trimmedQ;
+  }
+
+  const trimmedDate = date?.trim();
+
+  if (trimmedDate) {
+    searchParams.date = trimmedDate;
   }
 
   const response = await unwrapApiResponse(
