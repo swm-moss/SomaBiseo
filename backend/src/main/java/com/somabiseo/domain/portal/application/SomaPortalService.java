@@ -124,20 +124,21 @@ public class SomaPortalService {
         return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q);
     }
 
-    public SomaPortalEventResponse getPublicEventDetailBySourceId(String sourceId) {
+    public SomaPortalEventResponse getPublicEventDetailBySourceId(String sourceId, boolean refresh) {
         syncEventsIfNeeded();
 
-        return cacheService.findEventDetailBySourceId(sourceId)
-                .orElseGet(() -> {
-                    String sourceUrl = cacheService.findEventBySourceId(sourceId)
-                            .map(SomaPortalEventResponse::sourceUrl)
-                            .orElseGet(() -> sourceUrlFromSourceId(sourceId));
-                    SomaPortalEventResponse detail = withOperatorSession((session) -> fetchEventDetail(session, sourceUrl));
+        if (!refresh) {
+            return cacheService.findFreshEventDetailBySourceId(sourceId, detailCacheTtl())
+                    .orElseGet(() -> fetchAndCachePublicEventDetail(sourceUrlForSourceId(sourceId)));
+        }
 
-                    cacheService.upsertEvent(detail);
+        return fetchAndCachePublicEventDetail(sourceUrlForSourceId(sourceId));
+    }
 
-                    return detail;
-                });
+    private String sourceUrlForSourceId(String sourceId) {
+        return cacheService.findEventBySourceId(sourceId)
+                .map(SomaPortalEventResponse::sourceUrl)
+                .orElseGet(() -> sourceUrlFromSourceId(sourceId));
     }
 
     private SomaPortalPageResponse<SomaPortalEventResponse> fetchEvents(SomaPortalSession session, int page) {
@@ -148,30 +149,35 @@ public class SomaPortalService {
         return toPageResponse(events, html, safePage);
     }
 
-    public SomaPortalEventResponse getPublicEventDetail(String sourceUrl) {
-        return cacheService.findEventDetail(sourceUrl)
-                .orElseGet(() -> {
-                    SomaPortalEventResponse detail = withOperatorSession((session) -> fetchEventDetail(session, sourceUrl));
+    public SomaPortalEventResponse getPublicEventDetail(String sourceUrl, boolean refresh) {
+        if (!refresh) {
+            return cacheService.findFreshEventDetail(sourceUrl, detailCacheTtl())
+                    .orElseGet(() -> fetchAndCachePublicEventDetail(sourceUrl));
+        }
 
-                    cacheService.upsertEvent(detail);
-
-                    return detail;
-                });
+        return fetchAndCachePublicEventDetail(sourceUrl);
     }
 
     public SomaPortalEventResponse getEventDetail(String sessionId, String sourceUrl) {
         SomaPortalSession session = sessionStore.get(sessionId);
-        SomaPortalEventResponse detail = fetchEventDetail(session, sourceUrl);
 
-        cacheService.upsertEvent(detail);
-
-        return detail;
+        return fetchAndCacheEventDetail(session, sourceUrl);
     }
 
     private SomaPortalEventResponse fetchEventDetail(SomaPortalSession session, String sourceUrl) {
         String html = portalClient.getEventDetailHtml(session, sourceUrl);
 
         return htmlParser.parseEventDetail(html, portalClient.baseUrl(), sourceUrl);
+    }
+
+    private SomaPortalEventResponse fetchAndCachePublicEventDetail(String sourceUrl) {
+        return withOperatorSession((session) -> fetchAndCacheEventDetail(session, sourceUrl));
+    }
+
+    private SomaPortalEventResponse fetchAndCacheEventDetail(SomaPortalSession session, String sourceUrl) {
+        SomaPortalEventResponse detail = fetchEventDetail(session, sourceUrl);
+
+        return cacheService.upsertEventDetail(detail);
     }
 
     public SomaPortalMentoLecApplicationResponse applyMentoLec(String sessionId, String qustnrSn) {
@@ -183,6 +189,7 @@ public class SomaPortalService {
         }
 
         SomaPortalClient.PortalCommandResult result = portalClient.applyMentoLec(session, detail);
+        refreshMentoLecDetailAfterCommand(session, detail.qustnrSn());
 
         return new SomaPortalMentoLecApplicationResponse(detail.qustnrSn(), true, result.message());
     }
@@ -196,8 +203,17 @@ public class SomaPortalService {
         }
 
         SomaPortalClient.PortalCommandResult result = portalClient.cancelMentoLec(session, detail);
+        refreshMentoLecDetailAfterCommand(session, detail.qustnrSn());
 
         return new SomaPortalMentoLecApplicationResponse(detail.qustnrSn(), false, result.message());
+    }
+
+    private void refreshMentoLecDetailAfterCommand(SomaPortalSession session, String qustnrSn) {
+        try {
+            fetchAndCacheEventDetail(session, portalClient.mentoLecViewPath(qustnrSn));
+        } catch (RuntimeException ignored) {
+            // The apply/cancel command already succeeded. The detail refresh button can recover stale cache.
+        }
     }
 
     private SomaPortalMentoLecApplicationDetail getMentoLecApplicationDetail(SomaPortalSession session, String qustnrSn) {
@@ -287,6 +303,10 @@ public class SomaPortalService {
 
     private Duration cacheTtl() {
         return Duration.ofMinutes(Math.max(properties.cacheTtlMinutes(), 1));
+    }
+
+    private Duration detailCacheTtl() {
+        return Duration.ofSeconds(Math.max(properties.detailCacheTtlSeconds(), 10));
     }
 
     private int limitedTotalPages(int totalPages) {

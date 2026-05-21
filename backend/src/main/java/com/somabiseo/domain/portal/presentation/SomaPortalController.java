@@ -79,14 +79,15 @@ public class SomaPortalController {
     ApiResponse<SomaPortalEventResponse> getEventDetail(
             @RequestParam(required = false) String sessionId,
             @RequestParam(required = false) String sourceUrl,
-            @RequestParam(required = false) String sourceId
+            @RequestParam(required = false) String sourceId,
+            @RequestParam(defaultValue = "false") boolean refresh
     ) {
         if (!hasText(sessionId)) {
             if (hasText(sourceId)) {
-                return ApiResponse.ok(portalService.getPublicEventDetailBySourceId(sourceId));
+                return ApiResponse.ok(portalService.getPublicEventDetailBySourceId(sourceId, refresh));
             }
 
-            return ApiResponse.ok(portalService.getPublicEventDetail(sourceUrl));
+            return ApiResponse.ok(portalService.getPublicEventDetail(sourceUrl, refresh));
         }
 
         return ApiResponse.ok(portalService.getEventDetail(sessionId, sourceUrl));
@@ -96,7 +97,7 @@ public class SomaPortalController {
     ApiResponse<EventAiSummaryResponse> summarizeEvent(
             @Valid @RequestBody EventAiSummaryRequest request
     ) {
-        SomaPortalEventResponse event = portalService.getPublicEventDetail(request.sourceUrl());
+        SomaPortalEventResponse event = portalService.getPublicEventDetail(request.sourceUrl(), false);
 
         return ApiResponse.ok(eventAiSummaryService.getOrCreate(event));
     }

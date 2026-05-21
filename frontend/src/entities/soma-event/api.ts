@@ -48,6 +48,7 @@ type PortalEventResponse = {
   detailItems?: SomaEventDetailItem[] | null;
   contentText?: string | null;
   applicants?: SomaEventApplicant[] | null;
+  detailSyncedAt?: string | null;
   rawText: string;
 };
 
@@ -99,6 +100,7 @@ function toSomaEvent(event: PortalEventResponse): SomaEvent {
     detailItems: event.detailItems ?? [],
     contentText: event.contentText ?? null,
     applicants: event.applicants ?? [],
+    detailSyncedAt: event.detailSyncedAt ?? null,
     rawText: event.rawText,
     conflict: { hasConflict: false, busyBlocks: [] },
   };
@@ -189,14 +191,18 @@ export async function getSomaEventsPage({
   };
 }
 
-export async function getSomaEventById(eventId: string) {
+export async function getSomaEventById(eventId: string, options: { refresh?: boolean } = {}) {
+  const searchParams: Record<string, string | boolean> = {
+    sourceId: eventId,
+  };
+
+  if (options.refresh) {
+    searchParams.refresh = true;
+  }
+
   const detail = await unwrapApiResponse(
     apiClient
-      .get("soma/events/detail", {
-        searchParams: {
-          sourceId: eventId,
-        },
-      })
+      .get("soma/events/detail", { searchParams })
       .json<ApiResponse<PortalEventResponse>>(),
   );
 

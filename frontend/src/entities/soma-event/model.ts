@@ -63,6 +63,7 @@ export type SomaEvent = {
   detailItems: SomaEventDetailItem[];
   contentText: string | null;
   applicants: SomaEventApplicant[];
+  detailSyncedAt: string | null;
   rawText: string;
   conflict: CalendarConflict;
 };

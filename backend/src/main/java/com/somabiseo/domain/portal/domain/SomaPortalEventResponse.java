@@ -2,6 +2,7 @@ package com.somabiseo.domain.portal.domain;
 
 import com.somabiseo.domain.somaevent.domain.EventType;
 
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -27,6 +28,7 @@ public record SomaPortalEventResponse(
         List<SomaPortalEventDetailItem> detailItems,
         String contentText,
         List<SomaPortalEventApplicantResponse> applicants,
+        Instant detailSyncedAt,
         String rawText
 ) {
 }

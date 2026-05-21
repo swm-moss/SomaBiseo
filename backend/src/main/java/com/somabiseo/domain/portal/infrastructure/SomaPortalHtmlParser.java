@@ -201,6 +201,7 @@ public class SomaPortalHtmlParser {
                             List.of(),
                             null,
                             List.of(),
+                            null,
                             item.rawText()
                     );
                 })
@@ -257,6 +258,7 @@ public class SomaPortalHtmlParser {
                         .toList(),
                 parseContentText(document, detailElement, applicantTable, detailMap).orElse(null),
                 applicants,
+                null,
                 rawText
         );
     }

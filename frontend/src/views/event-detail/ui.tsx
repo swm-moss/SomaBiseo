@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarClock,
@@ -13,6 +13,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { getSomaEventById, summarizeSomaEvent } from "@/entities/soma-event/api";
 import type { EventAiSummary, SomaEvent, SomaEventApplicant } from "@/entities/soma-event/model";
@@ -22,7 +23,7 @@ import { FavoriteEventButton } from "@/features/favorite-event/ui";
 import { AppShell } from "@/widgets/app-shell/ui";
 import { EventDetailMentorReviews } from "@/widgets/event-detail-mentor-reviews/ui";
 import { routes } from "@/shared/config/routes";
-import { formatOptionalDateTime, formatOptionalTimeRange } from "@/shared/lib/date";
+import { formatOptionalDateTime, formatOptionalTimeRange, getRelativeTimeAgo } from "@/shared/lib/date";
 import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
@@ -178,6 +179,7 @@ function SummaryList({ items, title }: { items: string[]; title: string }) {
 }
 
 export function EventDetailPage({ eventId }: { eventId: string }) {
+  const queryClient = useQueryClient();
   const { data: event, isLoading, isError, refetch } = useQuery({
     queryKey: ["event", eventId],
     queryFn: () => getSomaEventById(eventId),
@@ -192,6 +194,20 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
     queryFn: () => summarizeSomaEvent(event!.sourceUrl),
     enabled: Boolean(event?.sourceUrl),
     staleTime: 10 * 60_000,
+  });
+  const refreshDetailMutation = useMutation({
+    mutationFn: () => getSomaEventById(eventId, { refresh: true }),
+    onSuccess: async (freshEvent) => {
+      queryClient.setQueryData(["event", eventId], freshEvent);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard-events"] }),
+      ]);
+      toast.success("원본 신청자 정보를 다시 확인했어요.");
+    },
+    onError: () => {
+      toast.error("원본 정보를 다시 확인하지 못했어요.");
+    },
   });
   const eventContentLines = event ? contentLines(event) : [];
 
@@ -320,12 +336,35 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
             <EventDetailMentorReviews mentorName={event.mentorName} />
 
             <section>
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[20px] font-black leading-[29px]">신청자 리스트</h2>
-                <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-primary">
-                  <CheckCircle2 aria-hidden="true" className="size-4" />
-                  {event.applicantCount ?? event.applicants.length}명
-                </span>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-[20px] font-black leading-[29px]">신청자 리스트</h2>
+                    <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-primary">
+                      <CheckCircle2 aria-hidden="true" className="size-4" />
+                      {event.applicantCount ?? event.applicants.length}명
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[13px] font-semibold leading-[19px] text-muted-foreground">
+                    {refreshDetailMutation.isPending
+                      ? "원본 확인 중"
+                      : event.detailSyncedAt
+                        ? `원본 확인 ${getRelativeTimeAgo(event.detailSyncedAt)}`
+                        : "원본 확인 필요"}
+                  </p>
+                </div>
+                <Button
+                  className="h-10 w-full sm:w-auto"
+                  disabled={refreshDetailMutation.isPending}
+                  onClick={() => refreshDetailMutation.mutate()}
+                  variant="outline"
+                >
+                  <RefreshCcw
+                    aria-hidden="true"
+                    className={refreshDetailMutation.isPending ? "animate-spin" : undefined}
+                  />
+                  새로고침
+                </Button>
               </div>
               {event.applicants.length > 0 ? (
                 <>

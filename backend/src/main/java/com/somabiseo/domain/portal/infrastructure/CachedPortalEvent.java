@@ -19,6 +19,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -102,6 +103,9 @@ public class CachedPortalEvent {
     @Column(name = "applicants_json", nullable = false, columnDefinition = "text")
     private String applicantsJson = "[]";
 
+    @Column(name = "detail_synced_at")
+    private Instant detailSyncedAt;
+
     @Column(name = "raw_text", nullable = false, columnDefinition = "text")
     private String rawText = "";
 
@@ -115,11 +119,19 @@ public class CachedPortalEvent {
     }
 
     public CachedPortalEvent(SomaPortalEventResponse response, ObjectMapper objectMapper) {
+        this(response, objectMapper, false);
+    }
+
+    public CachedPortalEvent(SomaPortalEventResponse response, ObjectMapper objectMapper, boolean detailFetched) {
         this.sourceId = response.sourceId();
-        update(response, objectMapper);
+        update(response, objectMapper, detailFetched);
     }
 
     public void update(SomaPortalEventResponse response, ObjectMapper objectMapper) {
+        update(response, objectMapper, false);
+    }
+
+    public void update(SomaPortalEventResponse response, ObjectMapper objectMapper, boolean detailFetched) {
         this.type = response.type();
         this.title = response.title();
         this.mentorName = response.mentorName();
@@ -140,16 +152,18 @@ public class CachedPortalEvent {
         this.sourceUrl = response.sourceUrl();
         this.rawText = response.rawText() == null ? "" : response.rawText();
 
-        if (response.detailItems() != null && !response.detailItems().isEmpty()) {
+        if (detailFetched) {
+            this.detailItemsJson = writeJson(objectMapper, response.detailItems() == null ? List.of() : response.detailItems());
+            this.contentText = response.contentText() == null || response.contentText().isBlank()
+                    ? null
+                    : response.contentText();
+            this.applicantsJson = writeJson(objectMapper, response.applicants() == null ? List.of() : response.applicants());
+            this.detailSyncedAt = Instant.now();
+        } else if (response.detailItems() != null && !response.detailItems().isEmpty()) {
             this.detailItemsJson = writeJson(objectMapper, response.detailItems());
-        }
-
-        if (response.contentText() != null && !response.contentText().isBlank()) {
             this.contentText = response.contentText();
-        }
-
-        if (response.applicants() != null && !response.applicants().isEmpty()) {
-            this.applicantsJson = writeJson(objectMapper, response.applicants());
+            this.applicantsJson = writeJson(objectMapper, response.applicants() == null ? List.of() : response.applicants());
+            this.detailSyncedAt = response.detailSyncedAt() == null ? Instant.now() : response.detailSyncedAt();
         }
     }
 
@@ -176,6 +190,7 @@ public class CachedPortalEvent {
                 readJson(objectMapper, detailItemsJson, DETAIL_ITEMS_TYPE),
                 contentText,
                 readJson(objectMapper, applicantsJson, APPLICANTS_TYPE),
+                detailSyncedAt,
                 rawText
         );
     }
@@ -188,6 +203,12 @@ public class CachedPortalEvent {
 
     public Instant updatedAt() {
         return updatedAt;
+    }
+
+    public boolean detailFresh(Duration ttl, Instant now) {
+        return hasDetail()
+                && detailSyncedAt != null
+                && detailSyncedAt.isAfter(now.minus(ttl));
     }
 
     @PrePersist
