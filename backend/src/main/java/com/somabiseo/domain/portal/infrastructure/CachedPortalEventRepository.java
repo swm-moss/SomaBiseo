@@ -90,8 +90,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         when event.startAt >= :now then 0
                         else 1
                       end asc,
-                      case when event.startAt is not null and event.startAt >= :now then event.startAt end asc,
-                      case when event.startAt is not null and event.startAt < :now then event.startAt end desc,
+                      case when event.startAt is not null and event.startAt >= :now then event.startAt else null end asc,
+                      case when event.startAt is not null and event.startAt < :now then event.startAt else null end desc,
                       event.id asc
                     """,
             countQuery = """
@@ -174,14 +174,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                           and event.capacity is not null
                           and event.applicantCount is not null
                           and event.capacity - event.applicantCount > 0
-                        then 0 else 1
-                      end asc,
-                      case
-                        when upper(event.status) = 'OPEN'
-                          and event.capacity is not null
-                          and event.applicantCount is not null
-                          and event.capacity - event.applicantCount > 0
                         then (event.capacity - event.applicantCount)
+                        else 1000000000
                       end asc,
                       event.id asc
                     """,
