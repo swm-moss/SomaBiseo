@@ -15,10 +15,13 @@ import com.somabiseo.domain.portal.infrastructure.SomaPortalHtmlParser;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalProperties;
 import com.somabiseo.domain.somaevent.domain.EventMode;
 import com.somabiseo.domain.somaevent.domain.EventType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +29,7 @@ import java.util.function.Function;
 
 @Service
 public class SomaPortalService {
+    private static final Logger log = LoggerFactory.getLogger(SomaPortalService.class);
     private static final String OPERATOR_SESSION_ID = "operator-readonly";
     private static final int PAGE_SIZE = 10;
     private static final int ALMOST_FULL_LIMIT = 3;
@@ -103,19 +107,20 @@ public class SomaPortalService {
             EventType type,
             EventMode mode,
             String q,
-            String date
+            String date,
+            OffsetDateTime activeAt
     ) {
-        syncEventsIfNeeded();
-        hydrateCachedEventsMissingDisplayDetailsIfNeeded();
+        syncPublicEventsBestEffort();
+        hydratePublicEventDisplayDetailsBestEffort();
 
         return hydrateEventPageDisplayDetails(
-                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date),
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date, activeAt),
                 this::fetchAndCachePublicEventDetail
         );
     }
 
     public List<SomaPortalEventResponse> getAlmostFullEvents() {
-        syncEventsIfNeeded();
+        syncPublicEventsBestEffort();
 
         return cacheService.findAlmostFullEvents(ALMOST_FULL_LIMIT);
     }
@@ -127,7 +132,8 @@ public class SomaPortalService {
             EventType type,
             EventMode mode,
             String q,
-            String date
+            String date,
+            OffsetDateTime activeAt
     ) {
         SomaPortalSession session = sessionStore.get(sessionId);
         SomaPortalPageResponse<SomaPortalEventResponse> response = fetchEvents(session, page);
@@ -135,7 +141,7 @@ public class SomaPortalService {
         cacheService.upsertEvents(response.items());
 
         return hydrateEventPageDisplayDetails(
-                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date),
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date, activeAt),
                 (sourceUrl) -> fetchAndCacheEventDetail(session, sourceUrl)
         );
     }
@@ -336,6 +342,26 @@ public class SomaPortalService {
             }
 
             syncEvents();
+        }
+    }
+
+    private void syncPublicEventsBestEffort() {
+        try {
+            syncEventsIfNeeded();
+        } catch (SomaPortalUnauthorizedException | SomaPortalException exception) {
+            if (!cacheService.hasEvents()) {
+                throw exception;
+            }
+
+            log.warn("SOMA event sync failed. Falling back to cached events.", exception);
+        }
+    }
+
+    private void hydratePublicEventDisplayDetailsBestEffort() {
+        try {
+            hydrateCachedEventsMissingDisplayDetailsIfNeeded();
+        } catch (SomaPortalUnauthorizedException | SomaPortalException exception) {
+            log.warn("SOMA event display detail hydration failed. Returning cached list.", exception);
         }
     }
 

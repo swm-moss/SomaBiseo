@@ -95,8 +95,9 @@ export const useInterestPreferenceStore = create<InterestPreferenceState>()(
 export function getEventRecommendation(
   event: SomaEvent,
   selectedTopicIds: InterestTopicId[],
+  referenceDate = new Date(),
 ): EventRecommendation {
-  if (selectedTopicIds.length === 0) {
+  if (selectedTopicIds.length === 0 || !isEventActiveAt(event, referenceDate)) {
     return { isRecommended: false, score: 0, matchedTopics: [] };
   }
 
@@ -137,11 +138,13 @@ export function getRecommendedEvents(
   events: SomaEvent[],
   selectedTopicIds: InterestTopicId[],
   limit: number,
+  referenceDate = new Date(),
 ) {
   return events
+    .filter((event) => isEventActiveAt(event, referenceDate))
     .map((event) => ({
       event,
-      recommendation: getEventRecommendation(event, selectedTopicIds),
+      recommendation: getEventRecommendation(event, selectedTopicIds, referenceDate),
     }))
     .filter(({ recommendation }) => recommendation.isRecommended)
     .sort((left, right) => {
@@ -155,6 +158,29 @@ export function getRecommendedEvents(
       return leftTime - rightTime;
     })
     .slice(0, limit);
+}
+
+export function isEventActiveAt(event: SomaEvent, referenceDate = new Date()) {
+  const referenceTime = referenceDate.getTime();
+  const endTime = toTime(event.endAt);
+
+  if (endTime != null) {
+    return endTime >= referenceTime;
+  }
+
+  const startTime = toTime(event.startAt);
+
+  return startTime != null && startTime >= referenceTime;
+}
+
+function toTime(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const time = new Date(value).getTime();
+
+  return Number.isNaN(time) ? null : time;
 }
 
 function countKeywordMatches(text: string, keywords: string[]) {

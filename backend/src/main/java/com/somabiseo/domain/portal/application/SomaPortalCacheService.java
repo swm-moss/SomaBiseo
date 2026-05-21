@@ -66,6 +66,11 @@ public class SomaPortalCacheService {
                 .orElse(false);
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasEvents() {
+        return eventRepository.count() > 0;
+    }
+
     @Transactional
     public void upsertNotices(List<SomaPortalNoticeResponse> notices) {
         notices.forEach((notice) -> {
@@ -146,7 +151,8 @@ public class SomaPortalCacheService {
             EventType type,
             EventMode mode,
             String q,
-            String date
+            String date,
+            OffsetDateTime activeAt
     ) {
         int safePage = Math.max(page, 1);
         PageRequest pageRequest = PageRequest.of(safePage - 1, size);
@@ -156,10 +162,10 @@ public class SomaPortalCacheService {
         OffsetDateTime dateFrom = dateRange == null ? null : dateRange.from();
         OffsetDateTime dateTo = dateRange == null ? null : dateRange.to();
         Page<CachedPortalEvent> eventPage = switch (sort == null ? SomaPortalEventSort.LECTURE_DATE_DESC : sort) {
-            case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(type, modeKeyword, trimmedQ, dateFrom, dateTo, pageRequest);
-            case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(type, modeKeyword, trimmedQ, dateFrom, dateTo, pageRequest);
-            case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(type, modeKeyword, trimmedQ, dateFrom, dateTo, pageRequest);
-            case REMAINING_SEATS_ASC -> eventRepository.findPageOrderByRemainingSeatsAsc(type, modeKeyword, trimmedQ, dateFrom, dateTo, pageRequest);
+            case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(type, modeKeyword, trimmedQ, dateFrom, dateTo, activeAt, pageRequest);
+            case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(type, modeKeyword, trimmedQ, dateFrom, dateTo, activeAt, pageRequest);
+            case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(type, modeKeyword, trimmedQ, dateFrom, dateTo, activeAt, pageRequest);
+            case REMAINING_SEATS_ASC -> eventRepository.findPageOrderByRemainingSeatsAsc(type, modeKeyword, trimmedQ, dateFrom, dateTo, activeAt, pageRequest);
         };
 
         return new SomaPortalPageResponse<>(
