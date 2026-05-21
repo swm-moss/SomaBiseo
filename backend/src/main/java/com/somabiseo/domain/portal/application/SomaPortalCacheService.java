@@ -21,7 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 
@@ -148,17 +151,21 @@ public class SomaPortalCacheService {
             EventType type,
             EventMode mode,
             String q,
+            String date,
             OffsetDateTime activeAt
     ) {
         int safePage = Math.max(page, 1);
         PageRequest pageRequest = PageRequest.of(safePage - 1, size);
         String trimmedQ = (q == null || q.isBlank()) ? null : q.trim();
         String modeKeyword = mode == null ? null : mode.keyword();
+        DateRange dateRange = parseDateRange(date);
+        OffsetDateTime dateFrom = dateRange == null ? null : dateRange.from();
+        OffsetDateTime dateTo = dateRange == null ? null : dateRange.to();
         Page<CachedPortalEvent> eventPage = switch (sort == null ? SomaPortalEventSort.LECTURE_DATE_DESC : sort) {
-            case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(type, modeKeyword, trimmedQ, activeAt, pageRequest);
-            case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(type, modeKeyword, trimmedQ, activeAt, pageRequest);
-            case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(type, modeKeyword, trimmedQ, activeAt, pageRequest);
-            case APPLICATION_DEADLINE_ASC -> eventRepository.findPageOrderByApplicationEndAtAsc(type, modeKeyword, trimmedQ, activeAt, pageRequest);
+            case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(type, modeKeyword, trimmedQ, dateFrom, dateTo, activeAt, pageRequest);
+            case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(type, modeKeyword, trimmedQ, dateFrom, dateTo, activeAt, pageRequest);
+            case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(type, modeKeyword, trimmedQ, dateFrom, dateTo, activeAt, pageRequest);
+            case REMAINING_SEATS_ASC -> eventRepository.findPageOrderByRemainingSeatsAsc(type, modeKeyword, trimmedQ, dateFrom, dateTo, activeAt, pageRequest);
         };
 
         return new SomaPortalPageResponse<>(
@@ -167,6 +174,27 @@ public class SomaPortalCacheService {
                 Math.max(eventPage.getTotalPages(), 1),
                 eventPage.hasNext()
         );
+    }
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
+    private DateRange parseDateRange(String date) {
+        if (date == null || date.isBlank()) {
+            return null;
+        }
+
+        try {
+            LocalDate localDate = LocalDate.parse(date.trim());
+            OffsetDateTime from = localDate.atStartOfDay(KST).toOffsetDateTime();
+            OffsetDateTime to = localDate.plusDays(1).atStartOfDay(KST).toOffsetDateTime();
+
+            return new DateRange(from, to);
+        } catch (DateTimeParseException exception) {
+            return null;
+        }
+    }
+
+    private record DateRange(OffsetDateTime from, OffsetDateTime to) {
     }
 
     @Transactional(readOnly = true)

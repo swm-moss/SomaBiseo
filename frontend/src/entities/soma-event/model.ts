@@ -73,3 +73,31 @@ export type SomaEventFilter = {
   from?: string;
   to?: string;
 };
+
+const CONFIRMED_APPLICANT_STATUS = "신청완료";
+
+export function getRemainingSeats(event: SomaEvent): number | null {
+  if (event.capacity == null) {
+    return null;
+  }
+
+  if (event.applicants && event.applicants.length > 0) {
+    const confirmed = event.applicants.filter(
+      (applicant) => applicant.status === CONFIRMED_APPLICANT_STATUS,
+    ).length;
+
+    return event.capacity - confirmed;
+  }
+
+  if (event.applicantCount == null) {
+    return null;
+  }
+
+  return event.capacity - event.applicantCount;
+}
+
+export function isEventClosed(event: SomaEvent): boolean {
+  const remaining = getRemainingSeats(event);
+
+  return remaining !== null && remaining <= 0;
+}

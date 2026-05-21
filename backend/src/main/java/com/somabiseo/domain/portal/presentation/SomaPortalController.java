@@ -71,13 +71,14 @@ public class SomaPortalController {
             @RequestParam(required = false) EventType type,
             @RequestParam(required = false) EventMode mode,
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) String date,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime activeAt
     ) {
         if (!hasText(sessionId)) {
-            return ApiResponse.ok(portalService.getPublicEvents(page, sort, type, mode, q, activeAt));
+            return ApiResponse.ok(portalService.getPublicEvents(page, sort, type, mode, q, date, activeAt));
         }
 
-        return ApiResponse.ok(portalService.getEvents(sessionId, page, sort, type, mode, q, activeAt));
+        return ApiResponse.ok(portalService.getEvents(sessionId, page, sort, type, mode, q, date, activeAt));
     }
 
     @GetMapping("/api/soma/events/almost-full")

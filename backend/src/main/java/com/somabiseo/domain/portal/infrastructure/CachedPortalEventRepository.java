@@ -1,9 +1,9 @@
 package com.somabiseo.domain.portal.infrastructure;
 
 import com.somabiseo.domain.somaevent.domain.EventType;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -43,7 +43,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:activeAt is null
+                      and (cast(:dateFrom as timestamp) is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
@@ -60,7 +62,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:activeAt is null
+                      and (cast(:dateFrom as timestamp) is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     """
@@ -69,6 +73,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("type") EventType type,
             @Param("mode") String mode,
             @Param("q") String q,
+            @Param("dateFrom") OffsetDateTime dateFrom,
+            @Param("dateTo") OffsetDateTime dateTo,
             @Param("activeAt") OffsetDateTime activeAt,
             Pageable pageable
     );
@@ -83,7 +89,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:activeAt is null
+                      and (cast(:dateFrom as timestamp) is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
@@ -100,7 +108,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:activeAt is null
+                      and (cast(:dateFrom as timestamp) is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     """
@@ -109,6 +119,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("type") EventType type,
             @Param("mode") String mode,
             @Param("q") String q,
+            @Param("dateFrom") OffsetDateTime dateFrom,
+            @Param("dateTo") OffsetDateTime dateTo,
             @Param("activeAt") OffsetDateTime activeAt,
             Pageable pageable
     );
@@ -123,7 +135,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:activeAt is null
+                      and (cast(:dateFrom as timestamp) is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
@@ -140,7 +154,9 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:activeAt is null
+                      and (cast(:dateFrom as timestamp) is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     """
@@ -149,6 +165,8 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("type") EventType type,
             @Param("mode") String mode,
             @Param("q") String q,
+            @Param("dateFrom") OffsetDateTime dateFrom,
+            @Param("dateTo") OffsetDateTime dateTo,
             @Param("activeAt") OffsetDateTime activeAt,
             Pageable pageable
     );
@@ -156,41 +174,52 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     @Query(
             value = """
                     select event from CachedPortalEvent event
-                    where (:type is null or event.type = :type)
+                    where upper(event.status) = 'OPEN'
+                      and event.capacity is not null
+                      and event.applicantCount is not null
+                      and event.capacity - event.applicantCount > 0
+                      and (:type is null or event.type = :type)
                       and (cast(:mode as string) is null
                         or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:activeAt is null
+                      and (cast(:dateFrom as timestamp) is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     order by
-                      case when event.applicationEndAt is null then 1 else 0 end,
-                      event.applicationEndAt asc,
-                      case when event.startAt is null then 1 else 0 end,
-                      event.startAt asc,
+                      (event.capacity - event.applicantCount) asc,
                       event.id asc
                     """,
             countQuery = """
                     select count(event) from CachedPortalEvent event
-                    where (:type is null or event.type = :type)
+                    where upper(event.status) = 'OPEN'
+                      and event.capacity is not null
+                      and event.applicantCount is not null
+                      and event.capacity - event.applicantCount > 0
+                      and (:type is null or event.type = :type)
                       and (cast(:mode as string) is null
                         or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:activeAt is null
+                      and (cast(:dateFrom as timestamp) is null
+                        or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
+                      and (cast(:activeAt as timestamp) is null
                         or (event.endAt is not null and event.endAt >= :activeAt)
                         or (event.endAt is null and event.startAt is not null and event.startAt >= :activeAt))
                     """
     )
-    Page<CachedPortalEvent> findPageOrderByApplicationEndAtAsc(
+    Page<CachedPortalEvent> findPageOrderByRemainingSeatsAsc(
             @Param("type") EventType type,
             @Param("mode") String mode,
             @Param("q") String q,
+            @Param("dateFrom") OffsetDateTime dateFrom,
+            @Param("dateTo") OffsetDateTime dateTo,
             @Param("activeAt") OffsetDateTime activeAt,
             Pageable pageable
     );

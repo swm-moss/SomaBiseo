@@ -107,13 +107,14 @@ public class SomaPortalService {
             EventType type,
             EventMode mode,
             String q,
+            String date,
             OffsetDateTime activeAt
     ) {
         syncPublicEventsBestEffort();
         hydratePublicEventDisplayDetailsBestEffort();
 
         return hydrateEventPageDisplayDetails(
-                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, activeAt),
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date, activeAt),
                 this::fetchAndCachePublicEventDetail
         );
     }
@@ -131,6 +132,7 @@ public class SomaPortalService {
             EventType type,
             EventMode mode,
             String q,
+            String date,
             OffsetDateTime activeAt
     ) {
         SomaPortalSession session = sessionStore.get(sessionId);
@@ -139,7 +141,7 @@ public class SomaPortalService {
         cacheService.upsertEvents(response.items());
 
         return hydrateEventPageDisplayDetails(
-                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, activeAt),
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date, activeAt),
                 (sourceUrl) -> fetchAndCacheEventDetail(session, sourceUrl)
         );
     }
