@@ -148,13 +148,17 @@ export async function getSomaEvents(
   return eventsPage.items.filter((event) => matchesFilter(event, filter));
 }
 
-async function getSomaEventsPages(maxPages: number, sort: SomaEventSort = DEFAULT_SOMA_EVENT_SORT) {
-  const firstPage = await getSomaEventsPage({ page: 1, sort });
+async function getSomaEventsPages(
+  maxPages: number,
+  sort: SomaEventSort = DEFAULT_SOMA_EVENT_SORT,
+  options: Omit<GetSomaEventsPageOptions, "page" | "sort"> = {},
+) {
+  const firstPage = await getSomaEventsPage({ ...options, page: 1, sort });
   const events = [...firstPage.items];
   let currentPage = firstPage;
 
   for (let page = 2; page <= maxPages && currentPage.hasNextPage; page += 1) {
-    currentPage = await getSomaEventsPage({ page, sort });
+    currentPage = await getSomaEventsPage({ ...options, page, sort });
     events.push(...currentPage.items);
   }
 
@@ -169,6 +173,7 @@ export type GetSomaEventsPageOptions = {
   type?: SomaEventType;
   mode?: SomaEventMode;
   q?: string;
+  activeAt?: string;
 };
 
 export async function getSomaEventsPage({
@@ -177,6 +182,7 @@ export async function getSomaEventsPage({
   type,
   mode,
   q,
+  activeAt,
 }: GetSomaEventsPageOptions = {}) {
   const searchParams: Record<string, string | number> = { page, sort };
 
@@ -192,6 +198,10 @@ export async function getSomaEventsPage({
 
   if (trimmedQ) {
     searchParams.q = trimmedQ;
+  }
+
+  if (activeAt) {
+    searchParams.activeAt = activeAt;
   }
 
   const response = await unwrapApiResponse(
@@ -288,8 +298,11 @@ export async function getAlmostFullEvents() {
 }
 
 export async function getDashboardEvents() {
+  const now = new Date();
   const [events, almostFullEvents] = await Promise.all([
-    getSomaEventsPages(MAX_DASHBOARD_EVENT_PAGES, "LECTURE_DATE_ASC"),
+    getSomaEventsPages(MAX_DASHBOARD_EVENT_PAGES, "LECTURE_DATE_ASC", {
+      activeAt: now.toISOString(),
+    }),
     getAlmostFullEvents(),
   ]);
   const today = new Intl.DateTimeFormat("sv-SE", {
@@ -297,7 +310,7 @@ export async function getDashboardEvents() {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date());
+  }).format(now);
 
   return {
     todayEvents: events.filter((event) => event.startAt?.startsWith(today)),

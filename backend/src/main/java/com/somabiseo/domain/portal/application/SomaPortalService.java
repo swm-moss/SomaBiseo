@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -102,13 +103,14 @@ public class SomaPortalService {
             SomaPortalEventSort sort,
             EventType type,
             EventMode mode,
-            String q
+            String q,
+            OffsetDateTime activeAt
     ) {
         syncEventsIfNeeded();
         hydrateCachedEventsMissingDisplayDetailsIfNeeded();
 
         return hydrateEventPageDisplayDetails(
-                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q),
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, activeAt),
                 this::fetchAndCachePublicEventDetail
         );
     }
@@ -125,7 +127,8 @@ public class SomaPortalService {
             SomaPortalEventSort sort,
             EventType type,
             EventMode mode,
-            String q
+            String q,
+            OffsetDateTime activeAt
     ) {
         SomaPortalSession session = sessionStore.get(sessionId);
         SomaPortalPageResponse<SomaPortalEventResponse> response = fetchEvents(session, page);
@@ -133,7 +136,7 @@ public class SomaPortalService {
         cacheService.upsertEvents(response.items());
 
         return hydrateEventPageDisplayDetails(
-                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q),
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, activeAt),
                 (sourceUrl) -> fetchAndCacheEventDetail(session, sourceUrl)
         );
     }

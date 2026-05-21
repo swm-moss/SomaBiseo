@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -141,17 +142,18 @@ public class SomaPortalCacheService {
             SomaPortalEventSort sort,
             EventType type,
             EventMode mode,
-            String q
+            String q,
+            OffsetDateTime activeAt
     ) {
         int safePage = Math.max(page, 1);
         PageRequest pageRequest = PageRequest.of(safePage - 1, size);
         String trimmedQ = (q == null || q.isBlank()) ? null : q.trim();
         String modeKeyword = mode == null ? null : mode.keyword();
         Page<CachedPortalEvent> eventPage = switch (sort == null ? SomaPortalEventSort.LECTURE_DATE_DESC : sort) {
-            case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(type, modeKeyword, trimmedQ, pageRequest);
-            case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(type, modeKeyword, trimmedQ, pageRequest);
-            case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(type, modeKeyword, trimmedQ, pageRequest);
-            case APPLICATION_DEADLINE_ASC -> eventRepository.findPageOrderByApplicationEndAtAsc(type, modeKeyword, trimmedQ, pageRequest);
+            case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(type, modeKeyword, trimmedQ, activeAt, pageRequest);
+            case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(type, modeKeyword, trimmedQ, activeAt, pageRequest);
+            case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(type, modeKeyword, trimmedQ, activeAt, pageRequest);
+            case APPLICATION_DEADLINE_ASC -> eventRepository.findPageOrderByApplicationEndAtAsc(type, modeKeyword, trimmedQ, activeAt, pageRequest);
         };
 
         return new SomaPortalPageResponse<>(
