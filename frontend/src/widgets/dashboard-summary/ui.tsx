@@ -21,6 +21,12 @@ import { routes } from "@/shared/config/routes";
 import { formatOptionalDateTime, getWeekRange } from "@/shared/lib/date";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { LoadingState } from "@/shared/ui/loading-state";
+import { StatusBadge } from "@/shared/ui/status-badge";
+
+const eventTypeLabel = {
+  LECTURE: "멘토특강",
+  MENTORING: "자유멘토링",
+} as const;
 
 export function DashboardSummary() {
   const sessionId = useAuthStore((state) => state.sessionId);
@@ -149,10 +155,20 @@ export function DashboardSummary() {
                   className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
                   href={routes.eventDetail(event.id)}
                 >
-                  <p className="text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
+                      {eventTypeLabel[event.type]}
+                    </StatusBadge>
+                    <p className="text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
+                  </div>
                   <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-                    {remainingSeats != null ? `남은 자리 ${remainingSeats}석` : "신청 가능"}
+                    {event.mentorName ?? "멘토 미정"} · {formatOptionalDateTime(event.startAt)}
                   </p>
+                  {remainingSeats != null ? (
+                    <p className="mt-1 text-[14px] font-semibold leading-[21px] text-red-600">
+                      남은 자리 {remainingSeats}석
+                    </p>
+                  ) : null}
                 </Link>
               );
             })}
