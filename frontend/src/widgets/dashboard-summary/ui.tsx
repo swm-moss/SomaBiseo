@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, CalendarDays, Star } from "lucide-react";
+import { Bell, CalendarDays, Flame, Star } from "lucide-react";
 
 import { getNotices } from "@/entities/notice/api";
 import { getDashboardEvents } from "@/entities/soma-event/api";
@@ -21,6 +21,12 @@ import { routes } from "@/shared/config/routes";
 import { formatOptionalDateTime, getWeekRange } from "@/shared/lib/date";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { LoadingState } from "@/shared/ui/loading-state";
+import { StatusBadge } from "@/shared/ui/status-badge";
+
+const eventTypeLabel = {
+  LECTURE: "멘토특강",
+  MENTORING: "자유멘토링",
+} as const;
 
 export function DashboardSummary() {
   const sessionId = useAuthStore((state) => state.sessionId);
@@ -47,7 +53,7 @@ export function DashboardSummary() {
   const newNotices = notices.slice(0, 2);
   const recommendationCandidates = dashboard?.recommendationCandidates ?? [];
   const recommendedEvents = getRecommendedEvents(recommendationCandidates, selectedTopicIds, 3);
-  const deadlineSoon = dashboard?.deadlineSoonEvents ?? [];
+  const almostFull = dashboard?.almostFullEvents ?? [];
   const calendarEventCount = calendarEventsQuery.data?.length ?? 0;
   const calendarSummaryValue =
     calendarConnected && sessionId
@@ -132,23 +138,41 @@ export function DashboardSummary() {
       </section>
 
       <section className="sb-section">
-        <h2 className="sb-section-title">마감 임박</h2>
-        {deadlineSoon.length === 0 ? (
+        <div className="flex items-center gap-2">
+          <Flame aria-hidden="true" className="size-5 text-primary" />
+          <h2 className="sb-section-title">마감 임박</h2>
+        </div>
+        {almostFull.length === 0 ? (
           <EmptyState className="mt-3" title="마감 임박 일정이 없어요" />
         ) : (
           <div className="sb-list-surface">
-            {deadlineSoon.map((event) => (
-              <Link
-                key={event.id}
-                className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
-                href={routes.eventDetail(event.id)}
-              >
-                <p className="text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
-                <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-                  {event.status === "OPEN" ? "신청 가능" : event.status}
-                </p>
-              </Link>
-            ))}
+            {almostFull.map((event) => {
+              const remainingSeats =
+                event.capacity != null && event.applicantCount != null
+                  ? event.capacity - event.applicantCount
+                  : null;
+
+              return (
+                <Link
+                  key={event.id}
+                  className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
+                  href={routes.eventDetail(event.id)}
+                >
+                  <StatusBadge tone={event.type === "LECTURE" ? "blue" : "cyan"}>
+                    {eventTypeLabel[event.type]}
+                  </StatusBadge>
+                  <p className="mt-2 text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
+                  <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
+                    {event.mentorName ?? "멘토 미정"} · {formatOptionalDateTime(event.startAt)}
+                  </p>
+                  {remainingSeats != null ? (
+                    <p className="mt-1 text-[14px] font-semibold leading-[21px] text-red-600">
+                      남은 자리 {remainingSeats}석
+                    </p>
+                  ) : null}
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface CachedPortalEventRepository extends JpaRepository<CachedPortalEvent, Long> {
@@ -151,4 +152,14 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("q") String q,
             Pageable pageable
     );
+
+    @Query("""
+            select event from CachedPortalEvent event
+            where upper(event.status) = 'OPEN'
+              and event.capacity is not null
+              and event.applicantCount is not null
+              and event.capacity - event.applicantCount > 0
+            order by (event.capacity - event.applicantCount) asc, event.id asc
+            """)
+    List<CachedPortalEvent> findAlmostFullOpenEvents(Pageable pageable);
 }
