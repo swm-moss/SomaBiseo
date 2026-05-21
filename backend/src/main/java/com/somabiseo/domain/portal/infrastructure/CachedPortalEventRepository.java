@@ -85,8 +85,13 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
-                      case when event.startAt is null then 1 else 0 end,
-                      event.startAt asc,
+                      case
+                        when event.startAt is null then 2
+                        when event.startAt >= :now then 0
+                        else 1
+                      end asc,
+                      case when event.startAt is not null and event.startAt >= :now then event.startAt end asc,
+                      case when event.startAt is not null and event.startAt < :now then event.startAt end desc,
                       event.id asc
                     """,
             countQuery = """
@@ -108,6 +113,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
             @Param("q") String q,
             @Param("dateFrom") OffsetDateTime dateFrom,
             @Param("dateTo") OffsetDateTime dateTo,
+            @Param("now") OffsetDateTime now,
             Pageable pageable
     );
 
