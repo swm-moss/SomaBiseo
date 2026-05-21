@@ -30,7 +30,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:dateFrom is null
+                      and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
                       case when event.startAt is null then 1 else 0 end,
@@ -46,7 +46,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:dateFrom is null
+                      and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     """
     )
@@ -69,7 +69,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:dateFrom is null
+                      and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
                       case when event.startAt is null then 1 else 0 end,
@@ -85,7 +85,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:dateFrom is null
+                      and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     """
     )
@@ -108,7 +108,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:dateFrom is null
+                      and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
                       case when event.registeredAt is null then 1 else 0 end,
@@ -124,7 +124,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:dateFrom is null
+                      and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     """
     )
@@ -151,7 +151,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:dateFrom is null
+                      and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
                       (event.capacity - event.applicantCount) asc,
@@ -170,7 +170,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or lower(event.title) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.mentorName, '')) like lower(concat('%', cast(:q as string), '%'))
                         or lower(coalesce(event.topic, '')) like lower(concat('%', cast(:q as string), '%')))
-                      and (:dateFrom is null
+                      and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     """
     )
