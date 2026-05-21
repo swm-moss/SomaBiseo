@@ -148,7 +148,7 @@ public class SomaPortalCacheService {
             case LECTURE_DATE_DESC -> eventRepository.findPageOrderByStartAtDesc(type, modeKeyword, trimmedQ, dateFrom, dateTo, pageRequest);
             case LECTURE_DATE_ASC -> eventRepository.findPageOrderByStartAtAsc(type, modeKeyword, trimmedQ, dateFrom, dateTo, pageRequest);
             case REGISTERED_AT_DESC -> eventRepository.findPageOrderByRegisteredAtDesc(type, modeKeyword, trimmedQ, dateFrom, dateTo, pageRequest);
-            case APPLICATION_DEADLINE_ASC -> eventRepository.findPageOrderByApplicationEndAtAsc(type, modeKeyword, trimmedQ, dateFrom, dateTo, pageRequest);
+            case REMAINING_SEATS_ASC -> eventRepository.findPageOrderByRemainingSeatsAsc(type, modeKeyword, trimmedQ, dateFrom, dateTo, pageRequest);
         };
 
         return new SomaPortalPageResponse<>(

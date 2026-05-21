@@ -49,7 +49,7 @@ const sortOptions = [
   { label: "최신 강의순", value: "LECTURE_DATE_DESC" },
   { label: "빠른 강의순", value: "LECTURE_DATE_ASC" },
   { label: "최근 등록순", value: "REGISTERED_AT_DESC" },
-  { label: "마감 임박순", value: "APPLICATION_DEADLINE_ASC" },
+  { label: "마감 임박순", value: "REMAINING_SEATS_ASC" },
 ] satisfies { label: string; value: SomaEventSort }[];
 
 const EVENT_TABS = new Set<EventTab>(["ALL", "LECTURE", "MENTORING"]);
@@ -58,7 +58,7 @@ const EVENT_SORTS = new Set<SomaEventSort>([
   "LECTURE_DATE_DESC",
   "LECTURE_DATE_ASC",
   "REGISTERED_AT_DESC",
-  "APPLICATION_DEADLINE_ASC",
+  "REMAINING_SEATS_ASC",
 ]);
 
 function parseTab(value: string | null): EventTab {

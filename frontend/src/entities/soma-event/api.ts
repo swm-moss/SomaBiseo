@@ -15,7 +15,7 @@ export type SomaEventSort =
   | "LECTURE_DATE_DESC"
   | "LECTURE_DATE_ASC"
   | "REGISTERED_AT_DESC"
-  | "APPLICATION_DEADLINE_ASC";
+  | "REMAINING_SEATS_ASC";
 
 export const DEFAULT_SOMA_EVENT_SORT: SomaEventSort = "LECTURE_DATE_DESC";
 

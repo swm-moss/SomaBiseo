@@ -140,7 +140,11 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     @Query(
             value = """
                     select event from CachedPortalEvent event
-                    where (:type is null or event.type = :type)
+                    where upper(event.status) = 'OPEN'
+                      and event.capacity is not null
+                      and event.applicantCount is not null
+                      and event.capacity - event.applicantCount > 0
+                      and (:type is null or event.type = :type)
                       and (cast(:mode as string) is null
                         or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
@@ -150,15 +154,16 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                       and (:dateFrom is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
-                      case when event.applicationEndAt is null then 1 else 0 end,
-                      event.applicationEndAt asc,
-                      case when event.startAt is null then 1 else 0 end,
-                      event.startAt asc,
+                      (event.capacity - event.applicantCount) asc,
                       event.id asc
                     """,
             countQuery = """
                     select count(event) from CachedPortalEvent event
-                    where (:type is null or event.type = :type)
+                    where upper(event.status) = 'OPEN'
+                      and event.capacity is not null
+                      and event.applicantCount is not null
+                      and event.capacity - event.applicantCount > 0
+                      and (:type is null or event.type = :type)
                       and (cast(:mode as string) is null
                         or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
@@ -169,7 +174,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     """
     )
-    Page<CachedPortalEvent> findPageOrderByApplicationEndAtAsc(
+    Page<CachedPortalEvent> findPageOrderByRemainingSeatsAsc(
             @Param("type") EventType type,
             @Param("mode") String mode,
             @Param("q") String q,
