@@ -52,8 +52,6 @@ export function UpcomingEventCard({
             <StatusBadge tone="green">충돌 없음</StatusBadge>
           ) : calendarCheckState === "loading" ? (
             <StatusBadge tone="neutral">확인 중</StatusBadge>
-          ) : calendarCheckState === "error" ? (
-            <StatusBadge tone="red">확인 실패</StatusBadge>
           ) : null}
         </div>
         <h3 className="mt-2 line-clamp-2 text-[17px] font-extrabold leading-[25.5px]">

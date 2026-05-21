@@ -104,6 +104,7 @@ public class SomaPortalService {
             String q
     ) {
         syncEventsIfNeeded();
+        hydrateCachedEventsMissingDisplayDetailsIfNeeded();
 
         return hydrateEventPageDisplayDetails(
                 cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q),
@@ -187,11 +188,7 @@ public class SomaPortalService {
     }
 
     private boolean needsDisplayDetailHydration(SomaPortalEventResponse event) {
-        return isBlank(event.location()) && detailStale(event.detailSyncedAt());
-    }
-
-    private boolean detailStale(Instant detailSyncedAt) {
-        return detailSyncedAt == null || detailSyncedAt.isBefore(Instant.now().minus(detailCacheTtl()));
+        return isBlank(event.location()) && event.detailSyncedAt() == null;
     }
 
     private boolean isBlank(String value) {
@@ -344,10 +341,54 @@ public class SomaPortalService {
                 cacheService.upsertEvents(fetchEvents(session, page).items());
             }
 
+            hydrateCachedEventsMissingDisplayDetails(session);
             cacheService.markEventSyncSuccess(totalPages);
 
             return null;
         });
+    }
+
+    private void hydrateCachedEventsMissingDisplayDetailsIfNeeded() {
+        if (cacheService.findDisplayDetailHydrationCandidates(1).isEmpty()) {
+            return;
+        }
+
+        synchronized (eventSyncLock) {
+            List<SomaPortalEventResponse> candidates = cacheService.findDisplayDetailHydrationCandidates(displayDetailHydrationLimit());
+
+            if (candidates.isEmpty()) {
+                return;
+            }
+
+            withOperatorSession((session) -> {
+                hydrateCachedEventsMissingDisplayDetails(session, candidates);
+
+                return null;
+            });
+        }
+    }
+
+    private void hydrateCachedEventsMissingDisplayDetails(SomaPortalSession session) {
+        hydrateCachedEventsMissingDisplayDetails(
+                session,
+                cacheService.findDisplayDetailHydrationCandidates(displayDetailHydrationLimit())
+        );
+    }
+
+    private void hydrateCachedEventsMissingDisplayDetails(
+            SomaPortalSession session,
+            List<SomaPortalEventResponse> candidates
+    ) {
+        candidates.forEach((event) -> hydrateEventDisplayDetails(
+                event,
+                (sourceUrl) -> fetchAndCacheEventDetail(session, sourceUrl)
+        ));
+    }
+
+    private int displayDetailHydrationLimit() {
+        int syncPageLimit = properties.syncPageLimit() <= 0 ? 1 : properties.syncPageLimit();
+
+        return Math.max(PAGE_SIZE, syncPageLimit * PAGE_SIZE);
     }
 
     private Duration cacheTtl() {

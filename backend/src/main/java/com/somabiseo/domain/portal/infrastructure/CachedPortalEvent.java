@@ -172,13 +172,16 @@ public class CachedPortalEvent {
     }
 
     public SomaPortalEventResponse toResponse(ObjectMapper objectMapper) {
+        List<SomaPortalEventDetailItem> detailItems = readJson(objectMapper, detailItemsJson, DETAIL_ITEMS_TYPE);
+        List<SomaPortalEventApplicantResponse> applicants = readJson(objectMapper, applicantsJson, APPLICANTS_TYPE);
+
         return new SomaPortalEventResponse(
                 sourceId,
                 type,
                 title,
                 mentorName,
                 topic,
-                location,
+                firstNonBlank(location, detailItemValue(detailItems, "장소")),
                 startAt,
                 endAt,
                 applicationStartAt,
@@ -191,9 +194,9 @@ public class CachedPortalEvent {
                 author,
                 registeredAt,
                 sourceUrl,
-                readJson(objectMapper, detailItemsJson, DETAIL_ITEMS_TYPE),
+                detailItems,
                 contentText,
-                readJson(objectMapper, applicantsJson, APPLICANTS_TYPE),
+                applicants,
                 detailSyncedAt,
                 rawText
         );

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface CachedPortalEventRepository extends JpaRepository<CachedPortalEvent, Long> {
@@ -17,6 +18,19 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
 
     @Query("select max(event.updatedAt) from CachedPortalEvent event")
     Optional<Instant> findLatestUpdatedAt();
+
+    @Query(
+            """
+                    select event from CachedPortalEvent event
+                    where (event.location is null or trim(event.location) = '')
+                      and event.detailSyncedAt is null
+                    order by
+                      case when event.startAt is null then 1 else 0 end,
+                      event.startAt desc,
+                      event.id desc
+                    """
+    )
+    List<CachedPortalEvent> findDisplayDetailHydrationCandidates(Pageable pageable);
 
     @Query(
             value = """
