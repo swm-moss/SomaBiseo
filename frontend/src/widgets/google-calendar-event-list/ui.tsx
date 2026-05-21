@@ -5,7 +5,11 @@ import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 
 import type { GoogleCalendarEvent } from "@/entities/calendar/model";
-import { isSomaBiseoCalendarEvent } from "@/entities/calendar/model";
+import {
+  getSomaBiseoEventId,
+  isSomaBiseoCalendarEvent,
+  SOMA_BISEO_EVENT_TYPE_MARKER_PREFIX,
+} from "@/entities/calendar/model";
 import { useAuthStore } from "@/features/auth/model";
 import {
   useGoogleCalendarConnectionSync,
@@ -20,8 +24,15 @@ import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { ErrorState } from "@/shared/ui/error-state";
 import { LoadingState } from "@/shared/ui/loading-state";
+import { StatusBadge } from "@/shared/ui/status-badge";
 
 type CalendarView = "SOMA" | "ALL";
+type SomaCalendarEventType = "LECTURE" | "MENTORING";
+
+const somaEventTypeLabel: Record<SomaCalendarEventType, string> = {
+  LECTURE: "멘토특강",
+  MENTORING: "자유멘토링",
+};
 
 export function GoogleCalendarEventList() {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -205,9 +216,18 @@ function CalendarEventContent({
 }
 
 function CalendarEventRow({ event }: { event: GoogleCalendarEvent }) {
-  return (
-    <div className="border-b border-border/80 px-5 py-5 last:border-b-0">
-      <p className="truncate text-[17px] font-semibold leading-[25.5px]">{event.title}</p>
+  const somaEventId = getSomaBiseoEventId(event);
+  const eventType = getSomaEventType(event);
+  const displayTitle = getCalendarEventDisplayTitle(event);
+
+  const content = (
+    <>
+      {eventType ? (
+        <StatusBadge tone={eventType === "LECTURE" ? "blue" : "cyan"}>
+          {somaEventTypeLabel[eventType]}
+        </StatusBadge>
+      ) : null}
+      <p className="mt-2 truncate text-[17px] font-semibold leading-[25.5px]">{displayTitle}</p>
       <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
         {formatDateTime(event.startAt)} · {formatTimeRange(event.startAt, event.endAt)}
       </p>
@@ -216,6 +236,59 @@ function CalendarEventRow({ event }: { event: GoogleCalendarEvent }) {
           {event.location}
         </p>
       ) : null}
+    </>
+  );
+
+  if (somaEventId) {
+    return (
+      <Link
+        className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
+        href={routes.eventDetail(somaEventId)}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="border-b border-border/80 px-5 py-5 last:border-b-0">
+      {content}
     </div>
   );
+}
+
+function getSomaEventType(event: GoogleCalendarEvent): SomaCalendarEventType | null {
+  const markerType = event.description
+    ?.split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.startsWith(SOMA_BISEO_EVENT_TYPE_MARKER_PREFIX))
+    ?.slice(SOMA_BISEO_EVENT_TYPE_MARKER_PREFIX.length);
+
+  if (markerType === "LECTURE" || markerType === "MENTORING") {
+    return markerType;
+  }
+
+  if (event.title.includes("[멘토특강]") || event.title.includes("[멘토 특강]")) {
+    return "LECTURE";
+  }
+
+  if (
+    event.title.includes("[자유멘토링]")
+    || event.title.includes("[자유 멘토링]")
+    || event.title.includes("[멘토링]")
+  ) {
+    return "MENTORING";
+  }
+
+  return null;
+}
+
+function getCalendarEventDisplayTitle(event: GoogleCalendarEvent) {
+  return event.title
+    .replace("[멘토 특강]", "")
+    .replace("[멘토특강]", "")
+    .replace("[자유 멘토링]", "")
+    .replace("[자유멘토링]", "")
+    .replace("[멘토링]", "")
+    .trim();
 }
