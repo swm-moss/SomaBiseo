@@ -111,3 +111,13 @@ export function isEventClosed(event: SomaEvent): boolean {
 
   return event.status === "CLOSED" || event.status === "FULL" || event.status === "CANCELED";
 }
+
+export function isEventEnded(event: SomaEvent, now: Date = new Date()): boolean {
+  const reference = event.endAt ?? event.startAt;
+
+  if (!reference) {
+    return false;
+  }
+
+  return new Date(reference).getTime() < now.getTime();
+}
