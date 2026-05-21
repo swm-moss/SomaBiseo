@@ -1,90 +1,108 @@
 # SomaBiseo
 
-SomaBiseo는 소프트웨어마에스트로 연수생을 위한 비공식 일정, 공지, 멘토링 비서입니다.
+> 소프트웨어마에스트로 연수생을 위한 **비공식** 일정 · 공지 · 멘토링 비서
 
-## Structure
+흩어져 있던 SOMA 공지, 멘토특강, 자유멘토링을 한 화면에서 보기 좋게 정리하고,
+관심사 기반 추천 · AI 요약 · Google Calendar 연동 · 후기까지 한 곳에서 모아 볼 수 있도록 만든 사이드 프로젝트입니다.
 
-```txt
-SomaBiseo
-├─ frontend  Next.js App Router + FSD
-├─ backend   Spring Boot REST API
-└─ docs      product, API, agent task split
-```
+<br/>
 
-## Run Frontend
+## 🔗 서비스 링크
+
+> 부산센터 연수생 대상 초대 코드가 있어야 메인 화면을 사용할 수 있습니다.
+
+https://somabiseo.vercel.app
+
+<br/>
+
+## ✨ 이런 분께 추천해요
+
+- 매번 SOMA 포털을 열어 공지, 멘토링을 확인하는 게 번거로우셨던 분
+- 멘토링 일정을 Google Calendar에 모아서 관리하고 싶은 분
+- 멘토링 일정과 개인 일정이 겹치는지 일일이 비교하기 번거로우셨던 분
+- 장소, 시간, 특강명, 멘토명을 캘린더에 직접 옮겨 적는 게 귀찮으셨던 분
+- 멘토특강, 자유멘토링 후기를 미리 보고 신청 여부를 결정하고 싶은 분
+
+<br/>
+
+## 🧩 주요 기능
+
+| 기능                | 설명                                                                  |
+| ------------------- | --------------------------------------------------------------------- |
+| **대시보드**        | 이번 주 캘린더 일정, 관심사 추천 특강, 마감 임박 일정, 최근 공지 요약 |
+| **공지**            | 중요, 읽지 않음, 북마크 필터                                          |
+| **일정**            | 강의 타입 필터, 온/오프라인 필터, 정렬, 검색 기능                     |
+| **AI 요약**         | 멘토링 본문을 핵심, 추천 대상, 얻는 것으로 요약                       |
+| **AI 추천**         | 사용자의 관심사에 맞는 특강 추천                                      |
+| **후기**            | 종료된 강의에 대한 후기 작성                                          |
+| **구글캘린더 연동** | 내 캘린더와의 충돌 표시, 캘린더 등록                                  |
+
+<br/>
+
+## 🛠️ 기술 스택
+
+| 영역     | 사용 기술                    |
+| -------- | ---------------------------- |
+| Frontend | Next.js 16, TypeScript       |
+| Backend  | Spring Boot 3.5, Java 21     |
+| Database | PostgreSQL                   |
+| 인증     | Google OAuth 2.0 + 초대 코드 |
+
+<br/>
+
+## 🚀 로컬에서 실행하기
+
+### 1. 사전 준비
+
+- Node.js 20+ / npm
+- Java 21
+- Docker (백엔드 + Postgres 실행용)
+
+### 2. 저장소 클론
 
 ```bash
-npm --prefix frontend run dev
+git clone https://github.com/<your-org>/SomaBiseo.git
+cd SomaBiseo
 ```
 
-Open the URL printed by Next.js, usually `http://localhost:3000`. If another app is using
-3000, Next.js will pick another port such as `http://localhost:3001`.
+### 3. 환경변수 설정
 
-## Run Backend
-
-Create a local env file first. The real invite code and production secrets must stay in your
-ignored `.env`.
+루트의 `.env.example`을 복사해 `.env`를 만듭니다.
 
 ```bash
 cp .env.example .env
 ```
 
-For this workspace, `.env` is already populated from Railway secrets with localhost DB and
-redirect overrides. The raw Railway dump is stored in ignored `.env.railway.local` only for local
-operator reference. Do not commit either file.
+`.env`에서 비워둔 값들을 채워 주세요. **`.env`와 시크릿 파일은 절대 커밋하지 마세요.**
+
+| 환경변수                                                          | 설명                                                    |
+| ----------------------------------------------------------------- | ------------------------------------------------------- |
+| `SOMA_PORTAL_OPERATOR_USERNAME` / `SOMA_PORTAL_OPERATOR_PASSWORD` | SOMA 포털 읽기 전용 운영자 계정                         |
+| `GOOGLE_CALENDAR_CLIENT_ID` / `GOOGLE_CALENDAR_CLIENT_SECRET`     | Google OAuth 클라이언트                                 |
+| `OPENAI_API_KEY`                                                  | AI 요약을 사용하려면 필요 (없으면 요약 기능만 비활성화) |
+| `SOMABISEO_INVITE_CODE`                                           | 부산센터 멤버 확인용 초대 코드                          |
+
+### 4. 백엔드 실행 (Docker)
 
 ```bash
 docker compose up -d --build backend
 ```
 
-Local backend health:
+### 5. 프론트엔드 실행
 
 ```bash
-curl http://localhost:8080/api/health
-```
-
-Postgres is exposed on `127.0.0.1:${POSTGRES_PORT:-15432}` to avoid clashing with an existing local `5432`.
-
-## Production Deployment
-
-Frontend deploys to Vercel and backend deploys to Railway after CI passes on `main`.
-See [프로덕션 배포 문서](docs/deployment/production.md).
-
-## Implementation Docs
-
-- [프론트 초기 세팅](docs/frontend/initial-setup.md)
-- [SOMA 포털 읽기 어댑터, 공지, 멘토링 기능](docs/features/soma-portal.md)
-
-## Project Context
-
-Agent handoff notes, React Query caching policy, and current infrastructure decisions live in
-[Conversation Notes](docs/conversation.md).
-
-## Local Real Portal Test
-
-```bash
-docker compose up -d --build backend
+npm --prefix frontend install
 npm --prefix frontend run dev
 ```
 
-Before running real portal reads, set the read-only operator credentials as environment variables
-for the backend. These secrets are used only by the server-side adapter.
+<br/>
 
-```bash
-export SOMA_PORTAL_OPERATOR_USERNAME="<operator-soma-id>"
-export SOMA_PORTAL_OPERATOR_PASSWORD="<operator-soma-password>"
-```
+## 🛡️ Product Guardrails
 
-Then open `/dashboard`, `/notices`, or `/events` on the frontend localhost URL. End users do not
-enter SOMA portal credentials; the frontend calls read APIs without `sessionId`, and the backend
-uses the operator account to fetch notices and mentoring events.
-Fetched notices and mentoring events are stored in Postgres and refreshed by TTL instead of being
-crawled on every request.
+해당 서비스는 다음 원칙을 지킵니다.
 
-## Product Guardrails
-
-- 비공식 서비스로 표현합니다.
 - 사용자에게 SOMA 포털 아이디/비밀번호를 입력받지 않습니다.
-- 읽기 전용 포털 조회는 서버 환경변수의 운영자 계정으로만 수행합니다.
-- MVP 1차에서는 신청, 취소를 넣지 않습니다. 이후에는 사용자 명시 버튼 기반 흐름만 허용하고 매크로성 자동 반복 실행은 만들지 않습니다.
-- 실제 SOMA 연동은 읽기 전용 데이터 조회부터 붙입니다.
+- 신청 · 취소 자동화나 매크로성 동작을 만들지 않습니다. 실제 강의 신청을 위해서는 사용자가 직접 소마 공식 사이트에 접속해야 합니다.
+- 무단 대량 크롤링, 랭킹 시스템을 포함하기 않습니다.
+
+<br/>
