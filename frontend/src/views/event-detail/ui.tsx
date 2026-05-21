@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -181,7 +180,6 @@ function SummaryList({ items, title }: { items: string[]; title: string }) {
 
 export function EventDetailPage({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient();
-  const locationRefreshRequestedRef = useRef<string | null>(null);
   const { data: event, isLoading, isError, refetch } = useQuery({
     queryKey: ["event", eventId],
     queryFn: () => getSomaEventById(eventId),
@@ -198,43 +196,21 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
     staleTime: 10 * 60_000,
   });
   const refreshDetailMutation = useMutation({
-    mutationFn: (variables: { silent?: boolean }) => {
-      void variables;
-
-      return getSomaEventById(eventId, { refresh: true });
-    },
-    onSuccess: async (freshEvent, variables) => {
+    mutationFn: () => getSomaEventById(eventId, { refresh: true }),
+    onSuccess: async (freshEvent) => {
       queryClient.setQueryData(["event", eventId], freshEvent);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["events"] }),
         queryClient.invalidateQueries({ queryKey: ["dashboard-events"] }),
       ]);
-
-      if (!variables.silent) {
-        toast.success("원본 정보를 다시 확인했어요.");
-      }
+      toast.success("원본 정보를 다시 확인했어요.");
     },
-    onError: (_error, variables) => {
-      if (!variables.silent) {
-        toast.error("원본 정보를 다시 확인하지 못했어요.");
-      }
+    onError: () => {
+      toast.error("원본 정보를 다시 확인하지 못했어요.");
     },
   });
   const eventContentLines = event ? contentLines(event) : [];
   const hasLocation = Boolean(event?.location);
-
-  useEffect(() => {
-    if (!event || event.location || refreshDetailMutation.isPending) {
-      return;
-    }
-
-    if (locationRefreshRequestedRef.current === event.id) {
-      return;
-    }
-
-    locationRefreshRequestedRef.current = event.id;
-    refreshDetailMutation.mutate({ silent: true });
-  }, [event, refreshDetailMutation]);
 
   return (
     <AppShell>
@@ -293,16 +269,13 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                     </p>
                   </div>
                 </div>
-                {event.location || refreshDetailMutation.isPending ? (
+                {event.location ? (
                   <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
-                    <MapPin
-                      aria-hidden="true"
-                      className={`mt-0.5 size-5 ${event.location ? "text-primary" : "text-muted-foreground"}`}
-                    />
+                    <MapPin aria-hidden="true" className="mt-0.5 size-5 text-primary" />
                     <div className="min-w-0">
                       <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">장소</p>
-                      <p className="mt-1 text-[15px] font-extrabold leading-[22px] text-foreground">
-                        {event.location ?? "원본 확인 중"}
+                      <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
+                        {event.location}
                       </p>
                     </div>
                   </div>
@@ -386,7 +359,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                 <Button
                   className="h-10 w-full sm:w-auto"
                   disabled={refreshDetailMutation.isPending}
-                  onClick={() => refreshDetailMutation.mutate({ silent: false })}
+                  onClick={() => refreshDetailMutation.mutate()}
                   variant="outline"
                 >
                   <RefreshCcw

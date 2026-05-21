@@ -105,7 +105,10 @@ public class SomaPortalService {
     ) {
         syncEventsIfNeeded();
 
-        return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q);
+        return hydrateEventPageDisplayDetails(
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q),
+                this::fetchAndCachePublicEventDetail
+        );
     }
 
     public SomaPortalPageResponse<SomaPortalEventResponse> getEvents(
@@ -121,7 +124,10 @@ public class SomaPortalService {
 
         cacheService.upsertEvents(response.items());
 
-        return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q);
+        return hydrateEventPageDisplayDetails(
+                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q),
+                (sourceUrl) -> fetchAndCacheEventDetail(session, sourceUrl)
+        );
     }
 
     public SomaPortalEventResponse getPublicEventDetailBySourceId(String sourceId, boolean refresh) {
@@ -147,6 +153,49 @@ public class SomaPortalService {
         List<SomaPortalEventResponse> events = htmlParser.parseEvents(html, portalClient.baseUrl());
 
         return toPageResponse(events, html, safePage);
+    }
+
+    private SomaPortalPageResponse<SomaPortalEventResponse> hydrateEventPageDisplayDetails(
+            SomaPortalPageResponse<SomaPortalEventResponse> page,
+            Function<String, SomaPortalEventResponse> detailFetcher
+    ) {
+        List<SomaPortalEventResponse> hydratedItems = page.items().stream()
+                .map((event) -> hydrateEventDisplayDetails(event, detailFetcher))
+                .toList();
+
+        return new SomaPortalPageResponse<>(
+                hydratedItems,
+                page.page(),
+                page.totalPages(),
+                page.hasNextPage()
+        );
+    }
+
+    private SomaPortalEventResponse hydrateEventDisplayDetails(
+            SomaPortalEventResponse event,
+            Function<String, SomaPortalEventResponse> detailFetcher
+    ) {
+        if (!needsDisplayDetailHydration(event)) {
+            return event;
+        }
+
+        try {
+            return detailFetcher.apply(event.sourceUrl());
+        } catch (RuntimeException exception) {
+            return event;
+        }
+    }
+
+    private boolean needsDisplayDetailHydration(SomaPortalEventResponse event) {
+        return isBlank(event.location()) && detailStale(event.detailSyncedAt());
+    }
+
+    private boolean detailStale(Instant detailSyncedAt) {
+        return detailSyncedAt == null || detailSyncedAt.isBefore(Instant.now().minus(detailCacheTtl()));
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     public SomaPortalEventResponse getPublicEventDetail(String sourceUrl, boolean refresh) {
