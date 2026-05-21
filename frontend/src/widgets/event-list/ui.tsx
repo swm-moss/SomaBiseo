@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CalendarDays, ChevronDown, Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 
 import {
   DEFAULT_SOMA_EVENT_SORT,
@@ -268,13 +268,9 @@ export function EventList() {
         </div>
         <div className="flex items-center gap-2">
         <div className="relative shrink-0">
-          <CalendarDays
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          />
           <input
             aria-label="강의 날짜"
-            className="h-12 w-40 rounded-lg border border-border bg-white pl-9 pr-9 text-[14px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
+            className="h-12 w-40 rounded-lg border border-border bg-white pl-3 pr-9 text-[14px] font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
             type="date"
             value={date}
             onChange={(event) => handleDateChange(event.target.value)}
@@ -282,7 +278,7 @@ export function EventList() {
           {date ? (
             <button
               aria-label="날짜 필터 해제"
-              className="absolute right-2 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="absolute right-2 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-white text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               type="button"
               onClick={() => handleDateChange("")}
             >
