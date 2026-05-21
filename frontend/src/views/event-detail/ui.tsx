@@ -72,13 +72,13 @@ function getDetailItems(event: SomaEvent) {
 
   return [
     { label: "강의 날짜", value: event.startAt ? formatOptionalDateTime(event.startAt) : "시간 미정" },
-    { label: "장소", value: event.location ?? "장소 미정" },
+    event.location ? { label: "장소", value: event.location } : null,
     { label: "상태", value: statusLabel[event.status] ?? event.status },
     {
       label: "모집 인원",
       value: event.capacity ? `${event.capacity}명` : "미정",
     },
-  ];
+  ].filter((item): item is { label: string; value: string } => item !== null);
 }
 
 function contentLines(event: SomaEvent) {
@@ -210,6 +210,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
     },
   });
   const eventContentLines = event ? contentLines(event) : [];
+  const hasLocation = Boolean(event?.location);
 
   return (
     <AppShell>
@@ -253,7 +254,7 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                 <FavoriteEventButton eventId={event.id} />
               </div>
 
-              <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              <div className={`mt-7 grid gap-3 sm:grid-cols-2 ${hasLocation ? "lg:grid-cols-3" : ""}`}>
                 <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
                   <CalendarClock aria-hidden="true" className="mt-0.5 size-5 text-primary" />
                   <div className="min-w-0">
@@ -268,15 +269,17 @@ export function EventDetailPage({ eventId }: { eventId: string }) {
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
-                  <MapPin aria-hidden="true" className="mt-0.5 size-5 text-primary" />
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">장소</p>
-                    <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
-                      {event.location ?? "장소 미정"}
-                    </p>
+                {event.location ? (
+                  <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
+                    <MapPin aria-hidden="true" className="mt-0.5 size-5 text-primary" />
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-bold leading-[19px] text-muted-foreground">장소</p>
+                      <p className="mt-1 text-[15px] font-extrabold leading-[22px]">
+                        {event.location}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : null}
                 <div className="flex gap-3 rounded-lg bg-white px-4 py-4">
                   <Users aria-hidden="true" className="mt-0.5 size-5 text-primary" />
                   <div className="min-w-0">

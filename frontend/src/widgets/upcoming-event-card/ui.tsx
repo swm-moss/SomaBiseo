@@ -62,10 +62,12 @@ export function UpcomingEventCard({
         <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
           {event.mentorName ?? "멘토 미정"} · {formatOptionalDateTime(event.startAt)}
         </p>
-        <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-          <MapPin aria-hidden="true" className="size-4" />
-          {event.location ?? "장소 미정"}
-        </p>
+        {event.location ? (
+          <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
+            <MapPin aria-hidden="true" className="size-4" />
+            {event.location}
+          </p>
+        ) : null}
       </Link>
       <FavoriteEventButton eventId={event.id} />
     </article>
