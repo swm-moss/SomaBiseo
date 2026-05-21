@@ -47,7 +47,7 @@ export function DashboardSummary() {
   const newNotices = notices.slice(0, 2);
   const recommendationCandidates = dashboard?.recommendationCandidates ?? [];
   const recommendedEvents = getRecommendedEvents(recommendationCandidates, selectedTopicIds, 3);
-  const deadlineSoon = dashboard?.deadlineSoonEvents ?? [];
+  const almostFull = dashboard?.almostFullEvents ?? [];
   const calendarEventCount = calendarEventsQuery.data?.length ?? 0;
   const calendarSummaryValue =
     calendarConnected && sessionId
@@ -133,24 +133,29 @@ export function DashboardSummary() {
 
       <section className="sb-section">
         <h2 className="sb-section-title">마감 임박</h2>
-        {deadlineSoon.length === 0 ? (
+        {almostFull.length === 0 ? (
           <EmptyState className="mt-3" title="마감 임박 일정이 없어요" />
         ) : (
           <div className="sb-list-surface">
-            {deadlineSoon.map((event) => (
-              <Link
-                key={event.id}
-                className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
-                href={routes.eventDetail(event.id)}
-              >
-                <p className="text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
-                <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-                  {event.applicationEndAt
-                    ? `${formatOptionalDateTime(event.applicationEndAt)} 마감`
-                    : "신청 가능"}
-                </p>
-              </Link>
-            ))}
+            {almostFull.map((event) => {
+              const remainingSeats =
+                event.capacity != null && event.applicantCount != null
+                  ? event.capacity - event.applicantCount
+                  : null;
+
+              return (
+                <Link
+                  key={event.id}
+                  className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
+                  href={routes.eventDetail(event.id)}
+                >
+                  <p className="text-[17px] font-semibold leading-[25.5px]">{event.topic}</p>
+                  <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
+                    {remainingSeats != null ? `남은 자리 ${remainingSeats}석` : "신청 가능"}
+                  </p>
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>
