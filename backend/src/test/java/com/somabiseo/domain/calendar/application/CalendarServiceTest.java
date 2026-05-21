@@ -136,6 +136,45 @@ class CalendarServiceTest {
         verify(googleCalendarClient).findEvents(SESSION_ID, START_AT, secondEndAt);
     }
 
+    @Test
+    void addsCalendarEventWithTopicTitleAndEventTypeMarker() {
+        givenEvent();
+        GoogleCalendarEventLink pendingLink = GoogleCalendarEventLink.pending(SESSION_ID, EVENT_ID, "primary");
+        String description = """
+                특강 설명
+
+                SomaBiseo Event ID: soma-event-1
+                SomaBiseo Event Type: LECTURE""";
+        when(googleCalendarClient.calendarId()).thenReturn("primary");
+        when(googleCalendarClient.isConnected(SESSION_ID)).thenReturn(true);
+        when(googleCalendarEventLinkRepository.findByCalendarSessionIdAndSourceIdAndCalendarId(
+                SESSION_ID,
+                EVENT_ID,
+                "primary"
+        )).thenReturn(Optional.empty(), Optional.of(pendingLink));
+        when(googleCalendarEventLinkRepository.insertPending(SESSION_ID, EVENT_ID, "primary")).thenReturn(1);
+        when(googleCalendarClient.insertEvent(
+                SESSION_ID,
+                "Backend",
+                description,
+                "부산센터",
+                START_AT,
+                END_AT
+        )).thenReturn(googleEvent("google-event-1", "Backend", START_AT, END_AT, description));
+
+        var response = calendarService.addEvent(SESSION_ID, EVENT_ID);
+
+        assertThat(response.googleEventId()).isEqualTo("google-event-1");
+        verify(googleCalendarClient).insertEvent(
+                SESSION_ID,
+                "Backend",
+                description,
+                "부산센터",
+                START_AT,
+                END_AT
+        );
+    }
+
     private void givenEvent() {
         givenEvent(EVENT_ID, START_AT, END_AT);
     }

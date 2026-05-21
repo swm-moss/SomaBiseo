@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 @Service
 public class CalendarService {
     private static final String EVENT_ID_MARKER_PREFIX = "SomaBiseo Event ID: ";
+    private static final String EVENT_TYPE_MARKER_PREFIX = "SomaBiseo Event Type: ";
     private static final CalendarConnectionResponse DISCONNECTED =
             new CalendarConnectionResponse(false, null, null, null);
 
@@ -311,8 +312,8 @@ public class CalendarService {
         try {
             googleEvent = googleCalendarClient.insertEvent(
                     calendarSessionId,
-                    event.title(),
-                    withEventIdMarker(event.description(), eventId),
+                    event.displayTitle(),
+                    withEventMarkers(event.description(), eventId, event.type()),
                     event.location(),
                     event.startAt(),
                     event.endAt()
@@ -368,18 +369,22 @@ public class CalendarService {
                 .orElse(null);
     }
 
-    private String withEventIdMarker(String description, String eventId) {
-        String marker = eventIdMarker(eventId);
+    private String withEventMarkers(String description, String eventId, String eventType) {
+        String markers = eventIdMarker(eventId) + "\n" + eventTypeMarker(eventType);
 
         if (description == null || description.isBlank()) {
-            return marker;
+            return markers;
         }
 
-        return description + "\n\n" + marker;
+        return description + "\n\n" + markers;
     }
 
     private String eventIdMarker(String eventId) {
         return EVENT_ID_MARKER_PREFIX + eventId;
+    }
+
+    private String eventTypeMarker(String eventType) {
+        return EVENT_TYPE_MARKER_PREFIX + eventType;
     }
 
     private boolean hasEventIdMarker(String description, String eventId) {
@@ -421,6 +426,8 @@ public class CalendarService {
     private CalendarEvent toCalendarEvent(SomaPortalEventResponse event) {
         return new CalendarEvent(
                 event.title(),
+                event.topic(),
+                event.type().name(),
                 event.contentText(),
                 event.location(),
                 event.startAt(),
@@ -431,6 +438,8 @@ public class CalendarService {
     private CalendarEvent toCalendarEvent(SomaEventResponse event) {
         return new CalendarEvent(
                 event.title(),
+                event.topic(),
+                event.type().name(),
                 event.description(),
                 event.location(),
                 event.startAt(),
@@ -440,11 +449,16 @@ public class CalendarService {
 
     private record CalendarEvent(
             String title,
+            String topic,
+            String type,
             String description,
             String location,
             OffsetDateTime startAt,
             OffsetDateTime endAt
     ) {
+        String displayTitle() {
+            return topic == null || topic.isBlank() ? title : topic;
+        }
     }
 
     private record CalendarEventWithId(
