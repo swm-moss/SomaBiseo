@@ -153,11 +153,7 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
     @Query(
             value = """
                     select event from CachedPortalEvent event
-                    where upper(event.status) = 'OPEN'
-                      and event.capacity is not null
-                      and event.applicantCount is not null
-                      and event.capacity - event.applicantCount > 0
-                      and (:type is null or event.type = :type)
+                    where (:type is null or event.type = :type)
                       and (cast(:mode as string) is null
                         or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
@@ -167,16 +163,25 @@ public interface CachedPortalEventRepository extends JpaRepository<CachedPortalE
                       and (cast(:dateFrom as timestamp) is null
                         or (event.startAt is not null and event.startAt >= :dateFrom and event.startAt < :dateTo))
                     order by
-                      (event.capacity - event.applicantCount) asc,
+                      case
+                        when upper(event.status) = 'OPEN'
+                          and event.capacity is not null
+                          and event.applicantCount is not null
+                          and event.capacity - event.applicantCount > 0
+                        then 0 else 1
+                      end asc,
+                      case
+                        when upper(event.status) = 'OPEN'
+                          and event.capacity is not null
+                          and event.applicantCount is not null
+                          and event.capacity - event.applicantCount > 0
+                        then (event.capacity - event.applicantCount)
+                      end asc,
                       event.id asc
                     """,
             countQuery = """
                     select count(event) from CachedPortalEvent event
-                    where upper(event.status) = 'OPEN'
-                      and event.capacity is not null
-                      and event.applicantCount is not null
-                      and event.capacity - event.applicantCount > 0
-                      and (:type is null or event.type = :type)
+                    where (:type is null or event.type = :type)
                       and (cast(:mode as string) is null
                         or lower(coalesce(event.operationType, '')) like lower(concat('%', cast(:mode as string), '%')))
                       and (cast(:q as string) is null
