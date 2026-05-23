@@ -259,6 +259,18 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      <footer className="bg-[#101828] px-5 pb-10 text-white/60 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1120px] flex-wrap gap-x-4 gap-y-2 border-t border-white/15 pt-6 text-[13px] font-semibold leading-[20px]">
+          <span>{PRODUCT_NAME}</span>
+          <Link className="hover:text-white" href={routes.privacy}>
+            개인정보처리방침
+          </Link>
+          <Link className="hover:text-white" href={routes.terms}>
+            이용약관
+          </Link>
+        </div>
+      </footer>
     </main>
   );
 }

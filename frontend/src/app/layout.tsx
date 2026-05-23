@@ -3,7 +3,7 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://somabiseo.local"),
+  metadataBase: new URL("https://somabiseo.com"),
   title: {
     default: "SomaBiseo",
     template: "%s · SomaBiseo",
