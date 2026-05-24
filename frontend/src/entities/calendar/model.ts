@@ -30,6 +30,8 @@ export type GoogleCalendarEvent = {
   calendarId: string;
   location: string | null;
   description: string | null;
+  somaBiseoEventId: string | null;
+  somaBiseoEventType: string | null;
 };
 
 export const SOMA_BISEO_EVENT_MARKER_PREFIX = "SomaBiseo Event ID: ";
@@ -40,10 +42,27 @@ export function isSomaBiseoCalendarEvent(event: GoogleCalendarEvent) {
 }
 
 export function getSomaBiseoEventId(event: GoogleCalendarEvent) {
+  if (event.somaBiseoEventId && event.somaBiseoEventId.trim().length > 0) {
+    return event.somaBiseoEventId.trim();
+  }
+
   return event.description
     ?.split("\n")
     .map((line) => line.trim())
     .find((line) => line.startsWith(SOMA_BISEO_EVENT_MARKER_PREFIX))
     ?.slice(SOMA_BISEO_EVENT_MARKER_PREFIX.length)
+    .trim() ?? null;
+}
+
+export function getSomaBiseoEventType(event: GoogleCalendarEvent) {
+  if (event.somaBiseoEventType && event.somaBiseoEventType.trim().length > 0) {
+    return event.somaBiseoEventType.trim();
+  }
+
+  return event.description
+    ?.split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.startsWith(SOMA_BISEO_EVENT_TYPE_MARKER_PREFIX))
+    ?.slice(SOMA_BISEO_EVENT_TYPE_MARKER_PREFIX.length)
     .trim() ?? null;
 }

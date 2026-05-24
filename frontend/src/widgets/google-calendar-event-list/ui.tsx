@@ -7,8 +7,8 @@ import { CalendarDays, MapPin } from "lucide-react";
 import type { GoogleCalendarEvent } from "@/entities/calendar/model";
 import {
   getSomaBiseoEventId,
+  getSomaBiseoEventType,
   isSomaBiseoCalendarEvent,
-  SOMA_BISEO_EVENT_TYPE_MARKER_PREFIX,
 } from "@/entities/calendar/model";
 import { useAuthStore } from "@/features/auth/model";
 import {
@@ -259,11 +259,7 @@ function CalendarEventRow({ event }: { event: GoogleCalendarEvent }) {
 }
 
 function getSomaEventType(event: GoogleCalendarEvent): SomaCalendarEventType | null {
-  const markerType = event.description
-    ?.split("\n")
-    .map((line) => line.trim())
-    .find((line) => line.startsWith(SOMA_BISEO_EVENT_TYPE_MARKER_PREFIX))
-    ?.slice(SOMA_BISEO_EVENT_TYPE_MARKER_PREFIX.length);
+  const markerType = getSomaBiseoEventType(event);
 
   if (markerType === "LECTURE" || markerType === "MENTORING") {
     return markerType;
