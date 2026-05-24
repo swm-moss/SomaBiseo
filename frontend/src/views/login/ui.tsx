@@ -58,6 +58,14 @@ export function LoginPage() {
         <p className="mt-5 text-[13px] leading-[19.5px] text-muted-foreground">
           {NON_OFFICIAL_NOTICE}
         </p>
+        <div className="mt-4 flex gap-3 text-[13px] font-semibold leading-[19.5px] text-muted-foreground">
+          <a className="hover:text-foreground" href={routes.privacy}>
+            개인정보처리방침
+          </a>
+          <a className="hover:text-foreground" href={routes.terms}>
+            이용약관
+          </a>
+        </div>
       </div>
     </main>
   );

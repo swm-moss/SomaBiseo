@@ -1,6 +1,8 @@
 export const routes = {
   home: "/",
   login: "/login",
+  privacy: "/privacy",
+  terms: "/terms",
   inviteVerify: "/verify-invite",
   googleLoginCallback: "/login/google/callback",
   dashboard: "/dashboard",
