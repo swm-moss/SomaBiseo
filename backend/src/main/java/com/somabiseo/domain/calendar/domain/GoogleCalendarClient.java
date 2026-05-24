@@ -25,6 +25,8 @@ public interface GoogleCalendarClient {
             String sessionId,
             String title,
             String description,
+            String sourceEventId,
+            String sourceEventType,
             String location,
             OffsetDateTime startAt,
             OffsetDateTime endAt

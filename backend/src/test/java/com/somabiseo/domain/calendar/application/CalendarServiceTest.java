@@ -62,7 +62,7 @@ class CalendarServiceTest {
         givenEvent();
         when(googleCalendarClient.isConnected(SESSION_ID)).thenReturn(true);
         when(googleCalendarClient.findEvents(SESSION_ID, START_AT, END_AT)).thenReturn(List.of(
-                googleEvent("google-self", "내 캘린더에 추가된 소마 일정", START_AT, END_AT, "SomaBiseo Event ID: " + EVENT_ID),
+                somaBiseoGoogleEvent("google-self", "내 캘린더에 추가된 소마 일정", START_AT, END_AT, EVENT_ID),
                 googleEvent("busy-1", "개인 일정", START_AT.plusMinutes(30), START_AT.plusHours(1), null)
         ));
 
@@ -114,7 +114,7 @@ class CalendarServiceTest {
                 "primary"
         )).thenReturn(List.of(addedLink));
         when(googleCalendarClient.findEvents(SESSION_ID, START_AT, secondEndAt)).thenReturn(List.of(
-                googleEvent("google-self", "내 캘린더에 추가된 소마 일정", START_AT, END_AT, "SomaBiseo Event ID: " + EVENT_ID),
+                somaBiseoGoogleEvent("google-self", "내 캘린더에 추가된 소마 일정", START_AT, END_AT, EVENT_ID),
                 googleEvent("busy-1", "개인 일정", secondStartAt.plusMinutes(30), secondStartAt.plusHours(1), null)
         ));
 
@@ -137,14 +137,9 @@ class CalendarServiceTest {
     }
 
     @Test
-    void addsCalendarEventWithTopicTitleAndEventTypeMarker() {
+    void addsCalendarEventWithPrivatePropertiesAndVisibleDescriptionOnly() {
         givenEvent();
         GoogleCalendarEventLink pendingLink = GoogleCalendarEventLink.pending(SESSION_ID, EVENT_ID, "primary");
-        String description = """
-                특강 설명
-
-                SomaBiseo Event ID: soma-event-1
-                SomaBiseo Event Type: LECTURE""";
         when(googleCalendarClient.calendarId()).thenReturn("primary");
         when(googleCalendarClient.isConnected(SESSION_ID)).thenReturn(true);
         when(googleCalendarEventLinkRepository.findByCalendarSessionIdAndSourceIdAndCalendarId(
@@ -156,11 +151,13 @@ class CalendarServiceTest {
         when(googleCalendarClient.insertEvent(
                 SESSION_ID,
                 "Backend",
-                description,
+                "특강 설명",
+                EVENT_ID,
+                "LECTURE",
                 "부산센터",
                 START_AT,
                 END_AT
-        )).thenReturn(googleEvent("google-event-1", "Backend", START_AT, END_AT, description));
+        )).thenReturn(somaBiseoGoogleEvent("google-event-1", "Backend", START_AT, END_AT, EVENT_ID));
 
         var response = calendarService.addEvent(SESSION_ID, EVENT_ID);
 
@@ -168,7 +165,9 @@ class CalendarServiceTest {
         verify(googleCalendarClient).insertEvent(
                 SESSION_ID,
                 "Backend",
-                description,
+                "특강 설명",
+                EVENT_ID,
+                "LECTURE",
                 "부산센터",
                 START_AT,
                 END_AT
@@ -215,7 +214,29 @@ class CalendarServiceTest {
                 endAt,
                 "primary",
                 null,
-                description
+                description,
+                null,
+                null
+        );
+    }
+
+    private GoogleCalendarEventResponse somaBiseoGoogleEvent(
+            String id,
+            String title,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt,
+            String somaBiseoEventId
+    ) {
+        return new GoogleCalendarEventResponse(
+                id,
+                title,
+                startAt,
+                endAt,
+                "primary",
+                null,
+                null,
+                somaBiseoEventId,
+                "LECTURE"
         );
     }
 }

@@ -9,6 +9,8 @@ public record GoogleCalendarEventResponse(
         OffsetDateTime endAt,
         String calendarId,
         String location,
-        String description
+        String description,
+        String somaBiseoEventId,
+        String somaBiseoEventType
 ) {
 }
