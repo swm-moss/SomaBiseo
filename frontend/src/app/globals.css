@@ -240,27 +240,14 @@
     animation-delay: 320ms;
   }
 
-  .sb-landing-machine {
-    transform: translateX(-50%);
-    animation: sb-landing-machine-float 6s ease-in-out infinite;
-  }
-
   .sb-landing-marquee {
     animation: sb-landing-marquee 30s linear infinite;
     will-change: transform;
   }
 
-  .sb-monitor-stage {
-    perspective: 900px;
-  }
-
   .sb-monitor-shadow {
     background: radial-gradient(ellipse, rgb(20 49 93 / 30%) 0%, rgb(20 49 93 / 14%) 48%, transparent 74%);
     filter: blur(10px);
-  }
-
-  .sb-monitor-shell {
-    transform: rotateX(4deg) rotateY(-4deg) rotateZ(-1deg);
   }
 
   .sb-monitor-face {
@@ -293,6 +280,16 @@
       0 16px 34px rgb(25 31 40 / 12%);
   }
 
+}
+
+html.sb-landing-snap-active {
+  scroll-snap-type: y mandatory;
+}
+
+@media (max-width: 767px), (prefers-reduced-motion: reduce) {
+  html.sb-landing-snap-active {
+    scroll-snap-type: none;
+  }
 }
 
 @keyframes sb-interest-dialog-enter {
@@ -345,17 +342,6 @@
   }
 }
 
-@keyframes sb-landing-machine-float {
-  0%,
-  100% {
-    transform: translateX(-50%) translateY(0);
-  }
-
-  50% {
-    transform: translateX(-50%) translateY(-12px);
-  }
-}
-
 @keyframes sb-landing-marquee {
   from {
     transform: translateX(0);
@@ -375,7 +361,6 @@
   .sb-interest-chip-in,
   .sb-type-caret,
   .sb-landing-rise,
-  .sb-landing-machine,
   .sb-landing-marquee {
     animation: none;
   }
