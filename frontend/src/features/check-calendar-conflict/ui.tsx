@@ -24,12 +24,18 @@ export function CalendarConflictResult({ event }: { event: SomaEvent }) {
     queryFn: () => getGoogleCalendarEventLink(event),
     enabled: connected && Boolean(sessionId),
     retry: 0,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
   const { data, error, isError, isLoading, refetch } = useQuery({
     queryKey: ["calendar-conflict", event.id, sessionId],
     queryFn: () => getConflictForEvent(event),
     enabled: connected && Boolean(sessionId) && linkQuery.data?.alreadyAdded === false,
     retry: 0,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   if (!connected || !sessionId) {

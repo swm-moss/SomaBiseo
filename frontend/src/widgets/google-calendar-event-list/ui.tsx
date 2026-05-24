@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, ExternalLink, MapPin } from "lucide-react";
 
 import type { GoogleCalendarEvent } from "@/entities/calendar/model";
 import {
@@ -40,6 +40,7 @@ export function GoogleCalendarEventList() {
   const sessionId = useAuthStore((state) => state.sessionId);
   useGoogleCalendarConnectionSync();
   const connected = useGoogleCalendarStore((state) => state.connected);
+  const googleAccountEmail = useGoogleCalendarStore((state) => state.googleAccountEmail);
   const { start: weekStart, end: weekEnd } = getWeekRange(weekOffset);
   const eventsQuery = useGoogleCalendarEventsInRange(weekStart, weekEnd);
 
@@ -106,6 +107,7 @@ export function GoogleCalendarEventList() {
           }
           emptyTitle={view === "SOMA" ? "내 소마 일정이 없어요" : "특강 보러 가볼까요?"}
           events={selectedEvents}
+          googleAccountEmail={googleAccountEmail}
           isError={eventsQuery.isError}
           isLoading={eventsQuery.isLoading}
           error={eventsQuery.error}
@@ -149,6 +151,7 @@ function CalendarEventContent({
   emptyTitle,
   error,
   events,
+  googleAccountEmail,
   isError,
   isLoading,
   onRetry,
@@ -158,6 +161,7 @@ function CalendarEventContent({
   emptyTitle: string;
   error: unknown;
   events: GoogleCalendarEvent[];
+  googleAccountEmail?: string;
   isError: boolean;
   isLoading: boolean;
   onRetry: () => void;
@@ -209,35 +213,51 @@ function CalendarEventContent({
   return (
     <div className="sb-list-surface">
       {events.map((event) => (
-        <CalendarEventRow key={event.id} event={event} />
+        <CalendarEventRow
+          key={event.id}
+          event={event}
+          googleAccountEmail={googleAccountEmail}
+        />
       ))}
     </div>
   );
 }
 
-function CalendarEventRow({ event }: { event: GoogleCalendarEvent }) {
+function CalendarEventRow({
+  event,
+  googleAccountEmail,
+}: {
+  event: GoogleCalendarEvent;
+  googleAccountEmail?: string;
+}) {
   const somaEventId = getSomaBiseoEventId(event);
   const eventType = getSomaEventType(event);
   const displayTitle = getCalendarEventDisplayTitle(event);
+  const googleCalendarHref = event.htmlLink
+    ? withGoogleAccountHint(event.htmlLink, googleAccountEmail)
+    : null;
 
   const content = (
-    <>
-      {eventType ? (
-        <StatusBadge tone={eventType === "LECTURE" ? "blue" : "cyan"}>
-          {somaEventTypeLabel[eventType]}
-        </StatusBadge>
-      ) : null}
-      <p className="mt-2 truncate text-[17px] font-semibold leading-[25.5px]">{displayTitle}</p>
-      <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-        {formatDateTime(event.startAt)} · {formatTimeRange(event.startAt, event.endAt)}
-      </p>
-      {event.location ? (
-        <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-          <MapPin aria-hidden="true" className="size-4 shrink-0" />
-          <span className="truncate">{event.location}</span>
+    <div className="flex gap-3">
+      <div className="min-w-0 flex-1">
+        {eventType ? (
+          <StatusBadge tone={eventType === "LECTURE" ? "blue" : "cyan"}>
+            {somaEventTypeLabel[eventType]}
+          </StatusBadge>
+        ) : null}
+        <p className="mt-2 truncate text-[17px] font-semibold leading-[25.5px]">{displayTitle}</p>
+        <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
+          {formatDateTime(event.startAt)} · {formatTimeRange(event.startAt, event.endAt)}
         </p>
-      ) : null}
-    </>
+        {event.location ? (
+          <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
+            <MapPin aria-hidden="true" className="size-4 shrink-0" />
+            <span className="truncate">{event.location}</span>
+          </p>
+        ) : null}
+      </div>
+      {googleCalendarHref ? <GoogleCalendarLink href={googleCalendarHref} /> : null}
+    </div>
   );
 
   if (somaEventId) {
@@ -256,6 +276,38 @@ function CalendarEventRow({ event }: { event: GoogleCalendarEvent }) {
       {content}
     </div>
   );
+}
+
+function GoogleCalendarLink({ href }: { href: string }) {
+  return (
+    <a
+      aria-label="Google Calendar에서 보기"
+      className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      href={href}
+      rel="noreferrer"
+      target="_blank"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <ExternalLink aria-hidden="true" className="size-4" />
+    </a>
+  );
+}
+
+function withGoogleAccountHint(href: string, googleAccountEmail?: string) {
+  if (!googleAccountEmail) {
+    return href;
+  }
+
+  try {
+    const url = new URL(href);
+    url.searchParams.set("authuser", googleAccountEmail);
+
+    return url.toString();
+  } catch {
+    const separator = href.includes("?") ? "&" : "?";
+
+    return `${href}${separator}authuser=${encodeURIComponent(googleAccountEmail)}`;
+  }
 }
 
 function getSomaEventType(event: GoogleCalendarEvent): SomaCalendarEventType | null {
