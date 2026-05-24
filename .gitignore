@@ -14,3 +14,4 @@ frontend/out/
 .env.*.local
 .vercel/
 .railway/
+.playwright-mcp/
