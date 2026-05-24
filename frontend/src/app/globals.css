@@ -245,6 +245,11 @@
     animation: sb-landing-machine-float 6s ease-in-out infinite;
   }
 
+  .sb-landing-marquee {
+    animation: sb-landing-marquee 30s linear infinite;
+    will-change: transform;
+  }
+
   .sb-monitor-stage {
     perspective: 900px;
   }
@@ -351,6 +356,16 @@
   }
 }
 
+@keyframes sb-landing-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sb-recommended-row {
     animation: none;
@@ -360,7 +375,8 @@
   .sb-interest-chip-in,
   .sb-type-caret,
   .sb-landing-rise,
-  .sb-landing-machine {
+  .sb-landing-machine,
+  .sb-landing-marquee {
     animation: none;
   }
 }
