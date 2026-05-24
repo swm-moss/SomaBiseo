@@ -184,8 +184,9 @@ public class GoogleAuthService {
 
     public GoogleAuthSessionStore.GoogleAuthSession requireVerifiedAuthor(String authorization, String sessionCookie) {
         GoogleAuthSessionStore.GoogleAuthSession session = requireSession(authorization, sessionCookie);
+        AuthUser user = requireUser(session);
 
-        if (!session.inviteVerified()) {
+        if (!user.isInviteVerified()) {
             throw new InviteVerificationException("초대 코드 인증이 필요합니다.");
         }
 
