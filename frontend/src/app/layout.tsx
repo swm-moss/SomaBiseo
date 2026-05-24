@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Agentation } from "agentation";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -33,6 +34,9 @@ export default function RootLayout({
     <html lang="ko" className="h-full scroll-smooth antialiased">
       <body className="min-h-full">
         <Providers>{children}</Providers>
+        {process.env.NODE_ENV === "development" && (
+          <Agentation endpoint="http://localhost:4747" />
+        )}
       </body>
     </html>
   );
