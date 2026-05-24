@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 @Service
 public class CalendarService {
     private static final String EVENT_ID_MARKER_PREFIX = "SomaBiseo Event ID: ";
-    private static final String EVENT_TYPE_MARKER_PREFIX = "SomaBiseo Event Type: ";
     private static final CalendarConnectionResponse DISCONNECTED =
             new CalendarConnectionResponse(false, null, null, null);
 
@@ -172,7 +171,7 @@ public class CalendarService {
         }
 
         List<BusyBlockResponse> busyBlocks = googleCalendarClient.findEvents(calendarSessionId, startAt, endAt).stream()
-                .filter((event) -> eventId == null || !hasEventIdMarker(event.description(), eventId))
+                .filter((event) -> eventId == null || !isSomaBiseoEvent(event, eventId))
                 .filter((event) -> overlaps(startAt, endAt, event.startAt(), event.endAt()))
                 .map((event) -> new BusyBlockResponse(
                         event.id(),
@@ -199,11 +198,11 @@ public class CalendarService {
                 : Set.of();
         boolean alreadyAdded = googleEvents.stream()
                 .anyMatch((googleEvent) ->
-                        hasEventIdMarker(googleEvent.description(), event.eventId())
+                        isSomaBiseoEvent(googleEvent, event.eventId())
                                 || linkedGoogleEventIds.contains(googleEvent.id())
                 );
         List<BusyBlockResponse> busyBlocks = googleEvents.stream()
-                .filter((googleEvent) -> !hasEventIdMarker(googleEvent.description(), event.eventId()))
+                .filter((googleEvent) -> !isSomaBiseoEvent(googleEvent, event.eventId()))
                 .filter((googleEvent) -> !linkedGoogleEventIds.contains(googleEvent.id()))
                 .filter((googleEvent) -> overlaps(
                         event.event().startAt(),
@@ -313,7 +312,9 @@ public class CalendarService {
             googleEvent = googleCalendarClient.insertEvent(
                     calendarSessionId,
                     event.displayTitle(),
-                    withEventMarkers(event.description(), eventId, event.type()),
+                    event.description(),
+                    eventId,
+                    event.type(),
                     event.location(),
                     event.startAt(),
                     event.endAt()
@@ -364,27 +365,21 @@ public class CalendarService {
         }
 
         return googleCalendarClient.findEvents(calendarSessionId, event.startAt(), event.endAt()).stream()
-                .filter((googleEvent) -> hasEventIdMarker(googleEvent.description(), eventId))
+                .filter((googleEvent) -> isSomaBiseoEvent(googleEvent, eventId))
                 .findFirst()
                 .orElse(null);
-    }
-
-    private String withEventMarkers(String description, String eventId, String eventType) {
-        String markers = eventIdMarker(eventId) + "\n" + eventTypeMarker(eventType);
-
-        if (description == null || description.isBlank()) {
-            return markers;
-        }
-
-        return description + "\n\n" + markers;
     }
 
     private String eventIdMarker(String eventId) {
         return EVENT_ID_MARKER_PREFIX + eventId;
     }
 
-    private String eventTypeMarker(String eventType) {
-        return EVENT_TYPE_MARKER_PREFIX + eventType;
+    private boolean isSomaBiseoEvent(GoogleCalendarEventResponse event, String eventId) {
+        if (eventId == null || eventId.isBlank()) {
+            return false;
+        }
+
+        return eventId.equals(event.somaBiseoEventId()) || hasEventIdMarker(event.description(), eventId);
     }
 
     private boolean hasEventIdMarker(String description, String eventId) {

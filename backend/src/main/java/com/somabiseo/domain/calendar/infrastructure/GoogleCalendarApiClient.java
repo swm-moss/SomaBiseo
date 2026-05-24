@@ -33,6 +33,10 @@ import java.util.UUID;
 @ConditionalOnProperty(name = "somabiseo.google-calendar.mock-enabled", havingValue = "false", matchIfMissing = true)
 public class GoogleCalendarApiClient implements GoogleCalendarClient {
     private static final Logger log = LoggerFactory.getLogger(GoogleCalendarApiClient.class);
+    private static final String EXTENDED_PROPERTIES_KEY = "extendedProperties";
+    private static final String PRIVATE_PROPERTIES_KEY = "private";
+    private static final String SOMABISEO_EVENT_ID_KEY = "somabiseoEventId";
+    private static final String SOMABISEO_EVENT_TYPE_KEY = "somabiseoEventType";
     private static final String CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
     private static final String AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -205,6 +209,8 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
             String sessionId,
             String title,
             String description,
+            String sourceEventId,
+            String sourceEventType,
             String location,
             OffsetDateTime startAt,
             OffsetDateTime endAt
@@ -214,14 +220,20 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
         Map<String, Object> request = new HashMap<>();
         Map<String, String> start = new HashMap<>();
         Map<String, String> end = new HashMap<>();
+        Map<String, Object> extendedProperties = new HashMap<>();
+        Map<String, String> privateProperties = new HashMap<>();
 
         start.put("dateTime", googleDateTime(startAt));
         end.put("dateTime", googleDateTime(endAt));
+        privateProperties.put(SOMABISEO_EVENT_ID_KEY, sourceEventId);
+        privateProperties.put(SOMABISEO_EVENT_TYPE_KEY, sourceEventType);
+        extendedProperties.put(PRIVATE_PROPERTIES_KEY, privateProperties);
         request.put("summary", title);
         request.put("description", description);
         request.put("location", location);
         request.put("start", start);
         request.put("end", end);
+        request.put(EXTENDED_PROPERTIES_KEY, extendedProperties);
 
         JsonNode response;
 
@@ -253,7 +265,9 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                 insertedEndAt == null ? endAt : insertedEndAt,
                 calendarId,
                 response == null ? location : response.path("location").asText(location),
-                response == null ? description : response.path("description").asText(description)
+                response == null ? description : response.path("description").asText(description),
+                response == null ? sourceEventId : readPrivateProperty(response, SOMABISEO_EVENT_ID_KEY),
+                response == null ? sourceEventType : readPrivateProperty(response, SOMABISEO_EVENT_TYPE_KEY)
         );
     }
 
@@ -397,7 +411,9 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                     endAt,
                     calendarId,
                     item.path("location").asText(null),
-                    item.path("description").asText(null)
+                    item.path("description").asText(null),
+                    readPrivateProperty(item, SOMABISEO_EVENT_ID_KEY),
+                    readPrivateProperty(item, SOMABISEO_EVENT_TYPE_KEY)
             ));
         }
 
@@ -423,8 +439,19 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                 endAt,
                 calendarId,
                 item.path("location").asText(null),
-                item.path("description").asText(null)
+                item.path("description").asText(null),
+                readPrivateProperty(item, SOMABISEO_EVENT_ID_KEY),
+                readPrivateProperty(item, SOMABISEO_EVENT_TYPE_KEY)
         ));
+    }
+
+    private String readPrivateProperty(JsonNode event, String key) {
+        String value = event.path(EXTENDED_PROPERTIES_KEY)
+                .path(PRIVATE_PROPERTIES_KEY)
+                .path(key)
+                .asText(null);
+
+        return value == null || value.isBlank() ? null : value;
     }
 
     private OffsetDateTime readDateTime(JsonNode node) {
