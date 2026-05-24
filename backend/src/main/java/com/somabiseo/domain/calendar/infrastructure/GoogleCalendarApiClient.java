@@ -266,6 +266,8 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                 calendarId,
                 response == null ? location : response.path("location").asText(location),
                 response == null ? description : response.path("description").asText(description),
+                response == null ? null : response.path("htmlLink").asText(null),
+                response == null ? null : response.path("status").asText(null),
                 response == null ? sourceEventId : readPrivateProperty(response, SOMABISEO_EVENT_ID_KEY),
                 response == null ? sourceEventType : readPrivateProperty(response, SOMABISEO_EVENT_TYPE_KEY)
         );
@@ -412,6 +414,8 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                     calendarId,
                     item.path("location").asText(null),
                     item.path("description").asText(null),
+                    item.path("htmlLink").asText(null),
+                    item.path("status").asText(null),
                     readPrivateProperty(item, SOMABISEO_EVENT_ID_KEY),
                     readPrivateProperty(item, SOMABISEO_EVENT_TYPE_KEY)
             ));
@@ -440,6 +444,8 @@ public class GoogleCalendarApiClient implements GoogleCalendarClient {
                 calendarId,
                 item.path("location").asText(null),
                 item.path("description").asText(null),
+                item.path("htmlLink").asText(null),
+                item.path("status").asText(null),
                 readPrivateProperty(item, SOMABISEO_EVENT_ID_KEY),
                 readPrivateProperty(item, SOMABISEO_EVENT_TYPE_KEY)
         ));

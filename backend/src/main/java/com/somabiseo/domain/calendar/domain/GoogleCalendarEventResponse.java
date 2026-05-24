@@ -10,7 +10,14 @@ public record GoogleCalendarEventResponse(
         String calendarId,
         String location,
         String description,
+        String htmlLink,
+        String status,
         String somaBiseoEventId,
         String somaBiseoEventType
 ) {
+    private static final String CANCELLED_STATUS = "cancelled";
+
+    public boolean isCancelled() {
+        return CANCELLED_STATUS.equals(status);
+    }
 }

@@ -22,6 +22,9 @@ export function AddEventToCalendarButton({ event }: { event: SomaEvent }) {
     queryKey: linkQueryKey,
     queryFn: () => getGoogleCalendarEventLink(event),
     enabled: connected,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
   const isAdded = eventLink?.alreadyAdded ?? false;
   const addMutation = useMutation({

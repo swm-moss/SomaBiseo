@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, ExternalLink, MapPin } from "lucide-react";
 
 import type { GoogleCalendarEvent } from "@/entities/calendar/model";
 import {
@@ -28,6 +28,7 @@ import { StatusBadge } from "@/shared/ui/status-badge";
 
 type CalendarView = "SOMA" | "ALL";
 type SomaCalendarEventType = "LECTURE" | "MENTORING";
+type CalendarEventTimingBadge = "NOW" | "NEXT";
 
 const somaEventTypeLabel: Record<SomaCalendarEventType, string> = {
   LECTURE: "멘토특강",
@@ -40,6 +41,7 @@ export function GoogleCalendarEventList() {
   const sessionId = useAuthStore((state) => state.sessionId);
   useGoogleCalendarConnectionSync();
   const connected = useGoogleCalendarStore((state) => state.connected);
+  const googleAccountEmail = useGoogleCalendarStore((state) => state.googleAccountEmail);
   const { start: weekStart, end: weekEnd } = getWeekRange(weekOffset);
   const eventsQuery = useGoogleCalendarEventsInRange(weekStart, weekEnd);
 
@@ -106,6 +108,7 @@ export function GoogleCalendarEventList() {
           }
           emptyTitle={view === "SOMA" ? "내 소마 일정이 없어요" : "특강 보러 가볼까요?"}
           events={selectedEvents}
+          googleAccountEmail={googleAccountEmail}
           isError={eventsQuery.isError}
           isLoading={eventsQuery.isLoading}
           error={eventsQuery.error}
@@ -143,12 +146,73 @@ function CalendarViewButton({
   );
 }
 
+function CalendarEventRow({
+  event,
+  googleAccountEmail,
+  timingBadge,
+}: {
+  event: GoogleCalendarEvent;
+  googleAccountEmail?: string;
+  timingBadge?: CalendarEventTimingBadge;
+}) {
+  const somaEventId = getSomaBiseoEventId(event);
+  const eventType = getSomaEventType(event);
+  const displayTitle = getCalendarEventDisplayTitle(event);
+  const googleCalendarHref = event.htmlLink
+    ? withGoogleAccountHint(event.htmlLink, googleAccountEmail)
+    : null;
+
+  const content = (
+    <div className="flex gap-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {timingBadge ? <TimingBadge value={timingBadge} /> : null}
+          {eventType ? (
+            <StatusBadge tone={eventType === "LECTURE" ? "blue" : "cyan"}>
+              {somaEventTypeLabel[eventType]}
+            </StatusBadge>
+          ) : null}
+        </div>
+        <p className="mt-2 truncate text-[17px] font-semibold leading-[25.5px]">{displayTitle}</p>
+        <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
+          {formatDateTime(event.startAt)} · {formatTimeRange(event.startAt, event.endAt)}
+        </p>
+        {event.location ? (
+          <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
+            <MapPin aria-hidden="true" className="size-4 shrink-0" />
+            <span className="truncate">{event.location}</span>
+          </p>
+        ) : null}
+      </div>
+      {googleCalendarHref ? <GoogleCalendarLink href={googleCalendarHref} /> : null}
+    </div>
+  );
+
+  if (somaEventId) {
+    return (
+      <Link
+        className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
+        href={routes.eventDetail(somaEventId)}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="border-b border-border/80 px-5 py-5 last:border-b-0">
+      {content}
+    </div>
+  );
+}
+
 function CalendarEventContent({
   connected,
   emptyDescription,
   emptyTitle,
   error,
   events,
+  googleAccountEmail,
   isError,
   isLoading,
   onRetry,
@@ -158,10 +222,13 @@ function CalendarEventContent({
   emptyTitle: string;
   error: unknown;
   events: GoogleCalendarEvent[];
+  googleAccountEmail?: string;
   isError: boolean;
   isLoading: boolean;
   onRetry: () => void;
 }) {
+  const timingBadgeByEventId = getTimingBadgeByEventId(events);
+
   if (!connected) {
     return (
       <EmptyState
@@ -209,53 +276,90 @@ function CalendarEventContent({
   return (
     <div className="sb-list-surface">
       {events.map((event) => (
-        <CalendarEventRow key={event.id} event={event} />
+        <CalendarEventRow
+          key={event.id}
+          event={event}
+          googleAccountEmail={googleAccountEmail}
+          timingBadge={timingBadgeByEventId.get(event.id)}
+        />
       ))}
     </div>
   );
 }
 
-function CalendarEventRow({ event }: { event: GoogleCalendarEvent }) {
-  const somaEventId = getSomaBiseoEventId(event);
-  const eventType = getSomaEventType(event);
-  const displayTitle = getCalendarEventDisplayTitle(event);
-
-  const content = (
-    <>
-      {eventType ? (
-        <StatusBadge tone={eventType === "LECTURE" ? "blue" : "cyan"}>
-          {somaEventTypeLabel[eventType]}
-        </StatusBadge>
-      ) : null}
-      <p className="mt-2 truncate text-[17px] font-semibold leading-[25.5px]">{displayTitle}</p>
-      <p className="mt-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-        {formatDateTime(event.startAt)} · {formatTimeRange(event.startAt, event.endAt)}
-      </p>
-      {event.location ? (
-        <p className="mt-2 flex items-center gap-1 text-[14px] font-medium leading-[21px] text-muted-foreground">
-          <MapPin aria-hidden="true" className="size-4 shrink-0" />
-          <span className="truncate">{event.location}</span>
-        </p>
-      ) : null}
-    </>
+function GoogleCalendarLink({ href }: { href: string }) {
+  return (
+    <a
+      aria-label="Google Calendar에서 보기"
+      className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      href={href}
+      rel="noreferrer"
+      target="_blank"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <ExternalLink aria-hidden="true" className="size-4" />
+    </a>
   );
+}
 
-  if (somaEventId) {
-    return (
-      <Link
-        className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
-        href={routes.eventDetail(somaEventId)}
-      >
-        {content}
-      </Link>
-    );
+function TimingBadge({ value }: { value: CalendarEventTimingBadge }) {
+  return (
+    <span
+      className={
+        value === "NOW"
+          ? "inline-flex h-6 items-center rounded-md bg-emerald-50 px-2 text-[11px] font-black leading-none text-emerald-700"
+          : "inline-flex h-6 items-center rounded-md bg-indigo-50 px-2 text-[11px] font-black leading-none text-indigo-700"
+      }
+    >
+      {value}
+    </span>
+  );
+}
+
+function getTimingBadgeByEventId(events: GoogleCalendarEvent[]) {
+  const now = Date.now();
+  const result = new Map<string, CalendarEventTimingBadge>();
+
+  for (const event of events) {
+    const startAt = new Date(event.startAt).getTime();
+    const endAt = new Date(event.endAt).getTime();
+
+    if (startAt <= now && now < endAt) {
+      result.set(event.id, "NOW");
+    }
   }
 
-  return (
-    <div className="border-b border-border/80 px-5 py-5 last:border-b-0">
-      {content}
-    </div>
-  );
+  const nextEvent = events
+    .filter((event) => !result.has(event.id))
+    .map((event) => ({
+      event,
+      startAt: new Date(event.startAt).getTime(),
+    }))
+    .filter(({ startAt }) => startAt > now)
+    .sort((first, second) => first.startAt - second.startAt)[0]?.event;
+
+  if (nextEvent) {
+    result.set(nextEvent.id, "NEXT");
+  }
+
+  return result;
+}
+
+function withGoogleAccountHint(href: string, googleAccountEmail?: string) {
+  if (!googleAccountEmail) {
+    return href;
+  }
+
+  try {
+    const url = new URL(href);
+    url.searchParams.set("authuser", googleAccountEmail);
+
+    return url.toString();
+  } catch {
+    const separator = href.includes("?") ? "&" : "?";
+
+    return `${href}${separator}authuser=${encodeURIComponent(googleAccountEmail)}`;
+  }
 }
 
 function getSomaEventType(event: GoogleCalendarEvent): SomaCalendarEventType | null {

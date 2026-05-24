@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -171,6 +172,7 @@ public class CalendarService {
         }
 
         List<BusyBlockResponse> busyBlocks = googleCalendarClient.findEvents(calendarSessionId, startAt, endAt).stream()
+                .filter((event) -> !event.isCancelled())
                 .filter((event) -> eventId == null || !isSomaBiseoEvent(event, eventId))
                 .filter((event) -> overlaps(startAt, endAt, event.startAt(), event.endAt()))
                 .map((event) -> new BusyBlockResponse(
@@ -197,11 +199,13 @@ public class CalendarService {
                 ? Set.of(link.getGoogleEventId())
                 : Set.of();
         boolean alreadyAdded = googleEvents.stream()
+                .filter((googleEvent) -> !googleEvent.isCancelled())
                 .anyMatch((googleEvent) ->
                         isSomaBiseoEvent(googleEvent, event.eventId())
                                 || linkedGoogleEventIds.contains(googleEvent.id())
                 );
         List<BusyBlockResponse> busyBlocks = googleEvents.stream()
+                .filter((googleEvent) -> !googleEvent.isCancelled())
                 .filter((googleEvent) -> !isSomaBiseoEvent(googleEvent, event.eventId()))
                 .filter((googleEvent) -> !linkedGoogleEventIds.contains(googleEvent.id()))
                 .filter((googleEvent) -> overlaps(
@@ -238,7 +242,7 @@ public class CalendarService {
             return new CalendarEventLinkResponse(eventId, null, calendarId, false);
         }
 
-        if (googleCalendarClient.findEvent(calendarSessionId, link.getGoogleEventId()).isEmpty()) {
+        if (findActiveGoogleEvent(calendarSessionId, link.getGoogleEventId()).isEmpty()) {
             googleCalendarEventLinkRepository.delete(link);
 
             return new CalendarEventLinkResponse(eventId, null, calendarId, false);
@@ -292,7 +296,7 @@ public class CalendarService {
                 throw new GoogleCalendarConnectionException(
                         "Google Calendar 추가가 진행 중입니다. 잠시 후 다시 시도해 주세요."
                 );
-            } else if (googleCalendarClient.findEvent(calendarSessionId, link.getGoogleEventId()).isEmpty()) {
+            } else if (findActiveGoogleEvent(calendarSessionId, link.getGoogleEventId()).isEmpty()) {
                 googleCalendarEventLinkRepository.delete(link);
                 link = null;
             } else {
@@ -365,9 +369,15 @@ public class CalendarService {
         }
 
         return googleCalendarClient.findEvents(calendarSessionId, event.startAt(), event.endAt()).stream()
+                .filter((googleEvent) -> !googleEvent.isCancelled())
                 .filter((googleEvent) -> isSomaBiseoEvent(googleEvent, eventId))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private Optional<GoogleCalendarEventResponse> findActiveGoogleEvent(String calendarSessionId, String googleEventId) {
+        return googleCalendarClient.findEvent(calendarSessionId, googleEventId)
+                .filter((googleEvent) -> !googleEvent.isCancelled());
     }
 
     private String eventIdMarker(String eventId) {

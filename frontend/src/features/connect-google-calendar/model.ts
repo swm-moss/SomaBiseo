@@ -138,6 +138,9 @@ export function useGoogleCalendarEventsInRange(from: Date, to: Date) {
     queryFn: () => getGoogleCalendarEvents(fromIso, toIso),
     enabled: connected && Boolean(sessionId),
     retry: 0,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -151,5 +154,8 @@ export function useGoogleCalendarConflictStatuses(eventIds: string[]) {
     queryFn: () => getConflictStatusesForEvents(uniqueEventIds),
     enabled: connected && Boolean(sessionId) && uniqueEventIds.length > 0,
     retry: 0,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }

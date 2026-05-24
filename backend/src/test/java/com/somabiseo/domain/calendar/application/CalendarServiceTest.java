@@ -174,6 +174,84 @@ class CalendarServiceTest {
         );
     }
 
+    @Test
+    void treatsCancelledLinkedGoogleEventAsNotAdded() {
+        GoogleCalendarEventLink link = GoogleCalendarEventLink.pending(SESSION_ID, EVENT_ID, "primary");
+        link.markCreated("google-event-1");
+        when(googleCalendarClient.calendarId()).thenReturn("primary");
+        when(googleCalendarEventLinkRepository.findByCalendarSessionIdAndSourceIdAndCalendarId(
+                SESSION_ID,
+                EVENT_ID,
+                "primary"
+        )).thenReturn(Optional.of(link));
+        when(googleCalendarClient.findEvent(SESSION_ID, "google-event-1"))
+                .thenReturn(Optional.of(cancelledGoogleEvent("google-event-1", "Backend", START_AT, END_AT)));
+
+        var response = calendarService.getEventLink(SESSION_ID, EVENT_ID);
+
+        assertThat(response.alreadyAdded()).isFalse();
+        assertThat(response.googleEventId()).isNull();
+        verify(googleCalendarEventLinkRepository).delete(link);
+    }
+
+    @Test
+    void createsNewGoogleEventWhenExistingLinkIsCancelled() {
+        givenEvent();
+        GoogleCalendarEventLink createdLink = GoogleCalendarEventLink.pending(SESSION_ID, EVENT_ID, "primary");
+        createdLink.markCreated("google-event-1");
+        GoogleCalendarEventLink pendingLink = GoogleCalendarEventLink.pending(SESSION_ID, EVENT_ID, "primary");
+        when(googleCalendarClient.calendarId()).thenReturn("primary");
+        when(googleCalendarClient.isConnected(SESSION_ID)).thenReturn(true);
+        when(googleCalendarEventLinkRepository.findByCalendarSessionIdAndSourceIdAndCalendarId(
+                SESSION_ID,
+                EVENT_ID,
+                "primary"
+        )).thenReturn(Optional.of(createdLink), Optional.of(pendingLink));
+        when(googleCalendarClient.findEvent(SESSION_ID, "google-event-1"))
+                .thenReturn(Optional.of(cancelledGoogleEvent("google-event-1", "Backend", START_AT, END_AT)));
+        when(googleCalendarEventLinkRepository.insertPending(SESSION_ID, EVENT_ID, "primary")).thenReturn(1);
+        when(googleCalendarClient.insertEvent(
+                SESSION_ID,
+                "Backend",
+                "특강 설명",
+                EVENT_ID,
+                "LECTURE",
+                "부산센터",
+                START_AT,
+                END_AT
+        )).thenReturn(somaBiseoGoogleEvent("google-event-2", "Backend", START_AT, END_AT, EVENT_ID));
+
+        var response = calendarService.addEvent(SESSION_ID, EVENT_ID);
+
+        assertThat(response.googleEventId()).isEqualTo("google-event-2");
+        verify(googleCalendarEventLinkRepository).delete(createdLink);
+    }
+
+    @Test
+    void ignoresCancelledGoogleEventsInConflictStatus() {
+        givenEvent();
+        GoogleCalendarEventLink addedLink = GoogleCalendarEventLink.pending(SESSION_ID, EVENT_ID, "primary");
+        addedLink.markCreated("google-self");
+        when(googleCalendarClient.isConnected(SESSION_ID)).thenReturn(true);
+        when(googleCalendarClient.calendarId()).thenReturn("primary");
+        when(googleCalendarEventLinkRepository.findByCalendarSessionIdAndSourceIdInAndCalendarId(
+                SESSION_ID,
+                List.of(EVENT_ID),
+                "primary"
+        )).thenReturn(List.of(addedLink));
+        when(googleCalendarClient.findEvents(SESSION_ID, START_AT, END_AT)).thenReturn(List.of(
+                cancelledGoogleEvent("google-self", "내 캘린더에서 삭제한 소마 일정", START_AT, END_AT),
+                cancelledGoogleEvent("busy-1", "삭제한 개인 일정", START_AT.plusMinutes(30), START_AT.plusHours(1))
+        ));
+
+        List<CalendarConflictStatusResponse> statuses = calendarService.getConflictStatuses(SESSION_ID, List.of(EVENT_ID));
+
+        assertThat(statuses).hasSize(1);
+        assertThat(statuses.getFirst().alreadyAdded()).isFalse();
+        assertThat(statuses.getFirst().hasConflict()).isFalse();
+        assertThat(statuses.getFirst().busyBlocks()).isEmpty();
+    }
+
     private void givenEvent() {
         givenEvent(EVENT_ID, START_AT, END_AT);
     }
@@ -216,6 +294,8 @@ class CalendarServiceTest {
                 null,
                 description,
                 null,
+                null,
+                null,
                 null
         );
     }
@@ -235,8 +315,31 @@ class CalendarServiceTest {
                 "primary",
                 null,
                 null,
+                null,
+                null,
                 somaBiseoEventId,
                 "LECTURE"
+        );
+    }
+
+    private GoogleCalendarEventResponse cancelledGoogleEvent(
+            String id,
+            String title,
+            OffsetDateTime startAt,
+            OffsetDateTime endAt
+    ) {
+        return new GoogleCalendarEventResponse(
+                id,
+                title,
+                startAt,
+                endAt,
+                "primary",
+                null,
+                null,
+                null,
+                "cancelled",
+                null,
+                null
         );
     }
 }

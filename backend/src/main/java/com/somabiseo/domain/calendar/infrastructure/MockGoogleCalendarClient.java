@@ -27,6 +27,8 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
                     "Google Meet",
                     null,
                     null,
+                    null,
+                    null,
                     null
             ),
             new GoogleCalendarEventResponse(
@@ -38,6 +40,8 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
                     "온라인",
                     null,
                     null,
+                    null,
+                    null,
                     null
             ),
             new GoogleCalendarEventResponse(
@@ -47,6 +51,8 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
                     OffsetDateTime.parse("2026-05-22T22:00:00+09:00"),
                     "primary",
                     "부산센터",
+                    null,
+                    null,
                     null,
                     null,
                     null
@@ -134,6 +140,8 @@ public class MockGoogleCalendarClient implements GoogleCalendarClient {
                 calendarId(),
                 location,
                 description,
+                null,
+                null,
                 sourceEventId,
                 sourceEventType
         );

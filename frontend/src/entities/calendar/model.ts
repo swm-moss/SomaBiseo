@@ -30,6 +30,7 @@ export type GoogleCalendarEvent = {
   calendarId: string;
   location: string | null;
   description: string | null;
+  htmlLink: string | null;
   somaBiseoEventId: string | null;
   somaBiseoEventType: string | null;
 };
