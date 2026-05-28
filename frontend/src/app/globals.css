@@ -283,7 +283,7 @@
 }
 
 html.sb-landing-snap-active {
-  scroll-snap-type: y mandatory;
+  scroll-snap-type: y proximity;
 }
 
 @media (max-width: 767px), (prefers-reduced-motion: reduce) {
