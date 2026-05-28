@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   },
 };
 
-const updatedAt = "시행일 2026.05.23";
+const updatedAt = "시행일 2026.05.28";
 
 export default function PrivacyPage() {
   return (
@@ -107,9 +107,15 @@ export default function PrivacyPage() {
 
       <LegalSection title="제3자 제공">
         <p>
-          SomaBiseo는 사용자의 개인정보를 판매하지 않습니다. 다만 사용자가 Google 로그인 또는 Google Calendar
-          기능을 사용할 때 Google OAuth와 Google Calendar API가 동작하며, 서비스 운영을 위해 Vercel, Railway,
-          PostgreSQL 등 배포와 데이터 저장 인프라가 사용될 수 있습니다.
+          SomaBiseo는 Google 사용자 데이터를 앱 기능 제공 또는 개선에 필요한 경우를 제외하고
+          제3자에게 이전하거나 공개하지 않으며, 어떠한 경우에도 판매하지 않습니다.
+        </p>
+        <p>
+          사용자가 Google 로그인 또는 Google Calendar 기능을 사용할 때 Google OAuth와 Google
+          Calendar API가 동작하며, 서비스 운영을 위해 Vercel, Railway, PostgreSQL 등 배포와 데이터
+          저장 인프라가 사용될 수 있습니다. 이러한 인프라 제공자는 서비스 운영 목적의 데이터
+          처리에 한해 관여하며, 별도의 제3자 마케팅이나 광고 목적으로 Google 사용자 데이터에
+          접근하지 않습니다.
         </p>
       </LegalSection>
 
