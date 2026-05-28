@@ -78,6 +78,21 @@ export default function PrivacyPage() {
         </p>
       </LegalSection>
 
+      <LegalSection title="AI 기능">
+        <p>
+          SomaBiseo는 자체 AI 모델 또는 AI 서비스를 보유하거나 운영하지 않습니다. AI 요약 기능은
+          제3자 AI 서비스인 OpenAI API를 호출하여 제공합니다.
+        </p>
+        <LegalList
+          items={[
+            "AI 요약 기능은 SOMA 멘토특강·자유멘토링 등 공개 일정의 본문 요약 용도에만 사용합니다.",
+            "Google 사용자 데이터는 OpenAI 등 외부 AI 서비스로 전송하지 않습니다.",
+            "Google 계정 식별자, 이메일, 프로필 정보, Google Calendar 일정, Google OAuth 토큰은 AI 요청에 포함하지 않습니다.",
+            "Google 사용자 데이터는 AI 모델 학습이나 AI 모델 개선에 사용하지 않습니다.",
+          ]}
+        />
+      </LegalSection>
+
       <LegalSection title="보관 기간">
         <LegalList
           items={[
