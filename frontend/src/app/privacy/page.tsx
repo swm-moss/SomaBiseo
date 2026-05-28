@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   },
 };
 
-const updatedAt = "시행일 2026.05.23";
+const updatedAt = "시행일 2026.05.28";
 
 export default function PrivacyPage() {
   return (
@@ -47,14 +47,48 @@ export default function PrivacyPage() {
 
       <LegalSection title="Google API 데이터 사용">
         <p>
-          SomaBiseo는 Google OAuth를 통해 사용자가 승인한 범위 안에서만 Google 사용자 데이터에 접근합니다.
-          현재 서비스는 로그인과 캘린더 기능 제공을 위해 이메일, 프로필 정보, Google Calendar 이벤트 권한을 사용합니다.
+          SomaBiseo는 Google OAuth를 통해 사용자가 승인한 범위 안에서만 Google 사용자 데이터에 접근하며,
+          Google 사용자 데이터(Google 계정 식별자, 이메일, 프로필 정보, Google Calendar 일정,
+          Google OAuth 토큰)는 아래에 명시한 앱 기능 제공 또는 개선 목적에만 사용합니다.
         </p>
         <LegalList
           items={[
-            "Google Calendar 데이터는 일정 충돌 확인과 사용자가 요청한 일정 추가에만 사용합니다.",
-            "Google Calendar 데이터와 Google OAuth 토큰은 광고, 판매, 제3자 마케팅 목적으로 사용하지 않습니다.",
-            "Google API로부터 받은 정보의 사용은 Google API Services User Data Policy와 Limited Use 요구사항을 준수합니다.",
+            "Google 로그인을 통한 사용자 인증",
+            "Google Calendar 일정 조회를 통한 충돌 확인",
+            "사용자가 선택한 소마 일정을 Google Calendar에 추가",
+          ]}
+        />
+        <p>
+          SomaBiseo는 Google 사용자 데이터를 다음 목적으로 사용하지 않습니다.
+        </p>
+        <LegalList
+          items={[
+            "광고",
+            "판매",
+            "제3자 마케팅",
+            "AI 모델 학습",
+            "AI 모델 개선",
+            "신용 평가",
+            "대출 심사 등 앱 기능과 무관한 목적",
+          ]}
+        />
+        <p>
+          Google API로부터 받은 정보의 사용은 Google API Services User Data Policy와 Limited Use
+          요구사항을 준수합니다.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="AI 기능">
+        <p>
+          SomaBiseo는 자체 AI 모델 또는 AI 서비스를 보유하거나 운영하지 않습니다. AI 요약 기능은
+          제3자 AI 서비스인 OpenAI API를 호출하여 제공합니다.
+        </p>
+        <LegalList
+          items={[
+            "AI 요약 기능은 SOMA 멘토특강·자유멘토링 등 공개 일정의 본문 요약 용도에만 사용합니다.",
+            "Google 사용자 데이터는 OpenAI 등 외부 AI 서비스로 전송하지 않습니다.",
+            "Google 계정 식별자, 이메일, 프로필 정보, Google Calendar 일정, Google OAuth 토큰은 AI 요청에 포함하지 않습니다.",
+            "Google 사용자 데이터는 AI 모델 학습이나 AI 모델 개선에 사용하지 않습니다.",
           ]}
         />
       </LegalSection>
@@ -73,9 +107,15 @@ export default function PrivacyPage() {
 
       <LegalSection title="제3자 제공">
         <p>
-          SomaBiseo는 사용자의 개인정보를 판매하지 않습니다. 다만 사용자가 Google 로그인 또는 Google Calendar
-          기능을 사용할 때 Google OAuth와 Google Calendar API가 동작하며, 서비스 운영을 위해 Vercel, Railway,
-          PostgreSQL 등 배포와 데이터 저장 인프라가 사용될 수 있습니다.
+          SomaBiseo는 Google 사용자 데이터를 앱 기능 제공 또는 개선에 필요한 경우를 제외하고
+          제3자에게 이전하거나 공개하지 않으며, 어떠한 경우에도 판매하지 않습니다.
+        </p>
+        <p>
+          사용자가 Google 로그인 또는 Google Calendar 기능을 사용할 때 Google OAuth와 Google
+          Calendar API가 동작하며, 서비스 운영을 위해 Vercel, Railway, PostgreSQL 등 배포와 데이터
+          저장 인프라가 사용될 수 있습니다. 이러한 인프라 제공자는 서비스 운영 목적의 데이터
+          처리에 한해 관여하며, 별도의 제3자 마케팅이나 광고 목적으로 Google 사용자 데이터에
+          접근하지 않습니다.
         </p>
       </LegalSection>
 
