@@ -47,16 +47,35 @@ export default function PrivacyPage() {
 
       <LegalSection title="Google API 데이터 사용">
         <p>
-          SomaBiseo는 Google OAuth를 통해 사용자가 승인한 범위 안에서만 Google 사용자 데이터에 접근합니다.
-          현재 서비스는 로그인과 캘린더 기능 제공을 위해 이메일, 프로필 정보, Google Calendar 이벤트 권한을 사용합니다.
+          SomaBiseo는 Google OAuth를 통해 사용자가 승인한 범위 안에서만 Google 사용자 데이터에 접근하며,
+          Google 사용자 데이터(Google 계정 식별자, 이메일, 프로필 정보, Google Calendar 일정,
+          Google OAuth 토큰)는 아래에 명시한 앱 기능 제공 또는 개선 목적에만 사용합니다.
         </p>
         <LegalList
           items={[
-            "Google Calendar 데이터는 일정 충돌 확인과 사용자가 요청한 일정 추가에만 사용합니다.",
-            "Google Calendar 데이터와 Google OAuth 토큰은 광고, 판매, 제3자 마케팅 목적으로 사용하지 않습니다.",
-            "Google API로부터 받은 정보의 사용은 Google API Services User Data Policy와 Limited Use 요구사항을 준수합니다.",
+            "Google 로그인을 통한 사용자 인증",
+            "Google Calendar 일정 조회를 통한 충돌 확인",
+            "사용자가 선택한 소마 일정을 Google Calendar에 추가",
           ]}
         />
+        <p>
+          SomaBiseo는 Google 사용자 데이터를 다음 목적으로 사용하지 않습니다.
+        </p>
+        <LegalList
+          items={[
+            "광고",
+            "판매",
+            "제3자 마케팅",
+            "AI 모델 학습",
+            "AI 모델 개선",
+            "신용 평가",
+            "대출 심사 등 앱 기능과 무관한 목적",
+          ]}
+        />
+        <p>
+          Google API로부터 받은 정보의 사용은 Google API Services User Data Policy와 Limited Use
+          요구사항을 준수합니다.
+        </p>
       </LegalSection>
 
       <LegalSection title="보관 기간">
