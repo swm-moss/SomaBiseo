@@ -1,5 +1,3 @@
-import { LoaderCircle } from "lucide-react";
-
 import { cn } from "@/shared/lib/utils";
 
 export function LoadingState({
@@ -11,13 +9,21 @@ export function LoadingState({
 }) {
   return (
     <div
+      role="status"
+      aria-label={label}
       className={cn(
-        "flex min-h-40 items-center justify-center gap-2 text-sm text-muted-foreground",
+        "flex min-h-28 flex-col items-center justify-center gap-2.5 text-sm text-muted-foreground",
         className,
       )}
     >
-      <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
-      <span>{label}</span>
+      <div aria-hidden="true" className="sb-loader">
+        <span className="sb-loader-dot" />
+        <span className="sb-loader-dot" />
+        <span className="sb-loader-dot" />
+        <span className="sb-loader-dot" />
+        <span className="sb-loader-dot" />
+      </div>
+      {label ? <span>{label}</span> : null}
     </div>
   );
 }

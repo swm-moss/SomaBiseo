@@ -190,12 +190,16 @@ function CalendarEventRow({
 
   if (somaEventId) {
     return (
-      <Link
-        className="block border-b border-border/80 px-5 py-5 transition-colors last:border-b-0 hover:bg-muted/40"
-        href={routes.eventDetail(somaEventId)}
-      >
-        {content}
-      </Link>
+      <div className="relative border-b border-border/80 last:border-b-0">
+        <Link
+          aria-label={displayTitle}
+          className="absolute inset-0 z-0 transition-colors hover:bg-muted/40"
+          href={routes.eventDetail(somaEventId)}
+        />
+        <div className="pointer-events-none relative z-10 px-5 py-5">
+          {content}
+        </div>
+      </div>
     );
   }
 
@@ -291,11 +295,10 @@ function GoogleCalendarLink({ href }: { href: string }) {
   return (
     <a
       aria-label="Google Calendar에서 보기"
-      className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      className="pointer-events-auto relative z-10 inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       href={href}
       rel="noreferrer"
       target="_blank"
-      onClick={(event) => event.stopPropagation()}
     >
       <ExternalLink aria-hidden="true" className="size-4" />
     </a>
