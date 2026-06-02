@@ -1,6 +1,11 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
+
+import type { UserPreferences } from "@/entities/user-preference/model";
+import { userPreferenceKeys } from "@/entities/user-preference/keys";
 import type { SomaEvent } from "@/entities/soma-event/model";
+import { useAuthStore } from "@/features/auth/model";
 import { useReplaceInterestTopics, useUserPreferences } from "@/features/user-preferences/model";
 
 export type InterestTopicId =
@@ -80,24 +85,41 @@ export function useInterestPreferenceStore<T>(
   selector: (state: InterestPreferenceState) => T,
 ) {
   const { preferences, isLoading } = useUserPreferences();
+  const sessionId = useAuthStore((state) => state.sessionId);
+  const queryClient = useQueryClient();
   const replaceInterestTopicsMutation = useReplaceInterestTopics();
   const selectedTopicIds = normalizeInterestTopicIds(preferences.interestTopicIds);
 
   const state: InterestPreferenceState = {
     selectedTopicIds,
     toggleTopic: (topicId) => {
-      const nextTopicIds = selectedTopicIds.includes(topicId)
-        ? selectedTopicIds.filter((selectedTopicId) => selectedTopicId !== topicId)
-        : [...selectedTopicIds, topicId];
+      const currentTopicIds = getCurrentInterestTopicIds(
+        queryClient.getQueryData<UserPreferences>(userPreferenceKeys.me(sessionId)),
+        preferences,
+      );
+      const nextTopicIds = currentTopicIds.includes(topicId)
+        ? currentTopicIds.filter((selectedTopicId) => selectedTopicId !== topicId)
+        : [...currentTopicIds, topicId];
 
       replaceInterestTopicsMutation.mutate(nextTopicIds);
     },
-    clearTopics: () => replaceInterestTopicsMutation.mutate([]),
+    clearTopics: () => {
+      replaceInterestTopicsMutation.mutate([]);
+    },
     isLoading,
     isSaving: replaceInterestTopicsMutation.isPending,
   };
 
   return selector(state);
+}
+
+function getCurrentInterestTopicIds(
+  cachedPreferences: UserPreferences | undefined,
+  fallbackPreferences: UserPreferences,
+) {
+  return normalizeInterestTopicIds(
+    (cachedPreferences ?? fallbackPreferences).interestTopicIds,
+  );
 }
 
 function normalizeInterestTopicIds(topicIds: string[]) {
