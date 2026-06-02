@@ -28,9 +28,8 @@ const getMountedSnapshot = () => true;
 const getMountedServerSnapshot = () => false;
 
 export function InterestPreferencePanel() {
-  const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
-  const toggleTopic = useInterestPreferenceStore((state) => state.toggleTopic);
-  const clearTopics = useInterestPreferenceStore((state) => state.clearTopics);
+  const { selectedTopicIds, toggleTopic, clearTopics, isSaving } =
+    useInterestPreferenceStore((state) => state);
 
   return (
     <div className="rounded-lg bg-white p-4">
@@ -45,7 +44,12 @@ export function InterestPreferencePanel() {
           </p>
         </div>
         {selectedTopicIds.length > 0 ? (
-          <Button className="h-9 px-3 text-[14px]" variant="ghost" onClick={clearTopics}>
+          <Button
+            className="h-9 px-3 text-[14px]"
+            disabled={isSaving}
+            variant="ghost"
+            onClick={clearTopics}
+          >
             <X aria-hidden="true" />
             초기화
           </Button>
@@ -56,6 +60,7 @@ export function InterestPreferencePanel() {
         {INTEREST_TOPICS.map((topic) => (
           <InterestChip
             key={topic.id}
+            disabled={isSaving}
             selected={selectedTopicIds.includes(topic.id)}
             topicId={topic.id}
             onToggle={toggleTopic}
@@ -69,9 +74,8 @@ export function InterestPreferencePanel() {
 }
 
 export function InterestOnboardingDialog() {
-  const selectedTopicIds = useInterestPreferenceStore((state) => state.selectedTopicIds);
-  const toggleTopic = useInterestPreferenceStore((state) => state.toggleTopic);
-  const clearTopics = useInterestPreferenceStore((state) => state.clearTopics);
+  const { selectedTopicIds, toggleTopic, clearTopics, isLoading, isSaving } =
+    useInterestPreferenceStore((state) => state);
   const mounted = useSyncExternalStore(
     subscribeMounted,
     getMountedSnapshot,
@@ -84,7 +88,7 @@ export function InterestOnboardingDialog() {
   );
   const [typedText, setTypedText] = useState("");
   const shouldOpen =
-    mounted && !dismissed && (selectedTopicIds.length === 0 || typedText.length > 0);
+    mounted && !isLoading && !dismissed && (selectedTopicIds.length === 0 || typedText.length > 0);
   const typingText = "요즘 끌리는 분야를 알려주면, 맞는 멘토링을 먼저 보여드릴게요.";
 
   useEffect(() => {
@@ -161,6 +165,7 @@ export function InterestOnboardingDialog() {
             <InterestChip
               key={topic.id}
               className="sb-interest-chip-in"
+              disabled={isSaving}
               onToggle={toggleTopic}
               selected={selectedTopicIds.includes(topic.id)}
               style={{ animationDelay: `${index * 45}ms` }}
@@ -175,13 +180,18 @@ export function InterestOnboardingDialog() {
           <Button className="h-12 flex-1" variant="outline" onClick={closeForSession}>
             나중에
           </Button>
-          <Button className="h-12 flex-[1.4]" disabled={selectedTopicIds.length === 0} onClick={closeForSession}>
+          <Button
+            className="h-12 flex-[1.4]"
+            disabled={selectedTopicIds.length === 0 || isSaving}
+            onClick={closeForSession}
+          >
             {selectedTopicIds.length === 0 ? "관심사 선택" : `${selectedLabels}로 시작`}
           </Button>
         </div>
 
         <button
           className="mt-3 w-full text-center text-[13px] font-semibold leading-[20px] text-muted-foreground"
+          disabled={isSaving}
           type="button"
           onClick={clearTopics}
         >
@@ -195,6 +205,7 @@ export function InterestOnboardingDialog() {
 function InterestChip({
   children,
   className,
+  disabled,
   onToggle,
   selected,
   style,
@@ -202,6 +213,7 @@ function InterestChip({
 }: {
   children: string;
   className?: string;
+  disabled?: boolean;
   onToggle: (topicId: InterestTopicId) => void;
   selected: boolean;
   style?: CSSProperties;
@@ -215,8 +227,10 @@ function InterestChip({
         selected
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-muted text-[#4e5968] hover:bg-white",
+        disabled && "cursor-not-allowed opacity-60",
         className,
       )}
+      disabled={disabled}
       style={style}
       type="button"
       onClick={() => onToggle(topicId)}

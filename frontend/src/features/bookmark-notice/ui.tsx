@@ -1,13 +1,14 @@
 "use client";
 
 import { Bookmark } from "lucide-react";
+import { toast } from "sonner";
 
-import { useNoticeBookmarkStore } from "@/features/bookmark-notice/model";
+import { useBookmarkNoticeMutation, useNoticeBookmarks } from "@/features/bookmark-notice/model";
 import { cn } from "@/shared/lib/utils";
 
 export function BookmarkNoticeButton({ noticeId }: { noticeId: string }) {
-  const bookmarkedNoticeIds = useNoticeBookmarkStore((state) => state.bookmarkedNoticeIds);
-  const toggleBookmark = useNoticeBookmarkStore((state) => state.toggleBookmark);
+  const { bookmarkedNoticeIds, isLoading } = useNoticeBookmarks();
+  const bookmarkMutation = useBookmarkNoticeMutation();
   const isBookmarked = bookmarkedNoticeIds.includes(noticeId);
 
   return (
@@ -17,8 +18,16 @@ export function BookmarkNoticeButton({ noticeId }: { noticeId: string }) {
         "sb-tap inline-flex size-11 items-center justify-center rounded-lg bg-white text-muted-foreground transition-colors hover:bg-slate-100",
         isBookmarked && "bg-blue-50 text-primary",
       )}
+      disabled={isLoading || bookmarkMutation.isPending}
       type="button"
-      onClick={() => toggleBookmark(noticeId)}
+      onClick={() =>
+        bookmarkMutation.mutate(
+          { noticeId, bookmarked: isBookmarked },
+          {
+            onError: () => toast.error("북마크를 저장하지 못했어요."),
+          },
+        )
+      }
     >
       <Bookmark aria-hidden="true" className={cn("size-5", isBookmarked && "fill-current")} />
     </button>

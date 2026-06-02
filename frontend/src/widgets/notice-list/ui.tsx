@@ -7,7 +7,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getNoticesPage } from "@/entities/notice/api";
 import type { NoticeFilter } from "@/entities/notice/model";
 import { BookmarkNoticeButton } from "@/features/bookmark-notice/ui";
-import { useNoticeBookmarkStore } from "@/features/bookmark-notice/model";
+import { useNoticeBookmarks } from "@/features/bookmark-notice/model";
 import { useNoticeReadStore } from "@/features/mark-notice-read/model";
 import { routes } from "@/shared/config/routes";
 import { getRelativePublishedAt } from "@/shared/lib/date";
@@ -29,7 +29,7 @@ const options = [
 export function NoticeList() {
   const [filter, setFilter] = useState<NoticeFilter>("ALL");
   const [page, setPage] = useState(1);
-  const bookmarkedNoticeIds = useNoticeBookmarkStore((state) => state.bookmarkedNoticeIds);
+  const { bookmarkedNoticeIds } = useNoticeBookmarks();
   const readNoticeIds = useNoticeReadStore((state) => state.readNoticeIds);
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["notices", page],
