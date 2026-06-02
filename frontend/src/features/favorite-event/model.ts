@@ -1,31 +1,17 @@
 "use client";
 
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { useToggleEventFavorite, useUserPreferences } from "@/features/user-preferences/model";
 
-type EventFavoriteState = {
-  favoriteEventIds: string[];
-  toggleFavorite: (eventId: string) => void;
-};
+export function useEventFavorites() {
+  const { preferences, isLoading, isFetching } = useUserPreferences();
 
-export const useEventFavoriteStore = create<EventFavoriteState>()(
-  persist(
-    (set) => ({
-      favoriteEventIds: ["event-1"],
-      toggleFavorite: (eventId) =>
-        set((state) => {
-          const isFavorite = state.favoriteEventIds.includes(eventId);
+  return {
+    favoriteEventIds: preferences.eventFavoriteIds,
+    isLoading,
+    isFetching,
+  };
+}
 
-          return {
-            favoriteEventIds: isFavorite
-              ? state.favoriteEventIds.filter((id) => id !== eventId)
-              : [...state.favoriteEventIds, eventId],
-          };
-        }),
-    }),
-    {
-      name: "somabiseo-event-favorites",
-      storage: createJSONStorage(() => localStorage),
-    },
-  ),
-);
+export function useFavoriteEventMutation() {
+  return useToggleEventFavorite();
+}

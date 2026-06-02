@@ -1,7 +1,7 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+"use client";
 
 import type { SomaEvent } from "@/entities/soma-event/model";
+import { useReplaceInterestTopics, useUserPreferences } from "@/features/user-preferences/model";
 
 export type InterestTopicId =
   | "ai"
@@ -72,25 +72,41 @@ type InterestPreferenceState = {
   selectedTopicIds: InterestTopicId[];
   toggleTopic: (topicId: InterestTopicId) => void;
   clearTopics: () => void;
+  isLoading: boolean;
+  isSaving: boolean;
 };
 
-export const useInterestPreferenceStore = create<InterestPreferenceState>()(
-  persist(
-    (set) => ({
-      selectedTopicIds: [],
-      toggleTopic: (topicId) =>
-        set((state) => ({
-          selectedTopicIds: state.selectedTopicIds.includes(topicId)
-            ? state.selectedTopicIds.filter((selectedTopicId) => selectedTopicId !== topicId)
-            : [...state.selectedTopicIds, topicId],
-        })),
-      clearTopics: () => set({ selectedTopicIds: [] }),
-    }),
-    {
-      name: "somabiseo-interest-preferences",
+export function useInterestPreferenceStore<T>(
+  selector: (state: InterestPreferenceState) => T,
+) {
+  const { preferences, isLoading } = useUserPreferences();
+  const replaceInterestTopicsMutation = useReplaceInterestTopics();
+  const selectedTopicIds = normalizeInterestTopicIds(preferences.interestTopicIds);
+
+  const state: InterestPreferenceState = {
+    selectedTopicIds,
+    toggleTopic: (topicId) => {
+      const nextTopicIds = selectedTopicIds.includes(topicId)
+        ? selectedTopicIds.filter((selectedTopicId) => selectedTopicId !== topicId)
+        : [...selectedTopicIds, topicId];
+
+      replaceInterestTopicsMutation.mutate(nextTopicIds);
     },
-  ),
-);
+    clearTopics: () => replaceInterestTopicsMutation.mutate([]),
+    isLoading,
+    isSaving: replaceInterestTopicsMutation.isPending,
+  };
+
+  return selector(state);
+}
+
+function normalizeInterestTopicIds(topicIds: string[]) {
+  return topicIds.filter(isInterestTopicId);
+}
+
+function isInterestTopicId(topicId: string): topicId is InterestTopicId {
+  return INTEREST_TOPICS.some((topic) => topic.id === topicId);
+}
 
 export function getEventRecommendation(
   event: SomaEvent,

@@ -1,31 +1,17 @@
 "use client";
 
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { useToggleNoticeBookmark, useUserPreferences } from "@/features/user-preferences/model";
 
-type NoticeBookmarkState = {
-  bookmarkedNoticeIds: string[];
-  toggleBookmark: (noticeId: string) => void;
-};
+export function useNoticeBookmarks() {
+  const { preferences, isLoading, isFetching } = useUserPreferences();
 
-export const useNoticeBookmarkStore = create<NoticeBookmarkState>()(
-  persist(
-    (set) => ({
-      bookmarkedNoticeIds: [],
-      toggleBookmark: (noticeId) =>
-        set((state) => {
-          const isBookmarked = state.bookmarkedNoticeIds.includes(noticeId);
+  return {
+    bookmarkedNoticeIds: preferences.noticeBookmarkIds,
+    isLoading,
+    isFetching,
+  };
+}
 
-          return {
-            bookmarkedNoticeIds: isBookmarked
-              ? state.bookmarkedNoticeIds.filter((id) => id !== noticeId)
-              : [...state.bookmarkedNoticeIds, noticeId],
-          };
-        }),
-    }),
-    {
-      name: "somabiseo-notice-bookmarks",
-      storage: createJSONStorage(() => localStorage),
-    },
-  ),
-);
+export function useBookmarkNoticeMutation() {
+  return useToggleNoticeBookmark();
+}
