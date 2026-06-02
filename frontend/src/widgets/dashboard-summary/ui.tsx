@@ -20,6 +20,7 @@ import { GoogleCalendarEventList } from "@/widgets/google-calendar-event-list/ui
 import { routes } from "@/shared/config/routes";
 import { formatOptionalDateTime, getWeekRange } from "@/shared/lib/date";
 import { EmptyState } from "@/shared/ui/empty-state";
+import { ErrorState } from "@/shared/ui/error-state";
 import { LoadingState } from "@/shared/ui/loading-state";
 import { StatusBadge } from "@/shared/ui/status-badge";
 
@@ -46,7 +47,7 @@ export function DashboardSummary() {
     enabled: Boolean(sessionId),
   });
 
-  if (!sessionId || eventsQuery.isLoading || noticesQuery.isLoading) {
+  if (!sessionId) {
     return <LoadingState />;
   }
 
@@ -57,6 +58,7 @@ export function DashboardSummary() {
   const recommendedEvents = getRecommendedEvents(recommendationCandidates, selectedTopicIds, 3);
   const almostFull = dashboard?.almostFullEvents ?? [];
   const calendarEventCount = calendarEventsQuery.data?.length ?? 0;
+  const noticeSummaryValue = noticesQuery.isLoading ? "확인 중" : `${newNotices.length}개`;
   const calendarSummaryValue =
     calendarConnected && sessionId
       ? calendarEventsQuery.isLoading
@@ -86,7 +88,7 @@ export function DashboardSummary() {
             <p className="mt-3 text-[14px] font-semibold leading-[21px] text-muted-foreground">
               최근 공지
             </p>
-            <p className="mt-1 text-[24px] font-bold leading-[32px]">{newNotices.length}개</p>
+            <p className="mt-1 text-[24px] font-bold leading-[32px]">{noticeSummaryValue}</p>
           </Link>
         </div>
       </section>
@@ -100,7 +102,14 @@ export function DashboardSummary() {
           <Star aria-hidden="true" className="size-5 text-primary" />
           <h2 className="sb-section-title">추천 특강</h2>
         </div>
-        {selectedTopicIds.length === 0 ? (
+        {eventsQuery.isLoading ? (
+          <LoadingState className="mt-3" />
+        ) : eventsQuery.isError ? (
+          <ErrorState
+            description="추천 특강을 잠시 불러오지 못했어요."
+            onRetry={() => void eventsQuery.refetch()}
+          />
+        ) : selectedTopicIds.length === 0 ? (
           <EmptyState
             className="mt-3"
             title="관심사를 설정해 주세요"
@@ -144,7 +153,14 @@ export function DashboardSummary() {
           <Flame aria-hidden="true" className="size-5 text-primary" />
           <h2 className="sb-section-title">마감 임박</h2>
         </div>
-        {almostFull.length === 0 ? (
+        {eventsQuery.isLoading ? (
+          <LoadingState className="mt-3" />
+        ) : eventsQuery.isError ? (
+          <ErrorState
+            description="마감 임박 일정을 잠시 불러오지 못했어요."
+            onRetry={() => void eventsQuery.refetch()}
+          />
+        ) : almostFull.length === 0 ? (
           <EmptyState className="mt-3" title="마감 임박 일정이 없어요" />
         ) : (
           <div className="sb-list-surface">
@@ -184,7 +200,14 @@ export function DashboardSummary() {
           <Bell aria-hidden="true" className="size-5 text-primary" />
           <h2 className="sb-section-title">최근 공지</h2>
         </div>
-        {newNotices.length === 0 ? (
+        {noticesQuery.isLoading ? (
+          <LoadingState className="mt-3" />
+        ) : noticesQuery.isError ? (
+          <ErrorState
+            description="최근 공지를 잠시 불러오지 못했어요."
+            onRetry={() => void noticesQuery.refetch()}
+          />
+        ) : newNotices.length === 0 ? (
           <EmptyState className="mt-3" title="최근 공지가 없어요" />
         ) : (
           <div className="sb-list-surface">
