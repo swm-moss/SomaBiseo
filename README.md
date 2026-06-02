@@ -11,7 +11,7 @@
 
 > 부산센터 연수생 대상 초대 코드가 있어야 메인 화면을 사용할 수 있습니다.
 
-https://somabiseo.vercel.app
+https://somabiseo.com
 
 <br/>
 
