@@ -28,8 +28,7 @@ const getMountedSnapshot = () => true;
 const getMountedServerSnapshot = () => false;
 
 export function InterestPreferencePanel() {
-  const { selectedTopicIds, toggleTopic, clearTopics, isSaving } =
-    useInterestPreferenceStore((state) => state);
+  const { selectedTopicIds, toggleTopic, clearTopics } = useInterestPreferenceStore((state) => state);
 
   return (
     <div className="rounded-lg bg-white p-4">
@@ -46,7 +45,6 @@ export function InterestPreferencePanel() {
         {selectedTopicIds.length > 0 ? (
           <Button
             className="h-9 px-3 text-[14px]"
-            disabled={isSaving}
             variant="ghost"
             onClick={clearTopics}
           >
@@ -60,7 +58,6 @@ export function InterestPreferencePanel() {
         {INTEREST_TOPICS.map((topic) => (
           <InterestChip
             key={topic.id}
-            disabled={isSaving}
             selected={selectedTopicIds.includes(topic.id)}
             topicId={topic.id}
             onToggle={toggleTopic}
@@ -74,7 +71,7 @@ export function InterestPreferencePanel() {
 }
 
 export function InterestOnboardingDialog() {
-  const { selectedTopicIds, toggleTopic, clearTopics, isLoading, isSaving } =
+  const { selectedTopicIds, toggleTopic, clearTopics, isLoading } =
     useInterestPreferenceStore((state) => state);
   const mounted = useSyncExternalStore(
     subscribeMounted,
@@ -165,7 +162,6 @@ export function InterestOnboardingDialog() {
             <InterestChip
               key={topic.id}
               className="sb-interest-chip-in"
-              disabled={isSaving}
               onToggle={toggleTopic}
               selected={selectedTopicIds.includes(topic.id)}
               style={{ animationDelay: `${index * 45}ms` }}
@@ -182,7 +178,7 @@ export function InterestOnboardingDialog() {
           </Button>
           <Button
             className="h-12 flex-[1.4]"
-            disabled={selectedTopicIds.length === 0 || isSaving}
+            disabled={selectedTopicIds.length === 0}
             onClick={closeForSession}
           >
             {selectedTopicIds.length === 0 ? "관심사 선택" : `${selectedLabels}로 시작`}
@@ -191,7 +187,6 @@ export function InterestOnboardingDialog() {
 
         <button
           className="mt-3 w-full text-center text-[13px] font-semibold leading-[20px] text-muted-foreground"
-          disabled={isSaving}
           type="button"
           onClick={clearTopics}
         >
