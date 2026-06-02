@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { BottomNavigation } from "@/widgets/bottom-navigation/ui";
+import { MainNavigation } from "@/widgets/app-shell/main-navigation";
 import { InviteVerificationGate, PortalSessionStatus } from "@/features/auth/ui";
 import { InterestOnboardingDialog } from "@/features/user-interests/ui";
 import { NON_OFFICIAL_NOTICE, PRODUCT_NAME } from "@/shared/constants/product";
@@ -38,23 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 width={720}
               />
             </Link>
-            <nav className="hidden min-w-0 flex-1 items-center gap-6 text-[15px] font-bold text-muted-foreground lg:flex">
-              <Link className="hover:text-foreground" href={routes.dashboard}>
-                대시보드
-              </Link>
-              <Link className="hover:text-foreground" href={routes.notices}>
-                공지
-              </Link>
-              <Link className="hover:text-foreground" href={routes.events}>
-                일정
-              </Link>
-              <Link className="hover:text-foreground" href={routes.reviews}>
-                후기
-              </Link>
-              <Link className="hover:text-foreground" href={routes.settings}>
-                설정
-              </Link>
-            </nav>
+            <MainNavigation />
             <div className="ml-auto flex shrink-0 items-center">
               <PortalSessionStatus />
             </div>

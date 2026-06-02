@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, CalendarDays, Home, MessageSquare, Settings } from "lucide-react";
 
+import { usePrefetchMainRouteData } from "@/widgets/app-shell/use-prefetch-main-route-data";
 import { routes } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/utils";
 
@@ -17,6 +18,7 @@ const navItems = [
 
 export function BottomNavigation() {
   const pathname = usePathname();
+  const prefetchRouteData = usePrefetchMainRouteData();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden">
@@ -32,6 +34,9 @@ export function BottomNavigation() {
                 isActive && "bg-[#eaf3ff] text-primary",
               )}
               href={href}
+              onFocus={() => prefetchRouteData(href)}
+              onPointerEnter={() => prefetchRouteData(href)}
+              onTouchStart={() => prefetchRouteData(href)}
             >
               <Icon aria-hidden="true" className="size-5" />
               {label}

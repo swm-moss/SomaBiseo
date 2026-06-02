@@ -154,15 +154,22 @@ async function getSomaEventsPages(
   options: Omit<GetSomaEventsPageOptions, "page" | "sort"> = {},
 ) {
   const firstPage = await getSomaEventsPage({ ...options, page: 1, sort });
-  const events = [...firstPage.items];
-  let currentPage = firstPage;
+  const lastPage = Math.min(maxPages, firstPage.totalPages);
 
-  for (let page = 2; page <= maxPages && currentPage.hasNextPage; page += 1) {
-    currentPage = await getSomaEventsPage({ ...options, page, sort });
-    events.push(...currentPage.items);
+  if (!firstPage.hasNextPage || lastPage <= 1) {
+    return firstPage.items;
   }
 
-  return events;
+  const restPages = await Promise.all(
+    Array.from({ length: lastPage - 1 }, (_, index) =>
+      getSomaEventsPage({ ...options, page: index + 2, sort }),
+    ),
+  );
+
+  return [
+    ...firstPage.items,
+    ...restPages.flatMap((pageResponse) => pageResponse.items),
+  ];
 }
 
 export type SomaEventMode = "ONLINE" | "OFFLINE";
