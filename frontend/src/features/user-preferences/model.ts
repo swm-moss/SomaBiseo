@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
 import {
@@ -84,10 +84,41 @@ export function useUserPreferences() {
 export function useReplaceInterestTopics() {
   const sessionId = useAuthStore((state) => state.sessionId);
   const queryClient = useQueryClient();
+  const mutationRevisionRef = useRef(0);
 
   return useMutation({
     mutationFn: replaceInterestTopics,
-    onSuccess: (preferences) => {
+    onMutate: async (topicIds) => {
+      const revision = mutationRevisionRef.current + 1;
+      mutationRevisionRef.current = revision;
+
+      await queryClient.cancelQueries({
+        queryKey: userPreferenceKeys.me(sessionId),
+      });
+
+      const previousPreferences = queryClient.getQueryData<UserPreferences>(
+        userPreferenceKeys.me(sessionId),
+      );
+
+      setPreferences(queryClient, sessionId, {
+        ...(previousPreferences ?? emptyUserPreferences),
+        interestTopicIds: topicIds,
+      });
+
+      return { previousPreferences, revision };
+    },
+    onError: (_error, _topicIds, context) => {
+      if (context?.revision !== mutationRevisionRef.current) {
+        return;
+      }
+
+      setPreferences(queryClient, sessionId, context.previousPreferences ?? emptyUserPreferences);
+    },
+    onSuccess: (preferences, _topicIds, context) => {
+      if (context?.revision !== mutationRevisionRef.current) {
+        return;
+      }
+
       setPreferences(queryClient, sessionId, preferences);
     },
   });
