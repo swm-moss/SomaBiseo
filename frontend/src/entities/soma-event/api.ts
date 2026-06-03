@@ -24,6 +24,9 @@ type PortalPage<T> = {
   page: number;
   totalPages: number;
   hasNextPage: boolean;
+  // 백엔드가 stale 캐시를 즉시 반환하고 백그라운드 동기화를 돌리는 중이면 true.
+  // 이 값이 true인 동안 프론트는 폴링으로 최신 데이터로 자동 교체한다.
+  refreshing: boolean;
 };
 
 type PortalEventResponse = {
@@ -157,7 +160,7 @@ async function getSomaEventsPages(
   const lastPage = Math.min(maxPages, firstPage.totalPages);
 
   if (!firstPage.hasNextPage || lastPage <= 1) {
-    return firstPage.items;
+    return { items: firstPage.items, refreshing: firstPage.refreshing };
   }
 
   const restPages = await Promise.all(
@@ -166,10 +169,13 @@ async function getSomaEventsPages(
     ),
   );
 
-  return [
-    ...firstPage.items,
-    ...restPages.flatMap((pageResponse) => pageResponse.items),
-  ];
+  return {
+    items: [
+      ...firstPage.items,
+      ...restPages.flatMap((pageResponse) => pageResponse.items),
+    ],
+    refreshing: firstPage.refreshing,
+  };
 }
 
 export type SomaEventMode = "ONLINE" | "OFFLINE";
@@ -296,10 +302,11 @@ function normalizePortalPage<T>(
       page: requestedPage,
       totalPages: requestedPage,
       hasNextPage: false,
+      refreshing: false,
     };
   }
 
-  return response;
+  return { ...response, refreshing: response.refreshing ?? false };
 }
 
 export async function getAlmostFullEvents() {
@@ -314,12 +321,13 @@ export async function getAlmostFullEvents() {
 
 export async function getDashboardEvents() {
   const now = new Date();
-  const [events, almostFullEvents] = await Promise.all([
+  const [eventsPage, almostFullEvents] = await Promise.all([
     getSomaEventsPages(MAX_DASHBOARD_EVENT_PAGES, "LECTURE_DATE_ASC", {
       activeAt: now.toISOString(),
     }),
     getAlmostFullEvents(),
   ]);
+  const events = eventsPage.items;
   const today = new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Seoul",
     year: "numeric",
@@ -333,5 +341,6 @@ export async function getDashboardEvents() {
     recommendationCandidates: events,
     almostFullEvents,
     conflictedEvents: events.filter((event) => event.conflict.hasConflict),
+    refreshing: eventsPage.refreshing,
   };
 }
