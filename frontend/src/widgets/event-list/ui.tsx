@@ -129,6 +129,9 @@ export function EventList() {
         date: date || undefined,
       }),
     placeholderData: keepPreviousData,
+    // 백엔드가 stale 캐시를 반환하며 백그라운드 동기화 중이면(refreshing) 짧게 폴링해
+    // 갱신이 끝나면 최신 목록으로 자동 교체한다.
+    refetchInterval: (query) => (query.state.data?.refreshing ? 3000 : false),
   });
 
   const events = data?.items ?? [];

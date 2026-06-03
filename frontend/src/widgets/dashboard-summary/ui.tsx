@@ -40,6 +40,8 @@ export function DashboardSummary() {
     queryKey: ["dashboard-events", sessionId],
     queryFn: () => getDashboardEvents(),
     enabled: Boolean(sessionId),
+    // 백그라운드 동기화 중이면 짧게 폴링해 갱신이 끝나면 최신 데이터로 자동 교체한다.
+    refetchInterval: (query) => (query.state.data?.refreshing ? 3000 : false),
   });
   const noticesQuery = useQuery({
     queryKey: ["dashboard-notices", sessionId],

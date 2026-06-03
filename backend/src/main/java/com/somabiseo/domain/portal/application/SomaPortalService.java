@@ -15,6 +15,7 @@ import com.somabiseo.domain.portal.infrastructure.SomaPortalHtmlParser;
 import com.somabiseo.domain.portal.infrastructure.SomaPortalProperties;
 import com.somabiseo.domain.somaevent.domain.EventMode;
 import com.somabiseo.domain.somaevent.domain.EventType;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,10 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 @Service
@@ -42,7 +47,28 @@ public class SomaPortalService {
     private final Object operatorSessionLock = new Object();
     private final Object noticeSyncLock = new Object();
     private final Object eventSyncLock = new Object();
+    private final AtomicBoolean eventRefreshInProgress = new AtomicBoolean(false);
+    private final ExecutorService backgroundSyncExecutor = Executors.newSingleThreadExecutor((runnable) -> {
+        Thread thread = new Thread(runnable, "soma-portal-bg-sync");
+        thread.setDaemon(true);
+
+        return thread;
+    });
     private volatile SomaPortalSession operatorSession;
+
+    @PreDestroy
+    void shutdownBackgroundSyncExecutor() {
+        backgroundSyncExecutor.shutdown();
+
+        try {
+            if (!backgroundSyncExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                backgroundSyncExecutor.shutdownNow();
+            }
+        } catch (InterruptedException exception) {
+            backgroundSyncExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
 
     public SomaPortalService(
             SomaPortalClient portalClient,
@@ -110,17 +136,14 @@ public class SomaPortalService {
             String date,
             OffsetDateTime activeAt
     ) {
-        syncPublicEventsBestEffort();
-        hydratePublicEventDisplayDetailsBestEffort();
+        boolean refreshing = ensurePublicEventsAvailable();
 
-        return hydrateEventPageDisplayDetails(
-                cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date, activeAt),
-                this::fetchAndCachePublicEventDetail
-        );
+        return cacheService.getEvents(page, PAGE_SIZE, sort, type, mode, q, date, activeAt)
+                .withRefreshing(refreshing);
     }
 
     public List<SomaPortalEventResponse> getAlmostFullEvents() {
-        syncPublicEventsBestEffort();
+        ensurePublicEventsAvailable();
 
         return cacheService.findAlmostFullEvents(ALMOST_FULL_LIMIT);
     }
@@ -147,7 +170,7 @@ public class SomaPortalService {
     }
 
     public SomaPortalEventResponse getPublicEventDetailBySourceId(String sourceId, boolean refresh) {
-        syncEventsIfNeeded();
+        ensurePublicEventsAvailable();
 
         if (!refresh) {
             return cacheService.findFreshEventDetailBySourceId(sourceId, detailCacheTtl())
@@ -331,6 +354,38 @@ public class SomaPortalService {
         });
     }
 
+    /**
+     * 공개 이벤트 목록을 요청 응답에 쓸 수 있도록 보장한다.
+     *
+     * <ul>
+     *   <li>캐시 자체가 없으면(콜드 스타트) 요청 스레드에서 동기로 sync — 타임아웃을 감수하더라도 첫 데이터를 만든다.</li>
+     *   <li>캐시가 있으면 TTL이 지났더라도 즉시 반환하고, 동기화/hydration은 백그라운드로 트리거한다(stale-while-revalidate).</li>
+     * </ul>
+     *
+     * @return 백그라운드 갱신이 진행 중이면 {@code true} (프론트가 폴링 후 자동 refetch 하도록).
+     */
+    private boolean ensurePublicEventsAvailable() {
+        if (!cacheService.hasEvents()) {
+            syncEventsBlocking();
+
+            return false;
+        }
+
+        return triggerBackgroundEventRefresh();
+    }
+
+    private void syncEventsBlocking() {
+        try {
+            syncEventsIfNeeded();
+        } catch (SomaPortalUnauthorizedException | SomaPortalException exception) {
+            if (!cacheService.hasEvents()) {
+                throw exception;
+            }
+
+            log.warn("SOMA event sync failed. Falling back to cached events.", exception);
+        }
+    }
+
     private void syncEventsIfNeeded() {
         if (cacheService.eventsFresh(cacheTtl())) {
             return;
@@ -345,24 +400,47 @@ public class SomaPortalService {
         }
     }
 
-    private void syncPublicEventsBestEffort() {
-        try {
-            syncEventsIfNeeded();
-        } catch (SomaPortalUnauthorizedException | SomaPortalException exception) {
-            if (!cacheService.hasEvents()) {
-                throw exception;
-            }
+    /**
+     * 캐시가 stale 하거나 display detail이 비어 있으면 백그라운드 스레드에서 갱신을 시작한다.
+     * 이미 갱신이 돌고 있으면 중복 실행하지 않고 진행 중임만 알린다.
+     *
+     * @return 갱신이 진행 중(이번에 시작했거나 이미 돌고 있던)이면 {@code true}.
+     */
+    private boolean triggerBackgroundEventRefresh() {
+        boolean needsSync = !cacheService.eventsFresh(cacheTtl());
+        boolean needsHydration = !cacheService.findDisplayDetailHydrationCandidates(1).isEmpty();
 
-            log.warn("SOMA event sync failed. Falling back to cached events.", exception);
+        if (!needsSync && !needsHydration) {
+            return false;
         }
+
+        if (eventRefreshInProgress.compareAndSet(false, true)) {
+            backgroundSyncExecutor.execute(() -> {
+                try {
+                    runBackgroundEventRefresh(needsSync);
+                } catch (RuntimeException exception) {
+                    log.warn("Background SOMA event refresh failed. Keeping cached events.", exception);
+                } finally {
+                    eventRefreshInProgress.set(false);
+                }
+            });
+        }
+
+        return true;
     }
 
-    private void hydratePublicEventDisplayDetailsBestEffort() {
-        try {
-            hydrateCachedEventsMissingDisplayDetailsIfNeeded();
-        } catch (SomaPortalUnauthorizedException | SomaPortalException exception) {
-            log.warn("SOMA event display detail hydration failed. Returning cached list.", exception);
+    private void runBackgroundEventRefresh(boolean needsSync) {
+        if (needsSync) {
+            syncEventsIfNeeded();
+
+            return;
         }
+
+        withOperatorSession((session) -> {
+            hydrateCachedEventsMissingDisplayDetails(session);
+
+            return null;
+        });
     }
 
     private void syncEvents() {
@@ -381,26 +459,6 @@ public class SomaPortalService {
 
             return null;
         });
-    }
-
-    private void hydrateCachedEventsMissingDisplayDetailsIfNeeded() {
-        if (cacheService.findDisplayDetailHydrationCandidates(1).isEmpty()) {
-            return;
-        }
-
-        synchronized (eventSyncLock) {
-            List<SomaPortalEventResponse> candidates = cacheService.findDisplayDetailHydrationCandidates(displayDetailHydrationLimit());
-
-            if (candidates.isEmpty()) {
-                return;
-            }
-
-            withOperatorSession((session) -> {
-                hydrateCachedEventsMissingDisplayDetails(session, candidates);
-
-                return null;
-            });
-        }
     }
 
     private void hydrateCachedEventsMissingDisplayDetails(SomaPortalSession session) {
