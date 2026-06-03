@@ -84,6 +84,7 @@ public class UserPreferenceService {
     @Transactional
     public UserPreferencesResponse replaceInterestTopics(Long userId, List<String> topicIds) {
         interestTopicRepository.deleteByUserId(userId);
+        interestTopicRepository.flush();
 
         List<String> normalizedTopicIds = normalizeTopicIds(topicIds);
         List<UserInterestTopicPreference> preferences = new ArrayList<>();
