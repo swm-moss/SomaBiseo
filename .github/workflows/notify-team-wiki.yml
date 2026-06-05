@@ -1,9 +1,10 @@
 name: notify-team-wiki
 
-# 이 파일을 각 프로젝트 레포(EmberRoom, SomaBiseo, 본과정 레포...)의
+# 이 파일을 각 프로젝트 레포(SomaBiseo, 본과정 레포...)의
 #   .github/workflows/notify-team-wiki.yml
-# 위치에 복사해 넣는다. push/PR/issue가 생기면 team-wiki로 신호(repository_dispatch)를
-# 보내 org-state 다이제스트를 즉시 다시 굽게 만든다.
+# 위치에 복사해 넣는다. push/PR/issue가 생기면 이벤트 요약을 만들어 team-wiki로
+# repository_dispatch(client_payload 포함)를 보낸다. team-wiki는 이걸 받아
+# org-state 스냅샷을 다시 굽고 활동 피드(_activity.md)에 한 줄 기록한다.
 #
 # 동작 조건: 이 레포의 시크릿에 MOSS_BOT_TOKEN(team-wiki에 Contents:R/W 권한 PAT)이 있어야 한다.
 # 없으면 조용히 건너뛴다(실패 X) — 시크릿을 넣는 순간 자동으로 활성화된다.
@@ -18,13 +19,38 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.MOSS_BOT_TOKEN }}
+      REPO: ${{ github.event.repository.name }}
+      ACTOR: ${{ github.actor }}
+      EVENT: ${{ github.event_name }}
+      ACTION: ${{ github.event.action }}
+      PR_NUM: ${{ github.event.pull_request.number }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_MERGED: ${{ github.event.pull_request.merged }}
+      ISSUE_NUM: ${{ github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+      COMMIT_MSG: ${{ github.event.head_commit.message }}
     steps:
-      - name: Dispatch to team-wiki
-        env:
-          GH_TOKEN: ${{ secrets.MOSS_BOT_TOKEN }}
+      - name: Build summary & dispatch to team-wiki
         run: |
           if [ -z "$GH_TOKEN" ]; then
             echo "MOSS_BOT_TOKEN 미설정 — team-wiki 알림 건너뜀"
             exit 0
           fi
-          gh api repos/swm-moss/team-wiki/dispatches -f event_type=org-update
+          case "$EVENT" in
+            push)
+              MSG="${COMMIT_MSG%%$'\n'*}"
+              SUMMARY="push: \"${MSG:-(empty)}\"" ;;
+            pull_request)
+              VERB="$ACTION"
+              [ "$ACTION" = "closed" ] && [ "$PR_MERGED" = "true" ] && VERB="머지"
+              SUMMARY="PR #$PR_NUM $VERB: \"$PR_TITLE\"" ;;
+            issues)
+              SUMMARY="이슈 #$ISSUE_NUM $ACTION: \"$ISSUE_TITLE\"" ;;
+            *)
+              SUMMARY="$EVENT $ACTION" ;;
+          esac
+          jq -nc --arg repo "$REPO" --arg actor "$ACTOR" --arg summary "$SUMMARY" \
+            '{event_type:"org-update", client_payload:{repo:$repo, actor:$actor, summary:$summary}}' \
+            | gh api repos/swm-moss/team-wiki/dispatches --input -
